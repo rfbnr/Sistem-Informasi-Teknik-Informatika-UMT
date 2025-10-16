@@ -10,10 +10,29 @@ class Layanan extends Model
     use HasFactory;
 
     protected $fillable = [
-        'image',
         'name',
-        'jabatan',
-        'status',
-        'keterangan'
+        'description',
+        'image',
+        'category',
+        'contact_person',
+        'contact_email',
+        'contact_phone',
+        'requirements',
+        'process_time',
+        'status'
     ];
+
+    protected $casts = [
+        'requirements' => 'array'
+    ];
+
+    public function scopeActive($query)
+    {
+        return $query->where('status', 'active');
+    }
+
+    public function scopeByCategory($query, $category)
+    {
+        return $query->where('category', $category);
+    }
 }

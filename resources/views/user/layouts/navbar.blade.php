@@ -35,6 +35,10 @@
                     <ul class="dropdown-menu" aria-labelledby="layananDropdown">
                         <li><a class="dropdown-item" href="{{ url('aproval') }}">APROVAL KAPRODI</a></li>
                         <li><a class="dropdown-item" href="{{ url('layanans') }}">KAPRODI</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{{ route('documents.index') }}">📄 E-SIGNATURE</a></li>
+                        <li><a class="dropdown-item" href="{{ route('signatures.index') }}">🖋️ TANDA TANGAN</a></li>
+                        <li><a class="dropdown-item" href="{{ route('validation.index') }}">✅ VALIDASI</a></li>
                     </ul>
                 </li>
 

@@ -11,12 +11,34 @@ class Alumni extends Model
 
     protected $fillable = [
         'name',
+        'NIM',
+        'tahun_lulus',
+        'company',
         'jabatan',
-        'linkedin',
-        'image',
-        'instagram',
         'email',
+        'phone',
+        'image',
+        'linkedin',
+        'instagram',
         'youtube',
-        'tiktok'
+        'tiktok',
+        'achievements',
+        'testimonial',
+        'status'
     ];
+
+    protected $casts = [
+        'achievements' => 'array',
+        'tahun_lulus' => 'integer'
+    ];
+
+    public function scopeActive($query)
+    {
+        return $query->where('status', 'active');
+    }
+
+    public function scopeByYear($query, $year)
+    {
+        return $query->where('tahun_lulus', $year);
+    }
 }

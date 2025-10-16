@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
+use App\Models\Kaprodi;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
 
-use App\Models\Kaprodi;
-use App\Models\User;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
@@ -60,7 +60,8 @@ class AuthController extends Controller
 
         if (Auth::guard('kaprodi')->attempt($credentials)) {
             $request->session()->regenerate();
-            return redirect('/kaprodi/approval-requests');
+            // return redirect('/kaprodi/approval-requests');
+            return redirect('/kaprodi/dashboard');
         }
 
         return back()->withErrors([

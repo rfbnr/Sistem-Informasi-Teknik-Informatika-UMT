@@ -12,7 +12,8 @@
         "laravel/tinker": "^2.9",
         "milon/barcode": "^11.0",
         "nesbot/carbon": "^3.7",
-        "simplesoftwareio/simple-qrcode": "^4.2"
+        "simplesoftwareio/simple-qrcode": "^4.2",
+        "web3p/web3.php": "^0.1.6"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

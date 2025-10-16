@@ -11,12 +11,26 @@ class Dosen extends Model
 
     protected $fillable = [
         'name',
+        'NIDN',
         'jabatan',
-        'linkedin',
-        'image',
-        'instagram',
         'email',
+        'phone',
+        'image',
+        'linkedin',
+        'instagram',
         'youtube',
-        'tiktok'
+        'tiktok',
+        'bio',
+        'research_interests',
+        'status'
     ];
+
+    protected $casts = [
+        'research_interests' => 'array'
+    ];
+
+    public function scopeActive($query)
+    {
+        return $query->where('status', 'active');
+    }
 }

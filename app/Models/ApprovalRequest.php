@@ -17,7 +17,9 @@ class ApprovalRequest extends Model
         'document_path',
         'signed_document_path',
         'notes',
-        'status'
+        'status',
+        'approved_at',
+        'approved_by'
     ];
 
     public function user()
@@ -25,7 +27,29 @@ class ApprovalRequest extends Model
         return $this->belongsTo(User::class);
     }
 
-    protected $addHttpCookie = true;
+    public function approver()
+    {
+        return $this->belongsTo(Kaprodi::class, 'approved_by');
+    }
+
+    public function scopePending($query)
+    {
+        return $query->where('status', 'pending');
+    }
+
+    public function scopeApproved($query)
+    {
+        return $query->where('status', 'approved');
+    }
+
+    public function scopeRejected($query)
+    {
+        return $query->where('status', 'rejected');
+    }
+
+    protected $casts = [
+        'approved_at' => 'datetime'
+    ];
     
      // Generate nomor otomatis saat create
     public static function boot()

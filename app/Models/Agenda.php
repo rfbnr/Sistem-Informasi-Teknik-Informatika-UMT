@@ -12,6 +12,34 @@ class Agenda extends Model
     protected $fillable = [
         'title',
         'description',
-        'image'
+        'image',
+        'start_date',
+        'end_date',
+        'location',
+        'organizer',
+        'max_participants',
+        'status',
+        'priority'
     ];
+
+    protected $casts = [
+        'start_date' => 'datetime',
+        'end_date' => 'datetime',
+        'max_participants' => 'integer'
+    ];
+
+    public function scopeUpcoming($query)
+    {
+        return $query->where('start_date', '>=', now());
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->where('status', 'active');
+    }
+
+    public function scopeByPriority($query, $priority)
+    {
+        return $query->where('priority', $priority);
+    }
 }
