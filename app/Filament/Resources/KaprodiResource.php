@@ -1,0 +1,87 @@
+<?php
+
+namespace App\Filament\Resources;
+
+use App\Filament\Resources\KaprodiResource\Pages;
+use App\Filament\Resources\KaprodiResource\RelationManagers;
+use App\Models\Kaprodi;
+use Filament\Forms;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Form;
+use Filament\Resources\Resource;
+use Filament\Tables;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
+
+class KaprodiResource extends Resource
+{
+    protected static ?string $model = Kaprodi::class;
+
+    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+
+    public static function form(Form $form): Form
+    {
+        return $form
+            ->schema([
+                TextInput::make('name')
+                    ->required()
+                    ->label('Nama'),
+                TextInput::make('email')
+                    ->label('Email')
+                    ->required()
+                    ->email()
+                    ->unique(ignorable: fn ($record) => $record)
+                    ->visibleOn('create'),
+                TextInput::make('NIDN')
+                    ->label('NIDN')
+                    ->required(),
+                TextInput::make('password')
+                    ->label('Password')
+                    ->required()
+                    ->password()
+                    ->visibleOn('create'),
+            ]);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return $table
+            ->columns([
+                TextColumn::make('name')
+                    ->label('Nama'),
+                TextColumn::make('email')
+                    ->label('Email'),
+                TextColumn::make('NIDN')
+                    ->label('NIDN'),
+            ])
+            ->filters([
+                //
+            ])
+            ->actions([
+                Tables\Actions\EditAction::make(),
+            ])
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make(),
+                ]),
+            ]);
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+            //
+        ];
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => Pages\ListKaprodis::route('/'),
+            'create' => Pages\CreateKaprodi::route('/create'),
+            'edit' => Pages\EditKaprodi::route('/{record}/edit'),
+        ];
+    }
+}
