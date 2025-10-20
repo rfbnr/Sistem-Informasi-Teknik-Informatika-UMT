@@ -1,0 +1,623 @@
+<?php
+
+namespace App\Http\Controllers\DigitalSignature;
+
+use Illuminate\Http\Request;
+use App\Models\ApprovalRequest;
+use App\Services\QRCodeService;
+use App\Models\DigitalSignature;
+use App\Models\DocumentSignature;
+use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
+use App\Services\VerificationService;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Response;
+use App\Services\DigitalSignatureService;
+use Illuminate\Support\Facades\Validator;
+
+class DocumentSignatureController extends Controller
+{
+    protected $digitalSignatureService;
+    protected $qrCodeService;
+    protected $verificationService;
+
+    public function __construct(
+        DigitalSignatureService $digitalSignatureService,
+        QRCodeService $qrCodeService,
+        VerificationService $verificationService
+    ) {
+        $this->digitalSignatureService = $digitalSignatureService;
+        $this->qrCodeService = $qrCodeService;
+        $this->verificationService = $verificationService;
+    }
+
+    /**
+     * Display list of document signatures for admin
+     */
+    public function index(Request $request)
+    {
+        try {
+            $query = DocumentSignature::with(['approvalRequest.user', 'digitalSignature', 'signer']);
+
+            // Filter by status
+            if ($request->has('status') && !empty($request->status)) {
+                $query->where('signature_status', $request->status);
+            }
+
+            // Filter by date range
+            if ($request->has('date_from') && !empty($request->date_from)) {
+                $query->where('signed_at', '>=', $request->date_from);
+            }
+            if ($request->has('date_to') && !empty($request->date_to)) {
+                $query->where('signed_at', '<=', $request->date_to);
+            }
+
+            // Search by document name
+            if ($request->has('search') && !empty($request->search)) {
+                $query->whereHas('approvalRequest', function ($q) use ($request) {
+                    $q->where('document_name', 'like', '%' . $request->search . '%');
+                });
+            }
+
+            $documentSignatures = $query->latest('signed_at')->paginate(15);
+
+            $statusCounts = [
+                'pending' => DocumentSignature::where('signature_status', DocumentSignature::STATUS_PENDING)->count(),
+                'signed' => DocumentSignature::where('signature_status', DocumentSignature::STATUS_SIGNED)->count(),
+                'verified' => DocumentSignature::where('signature_status', DocumentSignature::STATUS_VERIFIED)->count(),
+                'invalid' => DocumentSignature::where('signature_status', DocumentSignature::STATUS_INVALID)->count(),
+            ];
+
+            return view('digital-signature.admin.document-signatures', compact(
+                'documentSignatures',
+                'statusCounts'
+            ));
+
+        } catch (\Exception $e) {
+            Log::error('Document signatures index error: ' . $e->getMessage());
+            return back()->with('error', 'Failed to load document signatures');
+        }
+    }
+
+    /**
+     * Show specific document signature details
+     */
+    public function show($id)
+    {
+        try {
+            $documentSignature = DocumentSignature::with([
+                'approvalRequest.user',
+                'digitalSignature',
+                'signer',
+                'verifier',
+                'auditLogs'
+            ])->findOrFail($id);
+
+            // Get signature info
+            $signatureInfo = $documentSignature->getSignatureInfo();
+
+            // Perform verification
+            $verificationResult = $this->verificationService->verifyById($id);
+
+            return view('digital-signature.admin.signature-details', compact(
+                'documentSignature',
+                'signatureInfo',
+                'verificationResult'
+            ));
+
+        } catch (\Exception $e) {
+            dd($e);
+            Log::error('Document signature show error: ' . $e->getMessage());
+            return back()->with('error', 'Document signature not found');
+        }
+    }
+
+    /**
+     * Verify document signature
+     */
+    public function verify(Request $request, $id)
+    {
+        try {
+            $documentSignature = DocumentSignature::findOrFail($id);
+
+            $verificationResult = $this->verificationService->verifyById($id);
+
+            if ($verificationResult['is_valid']) {
+                $documentSignature->update([
+                    'signature_status' => DocumentSignature::STATUS_VERIFIED,
+                    'verified_at' => now(),
+                    'verified_by' => Auth::id()
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Document signature verified successfully',
+                    'verification_result' => $verificationResult
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Verification failed: ' . $verificationResult['message'],
+                    'verification_result' => $verificationResult
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Document signature verification error: ' . $e->getMessage());
+            return response()->json(['error' => 'Verification failed'], 500);
+        }
+    }
+
+    /**
+     * Invalidate document signature
+     */
+    public function invalidate(Request $request, $id)
+    {
+        $validator = Validator::make($request->all(), [
+            'reason' => 'required|string|max:500'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 400);
+        }
+
+        try {
+            $documentSignature = DocumentSignature::findOrFail($id);
+            $documentSignature->invalidate($request->reason);
+
+            Log::info('Document signature invalidated', [
+                'document_signature_id' => $id,
+                'reason' => $request->reason,
+                'invalidated_by' => Auth::id()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Document signature invalidated successfully'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Document signature invalidation error: ' . $e->getMessage());
+            return response()->json(['error' => 'Invalidation failed'], 500);
+        }
+    }
+
+    /**
+     * Download signed document
+     */
+    public function downloadSignedDocument($id)
+    {
+        try {
+            $documentSignature = DocumentSignature::findOrFail($id);
+            $approvalRequest = $documentSignature->approvalRequest;
+
+            // Check authorization - Check if user is Kaprodi or document owner
+            $isKaprodi = Auth::guard('kaprodi')->check();
+            $isOwner = Auth::check() && $approvalRequest->user_id === Auth::id();
+
+            if (!$isKaprodi && !$isOwner) {
+                Log::warning('Unauthorized download attempt', [
+                    'document_signature_id' => $id,
+                    'attempted_by' => Auth::id() ?? 'guest',
+                    'is_kaprodi' => $isKaprodi,
+                    'is_owner' => $isOwner
+                ]);
+                abort(403, 'Unauthorized to download this document');
+            }
+
+            // Check if signature is valid
+            if (!$documentSignature->isValid()) {
+                Log::warning('Attempted to download invalid signature', [
+                    'document_signature_id' => $id,
+                    'status' => $documentSignature->signature_status
+                ]);
+
+                return back()->with('error', 'Document signature is not valid');
+            }
+
+            // Determine which file to use
+            if ($documentSignature->final_pdf_path) {
+                // Use signed PDF (stored in local disk)
+                $filePath = $documentSignature->final_pdf_path;
+                $fullPath = Storage::disk('public')->path($filePath);
+                $fileType = 'signed';
+            } else {
+                // Fallback to original document (stored in public disk)
+                $filePath = $approvalRequest->document_path;
+                $fullPath = Storage::disk('public')->path($filePath);
+                $fileType = 'original';
+            }
+
+            if (!file_exists($fullPath)) {
+                Log::error('Document file not found', [
+                    'document_signature_id' => $id,
+                    'file_path' => $filePath,
+                    'full_path' => $fullPath,
+                    'file_type' => $fileType
+                ]);
+                return back()->with('error', 'Document file not found');
+            }
+
+            $filename = $approvalRequest->document_name .
+                       ($fileType === 'signed' ? '_signed_' : '_') .
+                       $documentSignature->signed_at->format('Y-m-d') .
+                       '.' . pathinfo($fullPath, PATHINFO_EXTENSION);
+
+            Log::info('Document downloaded', [
+                'document_signature_id' => $id,
+                'downloaded_by' => Auth::id(),
+                'filename' => $filename,
+                'file_type' => $fileType
+            ]);
+
+            return Response::download($fullPath, $filename);
+
+        } catch (\Exception $e) {
+            Log::error('Download document error: ' . $e->getMessage());
+            return back()->with('error', 'Failed to download document');
+        }
+    }
+
+    /**
+     * View/Preview signed PDF in browser
+     */
+    public function viewSignedDocument($id)
+    {
+        try {
+            $documentSignature = DocumentSignature::findOrFail($id);
+            $approvalRequest = $documentSignature->approvalRequest;
+
+            // Check authorization - Check if user is Kaprodi or document owner
+            $isKaprodi = Auth::guard('kaprodi')->check();
+            $isOwner = Auth::check() && $approvalRequest->user_id === Auth::id();
+
+            if (!$isKaprodi && !$isOwner) {
+                Log::warning('Unauthorized view attempt', [
+                    'document_signature_id' => $id,
+                    'attempted_by' => Auth::id() ?? 'guest'
+                ]);
+                abort(403, 'Unauthorized to view this document');
+            }
+
+            // Determine which file to use
+            if ($documentSignature->final_pdf_path) {
+                // Use signed PDF (stored in local disk)
+                $filePath = $documentSignature->final_pdf_path;
+                $fullPath = Storage::disk('public')->path($filePath);
+                $fileType = 'signed';
+            } else {
+                // Fallback to original document (stored in public disk)
+                $filePath = $approvalRequest->document_path;
+                $fullPath = Storage::disk('public')->path($filePath);
+                $fileType = 'original';
+            }
+
+            if (!file_exists($fullPath)) {
+                Log::error('Document file not found for viewing', [
+                    'document_signature_id' => $id,
+                    'file_path' => $filePath,
+                    'full_path' => $fullPath,
+                    'file_type' => $fileType
+                ]);
+                return back()->with('error', 'Document file not found');
+            }
+
+            Log::info('Document viewed', [
+                'document_signature_id' => $id,
+                'viewed_by' => Auth::id(),
+                'file_type' => $fileType
+            ]);
+
+            // Return PDF file inline (untuk preview di browser)
+            return response()->file($fullPath, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="' . basename($fullPath) . '"'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('View document error: ' . $e->getMessage());
+            return back()->with('error', 'Failed to view document');
+        }
+    }
+
+    /**
+     * Download QR code
+     */
+    public function downloadQRCode($id)
+    {
+        try {
+            $documentSignature = DocumentSignature::findOrFail($id);
+
+            if (!$documentSignature->qr_code_path) {
+                // Generate QR code if not exists
+                $qrData = $this->qrCodeService->generateVerificationQR($id);
+                $documentSignature->update(['qr_code_path' => $qrData['qr_code_path']]);
+            }
+
+            // Use Storage facade untuk konsistensi
+            $qrPath = Storage::disk('public')->path($documentSignature->qr_code_path);
+
+            if (!file_exists($qrPath)) {
+                Log::error('QR code file not found', [
+                    'document_signature_id' => $id,
+                    'qr_code_path' => $documentSignature->qr_code_path,
+                    'full_path' => $qrPath
+                ]);
+                return back()->with('error', 'QR code file not found');
+            }
+
+            $filename = 'qr_code_' . $documentSignature->id . '_' .
+                       now()->format('Y-m-d') . '.png';
+
+            Log::info('QR code downloaded', [
+                'document_signature_id' => $id,
+                'downloaded_by' => Auth::id(),
+                'filename' => $filename
+            ]);
+
+            return Response::download($qrPath, $filename);
+
+        } catch (\Exception $e) {
+            Log::error('Download QR code error: ' . $e->getMessage());
+            return back()->with('error', 'Failed to download QR code');
+        }
+    }
+
+    /**
+     * Regenerate QR code
+     */
+    public function regenerateQRCode($id)
+    {
+        try {
+            $documentSignature = DocumentSignature::findOrFail($id);
+
+            // Regenerate verification token for security
+            $documentSignature->regenerateVerificationToken();
+
+            // Generate new QR code
+            $qrData = $this->qrCodeService->generateVerificationQR($id, [
+                'size' => 300,
+                'add_logo' => true,
+                'add_label' => true
+            ]);
+
+            $documentSignature->update(['qr_code_path' => $qrData['qr_code_path']]);
+
+            Log::info('QR code regenerated', [
+                'document_signature_id' => $id,
+                'regenerated_by' => Auth::id()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'QR code regenerated successfully',
+                'qr_code_url' => $qrData['qr_code_url'],
+                'verification_url' => $qrData['verification_url']
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('QR code regeneration error: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to regenerate QR code'], 500);
+        }
+    }
+
+    /**
+     * Export document signatures
+     */
+    public function export(Request $request)
+    {
+        try {
+            $format = $request->get('format', 'csv');
+            $status = $request->get('status');
+            $dateFrom = $request->get('date_from');
+            $dateTo = $request->get('date_to');
+
+            $query = DocumentSignature::with(['approvalRequest.user', 'digitalSignature', 'signer']);
+
+            if ($status) {
+                $query->where('signature_status', $status);
+            }
+            if ($dateFrom) {
+                $query->where('signed_at', '>=', $dateFrom);
+            }
+            if ($dateTo) {
+                $query->where('signed_at', '<=', $dateTo);
+            }
+
+            $documentSignatures = $query->get();
+
+            if ($format === 'csv') {
+                return $this->exportToCSV($documentSignatures);
+            } elseif ($format === 'json') {
+                return $this->exportToJSON($documentSignatures);
+            }
+
+            return back()->with('error', 'Invalid export format');
+
+        } catch (\Exception $e) {
+            Log::error('Export document signatures error: ' . $e->getMessage());
+            return back()->with('error', 'Export failed');
+        }
+    }
+
+    /**
+     * Batch verify multiple document signatures
+     */
+    public function batchVerify(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'signature_ids' => 'required|array',
+            'signature_ids.*' => 'exists:document_signatures,id'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 400);
+        }
+
+        try {
+            $results = [];
+            $successCount = 0;
+            $failureCount = 0;
+
+            foreach ($request->signature_ids as $id) {
+                try {
+                    $verificationResult = $this->verificationService->verifyById($id);
+
+                    if ($verificationResult['is_valid']) {
+                        $documentSignature = DocumentSignature::findOrFail($id);
+                        $documentSignature->update([
+                            'signature_status' => DocumentSignature::STATUS_VERIFIED,
+                            'verified_at' => now(),
+                            'verified_by' => Auth::id()
+                        ]);
+                        $successCount++;
+                        $results[$id] = ['status' => 'success', 'message' => 'Verified successfully'];
+                    } else {
+                        $failureCount++;
+                        $results[$id] = ['status' => 'failed', 'message' => $verificationResult['message']];
+                    }
+                } catch (\Exception $e) {
+                    $failureCount++;
+                    $results[$id] = ['status' => 'error', 'message' => $e->getMessage()];
+                }
+            }
+
+            Log::info('Batch verification completed', [
+                'total_processed' => count($request->signature_ids),
+                'success_count' => $successCount,
+                'failure_count' => $failureCount,
+                'verified_by' => Auth::id()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => "Batch verification completed. {$successCount} verified, {$failureCount} failed.",
+                'results' => $results,
+                'summary' => [
+                    'total' => count($request->signature_ids),
+                    'success' => $successCount,
+                    'failure' => $failureCount
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Batch verification error: ' . $e->getMessage());
+            return response()->json(['error' => 'Batch verification failed'], 500);
+        }
+    }
+
+    /**
+     * Get signature statistics
+     */
+    public function getStatistics()
+    {
+        try {
+            $stats = [
+                'total_signatures' => DocumentSignature::count(),
+                'by_status' => [
+                    'pending' => DocumentSignature::where('signature_status', DocumentSignature::STATUS_PENDING)->count(),
+                    'signed' => DocumentSignature::where('signature_status', DocumentSignature::STATUS_SIGNED)->count(),
+                    'verified' => DocumentSignature::where('signature_status', DocumentSignature::STATUS_VERIFIED)->count(),
+                    'invalid' => DocumentSignature::where('signature_status', DocumentSignature::STATUS_INVALID)->count(),
+                ],
+                'recent_activity' => [
+                    'today' => DocumentSignature::whereDate('signed_at', today())->count(),
+                    'this_week' => DocumentSignature::where('signed_at', '>=', now()->startOfWeek())->count(),
+                    'this_month' => DocumentSignature::where('signed_at', '>=', now()->startOfMonth())->count(),
+                ],
+                'verification_rate' => $this->calculateVerificationRate()
+            ];
+
+            return response()->json($stats);
+
+        } catch (\Exception $e) {
+            Log::error('Get statistics error: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to get statistics'], 500);
+        }
+    }
+
+    /**
+     * Export to CSV format
+     */
+    private function exportToCSV($documentSignatures)
+    {
+        $filename = 'document_signatures_' . date('Y-m-d_H-i-s') . '.csv';
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"'
+        ];
+
+        $callback = function() use ($documentSignatures) {
+            $handle = fopen('php://output', 'w');
+
+            fputcsv($handle, [
+                'ID',
+                'Document Name',
+                'Document Number',
+                'Signed By',
+                'Signed At',
+                'Status',
+                'Algorithm',
+                'Verification URL'
+            ]);
+
+            foreach ($documentSignatures as $signature) {
+                fputcsv($handle, [
+                    $signature->id,
+                    $signature->approvalRequest->document_name,
+                    $signature->approvalRequest->full_document_number,
+                    $signature->signer->name ?? 'Unknown',
+                    $signature->signed_at ? $signature->signed_at->format('Y-m-d H:i:s') : '',
+                    $signature->signature_status,
+                    $signature->digitalSignature->algorithm ?? '',
+                    $signature->verification_url ?? ''
+                ]);
+            }
+
+            fclose($handle);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Export to JSON format
+     */
+    private function exportToJSON($documentSignatures)
+    {
+        $data = $documentSignatures->map(function ($signature) {
+            return [
+                'id' => $signature->id,
+                'document_name' => $signature->approvalRequest->document_name,
+                'document_number' => $signature->approvalRequest->full_document_number,
+                'signed_by' => $signature->signer->name ?? 'Unknown',
+                'signed_at' => $signature->signed_at,
+                'status' => $signature->signature_status,
+                'algorithm' => $signature->digitalSignature->algorithm ?? '',
+                'verification_url' => $signature->verification_url
+            ];
+        });
+
+        $filename = 'document_signatures_' . date('Y-m-d_H-i-s') . '.json';
+
+        return response()->json($data)
+            ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
+    }
+
+    /**
+     * Calculate verification rate
+     */
+    private function calculateVerificationRate()
+    {
+        $totalSigned = DocumentSignature::whereIn('signature_status', [
+            DocumentSignature::STATUS_SIGNED,
+            DocumentSignature::STATUS_VERIFIED
+        ])->count();
+
+        $verified = DocumentSignature::where('signature_status', DocumentSignature::STATUS_VERIFIED)->count();
+
+        return $totalSigned > 0 ? round(($verified / $totalSigned) * 100, 2) : 0;
+    }
+}

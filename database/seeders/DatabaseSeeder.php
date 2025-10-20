@@ -4,7 +4,9 @@ namespace Database\Seeders;
 
 use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\Kaprodi;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
@@ -15,9 +17,34 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
+        // Create Admin User
         User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+            'name' => 'Administrator',
+            'email' => 'admin@umt.ac.id',
+            'password' => Hash::make('password'),
+            'roles' => 'admin',
         ]);
+
+        // Create Regular User (Mahasiswa)
+        User::factory()->create([
+            'name' => 'Muhammad Rizki',
+            'email' => 'user@umt.ac.id',
+            'password' => Hash::make('password'),
+            'roles' => 'user',
+            'NIM' => '2024001001',
+        ]);
+
+        Kaprodi::create([
+            'name' => 'Dr. Budi Santoso, M.Kom',
+            'email' => 'kaprodi.informatika@umt.ac.id',
+            'password' => 'password', // akan di-hash otomatis oleh mutator
+            'NIDN' => '0123456789',
+        ]);
+
+        // Create initial digital signature for the system
+        // $this->call(DigitalSignatureSeeder::class);
+
+        // Create signature template for kaprodi
+        // $this->call(SignatureTemplateSeeder::class);
     }
 }

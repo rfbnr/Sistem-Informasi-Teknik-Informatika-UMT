@@ -1,0 +1,156 @@
+{{-- resources/views/digital-signature/admin/partials/sidebar.blade.php --}}
+<div class="sidebar-header text-center py-3">
+    <h5 class="text-white mb-0">
+        <i class="fas fa-user-shield me-2"></i>
+        Admin Panel
+    </h5>
+    <small class="text-white-50">Digital Signature Management</small>
+</div>
+
+<ul class="nav flex-column">
+    <!-- Dashboard -->
+    <li class="nav-item">
+        <a class="nav-link {{ request()->routeIs('admin.signature.dashboard') ? 'active' : '' }}"
+           href="{{ route('admin.signature.dashboard') }}">
+            <i class="fas fa-tachometer-alt me-2"></i>
+            Dashboard
+        </a>
+    </li>
+
+    <!-- Key Management -->
+    <li class="nav-item">
+        <a class="nav-link {{ request()->routeIs('admin.signature.key-management') || request()->routeIs('admin.signature.view') ? 'active' : '' }}"
+           href="{{ route('admin.signature.keys.index') }}">
+            <i class="fas fa-key me-2"></i>
+            Digital Signatures
+            @if(isset($stats['expired_signatures']) && $stats['expired_signatures'] > 0)
+                <span class="badge bg-warning rounded-pill ms-auto">{{ $stats['expired_signatures'] }}</span>
+            @endif
+        </a>
+    </li>
+
+    <!-- Document Management -->
+    <li class="nav-item">
+        <a class="nav-link {{ request()->routeIs('admin.signature.documents.*') ? 'active' : '' }}"
+           href="{{ route('admin.signature.documents.index') }}">
+            <i class="fas fa-file-signature me-2"></i>
+            Document Signatures
+            @if(isset($stats['pending_signatures']) && $stats['pending_signatures'] > 0)
+                <span class="badge bg-info rounded-pill ms-auto">{{ $stats['pending_signatures'] }}</span>
+            @endif
+        </a>
+    </li>
+
+    <!-- Approval Requests -->
+    <li class="nav-item">
+        <a class="nav-link {{ request()->routeIs('admin.signature.approval.*') ? 'active' : '' }}"
+           href="{{ route('admin.signature.approval.index') }}">
+            <i class="fas fa-clipboard-check me-2"></i>
+            Approval Requests
+            @php
+                $pendingCount = \App\Models\ApprovalRequest::pendingApproval()->count();
+            @endphp
+            @if($pendingCount > 0)
+                <span class="badge bg-warning rounded-pill ms-auto">{{ $pendingCount }}</span>
+            @endif
+        </a>
+    </li>
+
+    <!-- Templates -->
+    <li class="nav-item">
+        <a class="nav-link {{ request()->routeIs('admin.signature.templates.*') ? 'active' : '' }}"
+           href="{{ route('admin.signature.templates.index') }}">
+            <i class="fas fa-palette me-2"></i>
+            Signature Templates
+        </a>
+    </li>
+
+    <!-- Verification Tools -->
+    {{-- <li class="nav-item">
+        <a class="nav-link {{ request()->routeIs('admin.signature.verification-tools') ? 'active' : '' }}"
+           href="{{ route('admin.signature.verification-tools') }}">
+            <i class="fas fa-shield-alt me-2"></i>
+            Verification Tools
+        </a>
+    </li> --}}
+
+    <!-- Divider -->
+    <hr class="my-3 text-white-50">
+
+    <!-- Reports & Analytics -->
+    <li class="nav-item">
+        <a class="nav-link" href="#" onclick="generateReport()">
+            <i class="fas fa-chart-bar me-2"></i>
+            Reports & Analytics
+        </a>
+    </li>
+
+    <!-- Export Data -->
+    {{-- <li class="nav-item">
+        <a class="nav-link" href="{{ route('admin.signature.export') }}?format=csv">
+            <i class="fas fa-download me-2"></i>
+            Export Data
+        </a>
+    </li> --}}
+
+    <!-- System Settings -->
+    <li class="nav-item">
+        <a class="nav-link" href="#" onclick="showSettings()">
+            <i class="fas fa-cog me-2"></i>
+            Settings
+        </a>
+    </li>
+
+    <!-- Divider -->
+    <hr class="my-3 text-white-50">
+
+    <!-- Public Verification -->
+    {{-- <li class="nav-item">
+        <a class="nav-link" href="{{ route('signature.verify.page') }}" target="_blank">
+            <i class="fas fa-external-link-alt me-2"></i>
+            Public Verification
+        </a>
+    </li> --}}
+
+    <!-- Help & Documentation -->
+    <li class="nav-item">
+        <a class="nav-link" href="#" onclick="showHelp()">
+            <i class="fas fa-question-circle me-2"></i>
+            Help & Support
+        </a>
+    </li>
+</ul>
+
+<!-- Quick Stats at Bottom -->
+<div class="mt-auto pt-3">
+    <div class="bg-white bg-opacity-20 rounded p-3 mx-2">
+        <h6 class="text-white mb-2">Quick Stats</h6>
+        <div class="row text-center">
+            <div class="col-6">
+                <div class="text-white h6">{{ \App\Models\DigitalSignature::active()->count() }}</div>
+                <small class="text-white-50">Active Keys</small>
+            </div>
+            <div class="col-6">
+                <div class="text-white h6">{{ \App\Models\DocumentSignature::where('signature_status', 'verified')->count() }}</div>
+                <small class="text-white-50">Verified</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function generateReport() {
+    // Show report modal or redirect to reports page
+    alert('Reports feature coming soon!');
+}
+
+function showSettings() {
+    // Show settings modal
+    alert('Settings panel coming soon!');
+}
+
+function showHelp() {
+    // Show help modal or redirect to documentation
+    alert('Help documentation coming soon!');
+}
+</script>

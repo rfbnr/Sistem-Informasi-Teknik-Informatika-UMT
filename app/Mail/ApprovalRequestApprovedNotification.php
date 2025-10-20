@@ -19,10 +19,10 @@ class ApprovalRequestApprovedNotification extends Mailable
     public $approvalRequest;
     public $qrCodeUrl;
 
-    public function __construct($approvalRequest, $qrCodeUrl)
+    public function __construct($approvalRequest)
     {
         $this->approvalRequest = $approvalRequest;
-        $this->qrCodeUrl = $qrCodeUrl;
+        // $this->qrCodeUrl = $qrCodeUrl;
     }
     /**
      * Get the message envelope.

@@ -60,7 +60,8 @@ class AuthController extends Controller
 
         if (Auth::guard('kaprodi')->attempt($credentials)) {
             $request->session()->regenerate();
-            return redirect('/kaprodi/approval-requests');
+            // return redirect('/kaprodi/approval-requests');
+            return redirect('/admin/signature/dashboard');
         }
 
         return back()->withErrors([

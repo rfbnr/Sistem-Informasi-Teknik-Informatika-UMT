@@ -1,0 +1,868 @@
+{{-- resources/views/digital-signature/user/approval-request.blade.php --}}
+@extends('digital-signature.layouts.app')
+
+@section('title', 'Submit Document for Digital Signature')
+
+@push('styles')
+<style>
+.upload-container {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 1rem;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.priority-selector {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.priority-option {
+    padding: 0.75rem 1.5rem;
+    border-radius: 2rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+    min-width: 120px;
+}
+
+.priority-option.low {
+    background: #e3f2fd;
+    color: #1976d2;
+    border-color: #e3f2fd;
+}
+.priority-option.normal {
+    background: #f3e5f5;
+    color: #7b1fa2;
+    border-color: #f3e5f5;
+}
+.priority-option.high {
+    background: #fff3e0;
+    color: #f57c00;
+    border-color: #fff3e0;
+}
+.priority-option.urgent {
+    background: #ffebee;
+    color: #d32f2f;
+    border-color: #ffebee;
+}
+
+.priority-option.active {
+    transform: scale(1.05);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.priority-option.low.active { border-color: #1976d2; }
+.priority-option.normal.active { border-color: #7b1fa2; }
+.priority-option.high.active { border-color: #f57c00; }
+.priority-option.urgent.active { border-color: #d32f2f; }
+
+.file-drop-zone {
+    border: 3px dashed #dee2e6;
+    border-radius: 1rem;
+    padding: 3rem 2rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    background: #fff;
+    cursor: pointer;
+}
+
+.file-drop-zone:hover {
+    border-color: #007bff;
+    background: #f8f9ff;
+}
+
+.file-drop-zone.dragover {
+    border-color: #28a745;
+    background: #f8fff8;
+    transform: scale(1.02);
+}
+
+.file-selected {
+    background: #d4edda;
+    border-color: #28a745;
+    color: #155724;
+}
+
+.process-steps {
+    background: white;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    margin-bottom: 2rem;
+}
+
+.step-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.step-item:hover {
+    background: #f8f9fa;
+    transform: translateX(5px);
+}
+
+.step-number {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: white;
+    margin-right: 1rem;
+    flex-shrink: 0;
+}
+
+.step-1 { background: #007bff; }
+.step-2 { background: #17a2b8; }
+.step-3 { background: #ffc107; }
+.step-4 { background: #28a745; }
+
+.recent-requests {
+    background: white;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.request-item {
+    display: flex;
+    align-items: center;
+    justify-content: between;
+    padding: 1rem;
+    border: 1px solid #e9ecef;
+    border-radius: 0.5rem;
+    margin-bottom: 0.75rem;
+    transition: all 0.3s ease;
+}
+
+.request-item:hover {
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.status-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 0.75rem;
+    flex-shrink: 0;
+}
+
+.status-pending { background: #ffc107; }
+.status-approved { background: #17a2b8; }
+.status-user_signed { background: #6f42c1; }
+.status-sign_approved { background: #28a745; }
+.status-rejected { background: #dc3545; }
+
+.guidelines-box {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.guideline-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.guideline-item i {
+    margin-right: 0.75rem;
+    width: 20px;
+}
+
+@media (max-width: 768px) {
+    .priority-selector {
+        flex-direction: column;
+    }
+
+    .priority-option {
+        min-width: auto;
+        width: 100%;
+    }
+
+    .upload-container {
+        padding: 1rem;
+    }
+}
+</style>
+@endpush
+
+@section('content')
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="page-header">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1 class="mb-2">
+                    <i class="fas fa-file-signature me-3"></i>
+                    Digital Document Approval Request
+                </h1>
+                <p class="mb-0 opacity-75">Submit your document for Kaprodi approval and digital signature</p>
+            </div>
+            <div class="col-lg-4 text-end">
+                <div class="d-flex justify-content-end gap-2">
+                    <a href="{{ route('user.signature.approval.status') }}" class="btn btn-light">
+                        <i class="fas fa-list me-1"></i> My Requests
+                    </a>
+                    <a href="{{ route('signature.verify.page') }}" class="btn btn-warning">
+                        <i class="fas fa-shield-alt me-1"></i> Verify Document
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Main Form -->
+        <div class="col-lg-8">
+            <!-- Guidelines -->
+            <div class="guidelines-box">
+                <h5 class="mb-3">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Important Guidelines
+                </h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="guideline-item">
+                            <i class="fas fa-file-pdf"></i>
+                            <span>Only PDF files are accepted (max 25MB)</span>
+                        </div>
+                        <div class="guideline-item">
+                            <i class="fas fa-clock"></i>
+                            <span>Processing time: 1-3 business days</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="guideline-item">
+                            <i class="fas fa-shield-alt"></i>
+                            <span>Documents are encrypted and secure</span>
+                        </div>
+                        <div class="guideline-item">
+                            <i class="fas fa-bell"></i>
+                            <span>Email notifications for status updates</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Upload Form -->
+            <div class="upload-container">
+                <div class="d-flex align-items-center mb-4">
+                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3"
+                         style="width: 50px; height: 50px;">
+                        <i class="fas fa-upload"></i>
+                    </div>
+                    <div>
+                        <h3 class="mb-1">Submit New Document</h3>
+                        <p class="text-muted mb-0">Fill in the details and upload your document</p>
+                    </div>
+                </div>
+
+                @if (session('error'))
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        {{ session('error') }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                @endif
+
+                @if (session('success'))
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <i class="fas fa-check-circle me-2"></i>
+                        {{ session('success') }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                @endif
+
+                @if ($errors->any())
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Please fix the following errors:</strong>
+                        <ul class="mb-0 mt-2">
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                @endif
+
+                {{-- FIXED FORM: Route action dan method yang benar --}}
+                <form action="{{ route('user.signature.approval.upload') }}" method="POST" enctype="multipart/form-data" id="uploadForm" novalidate>
+                    @csrf
+
+                    <!-- User Information -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-user text-primary me-1"></i> Student Name
+                            </label>
+                            <input type="text" class="form-control" value="{{ auth()->user()->name }}" readonly>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-id-card text-primary me-1"></i> Student ID (NIM)
+                            </label>
+                            <input type="text" class="form-control" value="{{ auth()->user()->NIM ?? 'Not Set' }}" readonly>
+                        </div>
+                    </div>
+
+                    <!-- Document Type -->
+                    <div class="mb-4">
+                        <label for="document_name" class="form-label fw-bold">
+                            <i class="fas fa-file-alt text-primary me-1"></i> Document Type *
+                        </label>
+                        <select class="form-select" name="document_name" id="document_name" required>
+                            <option value="" disabled selected>-- Select Document Type --</option>
+                            <option value="Surat Dispensasi" {{ old('document_name') == 'Surat Dispensasi' ? 'selected' : '' }}>
+                                Surat Dispensasi
+                            </option>
+                            <option value="Surat Peminjaman Ruang" {{ old('document_name') == 'Surat Peminjaman Ruang' ? 'selected' : '' }}>
+                                Surat Peminjaman Ruang
+                            </option>
+                            <option value="Surat Peminjaman Alat" {{ old('document_name') == 'Surat Peminjaman Alat' ? 'selected' : '' }}>
+                                Surat Peminjaman Alat
+                            </option>
+                            <option value="Kartu Ujian" {{ old('document_name') == 'Kartu Ujian' ? 'selected' : '' }}>
+                                Kartu Ujian
+                            </option>
+                            <option value="Surat Keterangan Aktif" {{ old('document_name') == 'Surat Keterangan Aktif' ? 'selected' : '' }}>
+                                Surat Keterangan Aktif
+                            </option>
+                            <option value="Surat Rekomendasi" {{ old('document_name') == 'Surat Rekomendasi' ? 'selected' : '' }}>
+                                Surat Rekomendasi
+                            </option>
+                            <option value="Lainnya" {{ old('document_name') == 'Lainnya' ? 'selected' : '' }}>
+                                Lainnya
+                            </option>
+                        </select>
+                        <div class="form-text">
+                            <i class="fas fa-info-circle"></i>
+                            Choose the type of document you're submitting
+                        </div>
+                    </div>
+
+                    <!-- Priority Level -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">
+                            <i class="fas fa-flag text-primary me-1"></i> Priority Level
+                        </label>
+                        <div class="priority-selector">
+                            <input type="radio" name="priority" id="priority-low" value="low" class="d-none" {{ old('priority', 'normal') == 'low' ? 'checked' : '' }}>
+                            <label for="priority-low" class="priority-option low">
+                                <i class="fas fa-circle mb-1"></i><br>
+                                Low Priority
+                            </label>
+
+                            <input type="radio" name="priority" id="priority-normal" value="normal" class="d-none" {{ old('priority', 'normal') == 'normal' ? 'checked' : '' }}>
+                            <label for="priority-normal" class="priority-option normal">
+                                <i class="fas fa-circle mb-1"></i><br>
+                                Normal Priority
+                            </label>
+
+                            <input type="radio" name="priority" id="priority-high" value="high" class="d-none" {{ old('priority') == 'high' ? 'checked' : '' }}>
+                            <label for="priority-high" class="priority-option high">
+                                <i class="fas fa-circle mb-1"></i><br>
+                                High Priority
+                            </label>
+
+                            <input type="radio" name="priority" id="priority-urgent" value="urgent" class="d-none" {{ old('priority') == 'urgent' ? 'checked' : '' }}>
+                            <label for="priority-urgent" class="priority-option urgent">
+                                <i class="fas fa-circle mb-1"></i><br>
+                                Urgent
+                            </label>
+                        </div>
+                        <div class="form-text">
+                            <i class="fas fa-info-circle"></i>
+                            Higher priority documents are processed faster
+                        </div>
+                    </div>
+
+                    <!-- Expected Completion Date -->
+                    <div class="mb-4">
+                        <label for="deadline" class="form-label fw-bold">
+                            <i class="fas fa-calendar-alt text-primary me-1"></i> Expected Completion Date
+                        </label>
+                        <input type="date" class="form-control" id="deadline" name="deadline"
+                               value="{{ old('deadline') }}" min="{{ date('Y-m-d', strtotime('+1 day')) }}">
+                        <div class="form-text">
+                            <i class="fas fa-info-circle"></i>
+                            Optional: When do you need this document completed?
+                        </div>
+                    </div>
+
+                    <!-- Description/Notes -->
+                    <div class="mb-4">
+                        <label for="notes" class="form-label fw-bold">
+                            <i class="fas fa-comment-alt text-primary me-1"></i> Description/Notes *
+                        </label>
+                        <textarea class="form-control" id="notes" name="notes" rows="4" required
+                                  placeholder="Please provide details about your request, purpose, or any special instructions...">{{ old('notes') }}</textarea>
+                        <div class="form-text">
+                            <i class="fas fa-info-circle"></i>
+                            Clear details help with faster approval
+                        </div>
+                    </div>
+
+                    <!-- File Upload - DIPERBAIKI -->
+                    {{-- <div class="mb-4">
+                        <label class="form-label fw-bold">
+                            <i class="fas fa-cloud-upload-alt text-primary me-1"></i> Upload Document *
+                        </label>
+                        <div class="file-drop-zone" id="dropzone">
+                            <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                            <h5>Drop your PDF file here</h5>
+                            <p class="text-muted mb-3">or click to browse files</p>
+                            <input
+                                type="file"
+                                name="document"
+                                id="document"
+                                accept=".pdf"
+                                required
+                                class="d-none"
+                                data-max-size="26214400">
+                            <button type="button" class="btn btn-outline-primary" onclick="triggerFileInput()">
+                                <i class="fas fa-folder-open me-1"></i> Choose File
+                            </button>
+                            <div class="mt-2">
+                                <small class="text-muted">
+                                    Maximum file size: 25MB • PDF format only
+                                </small>
+                            </div>
+                        </div>
+                        <div id="fileInfo" class="mt-3" style="display: none;"></div>
+                        <div id="fileError" class="mt-2" style="display: none;"></div>
+                    </div> --}}
+
+                    <!-- File Upload Section - DIPERBAIKI -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">
+                            <i class="fas fa-cloud-upload-alt text-primary me-1"></i> Upload Document *
+                        </label>
+                        <div class="file-drop-zone" id="dropzone">
+                            <div id="dropzone-content">
+                                <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                                <h5>Drop your PDF file here</h5>
+                                <p class="text-muted mb-3">or click to browse files</p>
+                                <button type="button" class="btn btn-outline-primary" onclick="triggerFileInput()">
+                                    <i class="fas fa-folder-open me-1"></i> Choose File
+                                </button>
+                                <div class="mt-2">
+                                    <small class="text-muted">
+                                        Maximum file size: 25MB • PDF format only
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        {{-- FIXED: File input di luar dropzone agar tidak ter-replace --}}
+                        <input
+                            type="file"
+                            name="document"
+                            id="document"
+                            accept=".pdf"
+                            required
+                            style="display: none;">
+                        <div id="fileInfo" class="mt-3" style="display: none;"></div>
+                        <div id="fileError" class="mt-2" style="display: none;"></div>
+                        @error('document')
+                            <div class="text-danger mt-2">
+                                <i class="fas fa-exclamation-triangle me-1"></i>
+                                {{ $message }}
+                            </div>
+                        @enderror
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <button type="reset" class="btn btn-outline-secondary me-md-2" onclick="resetForm()">
+                            <i class="fas fa-undo me-1"></i> Reset Form
+                        </button>
+                        <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+                            <i class="fas fa-paper-plane me-1"></i> Submit Request
+                        </button>
+                    </div>
+
+                    @if ($hasApprovalRequests ?? false)
+                        <div class="mt-4 p-3 bg-light rounded">
+                            <i class="fas fa-info-circle text-info me-2"></i>
+                            <strong>Track Your Submissions:</strong>
+                            Check your <a href="{{ route('user.signature.approval.status') }}" class="text-decoration-none">
+                                document status page</a> to monitor progress.
+                        </div>
+                    @endif
+                </form>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Process Steps -->
+            <div class="process-steps">
+                <h5 class="mb-3">
+                    <i class="fas fa-route text-primary me-2"></i>
+                    Process Steps
+                </h5>
+
+                <div class="step-item">
+                    <div class="step-number step-1">1</div>
+                    <div>
+                        <strong>Submit Document</strong>
+                        <div class="small text-muted">Upload PDF with details and description</div>
+                    </div>
+                </div>
+
+                <div class="step-item">
+                    <div class="step-number step-2">2</div>
+                    <div>
+                        <strong>Kaprodi Review</strong>
+                        <div class="small text-muted">Document reviewed and approved by Kaprodi</div>
+                    </div>
+                </div>
+
+                <div class="step-item">
+                    <div class="step-number step-3">3</div>
+                    <div>
+                        <strong>Digital Signing</strong>
+                        <div class="small text-muted">You sign the approved document digitally</div>
+                    </div>
+                </div>
+
+                <div class="step-item">
+                    <div class="step-number step-4">4</div>
+                    <div>
+                        <strong>Complete & Download</strong>
+                        <div class="small text-muted">Download signed document with QR verification</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Requests -->
+            @if(isset($recentRequests) && $recentRequests->count() > 0)
+            <div class="recent-requests">
+                <h5 class="mb-3">
+                    <i class="fas fa-history text-primary me-2"></i>
+                    Recent Requests
+                </h5>
+                @foreach($recentRequests as $request)
+                <div class="request-item">
+                    <div class="status-dot status-{{ str_replace(' ', '_', strtolower($request->status)) }}"></div>
+                    <div class="flex-grow-1">
+                        <div class="fw-bold">{{ $request->document_name }}</div>
+                        <small class="text-muted">{{ $request->created_at->format('d M Y') }}</small>
+                    </div>
+                    <div class="text-end">
+                        <small class="text-muted">{{ $request->status_label }}</small>
+                    </div>
+                </div>
+                @endforeach
+                <div class="text-center mt-3">
+                    <a href="{{ route('user.signature.approval.status') }}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-list me-1"></i> View All
+                    </a>
+                </div>
+            </div>
+            @endif
+        </div>
+    </div>
+</div>
+@endsection
+
+
+@push('scripts')
+<script>
+$(document).ready(function() {
+    console.log('Document ready, initializing form...');
+
+    // Priority selection
+    $('.priority-option').click(function() {
+        $('.priority-option').removeClass('active');
+        $(this).addClass('active');
+        const radioId = $(this).attr('for');
+        $('#' + radioId).prop('checked', true);
+        console.log('Priority selected:', $('#' + radioId).val());
+    });
+
+    // Set initial active priority
+    $('input[name="priority"]:checked').each(function() {
+        $('label[for="' + this.id + '"]').addClass('active');
+    });
+
+    // File upload handling - DIPERBAIKI
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('document');
+    const fileInfo = document.getElementById('fileInfo');
+    const fileError = document.getElementById('fileError');
+
+    console.log('File input element:', fileInput);
+    console.log('Dropzone element:', dropzone);
+
+    // Event listeners
+    if (dropzone && fileInput) {
+        dropzone.addEventListener('dragover', handleDragOver);
+        dropzone.addEventListener('dragleave', handleDragLeave);
+        dropzone.addEventListener('drop', handleDrop);
+        dropzone.addEventListener('click', function(e) {
+            // Prevent event if clicking on button
+            if (!e.target.closest('button')) {
+                triggerFileInput();
+            }
+        });
+        fileInput.addEventListener('change', handleFileSelect);
+    }
+
+    function handleDragOver(e) {
+        e.preventDefault();
+        dropzone.classList.add('dragover');
+    }
+
+    function handleDragLeave(e) {
+        e.preventDefault();
+        dropzone.classList.remove('dragover');
+    }
+
+    function handleDrop(e) {
+        e.preventDefault();
+        dropzone.classList.remove('dragover');
+
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            // CRITICAL FIX: Set files properly
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(files[0]);
+            fileInput.files = dataTransfer.files;
+
+            handleFileSelect();
+        }
+    }
+
+    function handleFileSelect() {
+        console.log('File selected, processing...');
+        const file = fileInput.files[0];
+
+        if (file) {
+            console.log('File details:', {
+                name: file.name,
+                type: file.type,
+                size: file.size
+            });
+
+            // Clear previous errors
+            hideFileError();
+
+            // Validate file type
+            if (file.type !== 'application/pdf') {
+                showFileError('Please select a PDF file only.');
+                fileInput.value = '';
+                return;
+            }
+
+            // Validate file size (25MB = 26214400 bytes)
+            if (file.size > 26214400) {
+                showFileError('File size must be less than 25MB.');
+                fileInput.value = '';
+                return;
+            }
+
+            showFileInfo(file);
+        }
+    }
+
+    function showFileInfo(file) {
+        const fileSize = formatFileSize(file.size);
+        fileInfo.innerHTML = `
+            <div class="alert alert-success">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-file-pdf text-danger fa-2x me-3"></i>
+                    <div class="flex-grow-1">
+                        <strong>${file.name}</strong><br>
+                        <small>${fileSize} • PDF Document</small>
+                    </div>
+                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeFile()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+        fileInfo.style.display = 'block';
+        dropzone.classList.add('file-selected');
+
+        // FIXED: Update content without replacing the entire dropzone
+        const dropzoneContent = dropzone.querySelector('#dropzone-content') || dropzone;
+        dropzoneContent.innerHTML = `
+            <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+            <h5 class="text-success">File Selected</h5>
+            <p class="text-muted">${file.name}</p>
+            <button type="button" class="btn btn-outline-primary" onclick="triggerFileInput()">
+                <i class="fas fa-exchange-alt me-1"></i> Change File
+            </button>
+        `;
+    }
+
+    function showFileError(message) {
+        fileError.innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                ${message}
+            </div>
+        `;
+        fileError.style.display = 'block';
+    }
+
+    function hideFileError() {
+        fileError.style.display = 'none';
+    }
+
+    // Form submission dengan validasi lengkap - DIPERBAIKI
+    $('#uploadForm').on('submit', function(e) {
+        console.log('Form submission triggered');
+
+        // CRITICAL FIX: Validate the actual file input
+        const fileInputElement = document.getElementById('document');
+        console.log('File input at submission:', fileInputElement);
+        console.log('Files at submission:', fileInputElement.files);
+        console.log('File count:', fileInputElement.files.length);
+
+        if (fileInputElement.files.length > 0) {
+            console.log('File present:', fileInputElement.files[0].name);
+        }
+
+        let isValid = true;
+        let errors = [];
+
+        // Validation checks
+        if (!$('#document_name').val()) {
+            errors.push('Please select a document type.');
+            isValid = false;
+        }
+
+        // CRITICAL FIX: Check file input properly
+        if (!fileInputElement.files || fileInputElement.files.length === 0) {
+            errors.push('Please upload a PDF document.');
+            isValid = false;
+        } else {
+            console.log('File validation passed:', fileInputElement.files[0].name);
+        }
+
+        if (!$('#notes').val().trim()) {
+            errors.push('Please provide a description.');
+            isValid = false;
+        }
+
+        if (!isValid) {
+            e.preventDefault();
+            console.log('Form validation failed:', errors);
+            showAlert(errors.join('<br>'), 'danger');
+            return false;
+        } else {
+            console.log('Form validation passed, submitting...');
+            // Show loading state
+            $('#submitBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Submitting...');
+        }
+    });
+
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    function showAlert(message, type) {
+        const alertHtml = `
+            <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                <i class="fas fa-${type === 'danger' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+
+        // Remove existing alerts
+        $('.alert').not('.alert-success').remove();
+
+        // Add new alert at the top of the form
+        $('.upload-container').prepend(alertHtml);
+
+        // Auto-hide after 5 seconds
+        setTimeout(() => $('.alert-danger, .alert-warning').fadeOut(), 5000);
+    }
+});
+
+// Global functions - DIPERBAIKI
+function triggerFileInput() {
+    console.log('Triggering file input...');
+    const fileInput = document.getElementById('document');
+    if (fileInput) {
+        fileInput.click();
+    }
+}
+
+function removeFile() {
+    console.log('Removing file...');
+    const fileInput = document.getElementById('document');
+    const dropzone = document.getElementById('dropzone');
+    const fileInfo = document.getElementById('fileInfo');
+    const fileError = document.getElementById('fileError');
+
+    if (fileInput) {
+        fileInput.value = '';
+        console.log('File input cleared');
+    }
+
+    if (fileInfo) {
+        fileInfo.style.display = 'none';
+    }
+
+    if (fileError) {
+        fileError.style.display = 'none';
+    }
+
+    if (dropzone) {
+        dropzone.classList.remove('file-selected');
+
+        // Reset dropzone content - FIXED
+        const dropzoneContent = dropzone.querySelector('#dropzone-content') || dropzone;
+        dropzoneContent.innerHTML = `
+            <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+            <h5>Drop your PDF file here</h5>
+            <p class="text-muted mb-3">or click to browse files</p>
+            <button type="button" class="btn btn-outline-primary" onclick="triggerFileInput()">
+                <i class="fas fa-folder-open me-1"></i> Choose File
+            </button>
+            <div class="mt-2">
+                <small class="text-muted">
+                    Maximum file size: 25MB • PDF format only
+                </small>
+            </div>
+        `;
+    }
+}
+
+function resetForm() {
+    console.log('Resetting form...');
+    document.getElementById('uploadForm').reset();
+    removeFile();
+    $('.priority-option').removeClass('active');
+    $('#priority-normal').prop('checked', true);
+    $('label[for="priority-normal"]').addClass('active');
+
+    // Reset submit button
+    $('#submitBtn').prop('disabled', false).html('<i class="fas fa-paper-plane me-1"></i> Submit Request');
+}
+</script>
+@endpush

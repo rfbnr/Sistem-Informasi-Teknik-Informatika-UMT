@@ -23,4 +23,14 @@ class Kaprodi extends Model
             $this->attributes['password'] = Hash::make($value);
         }
     }
+
+    public function isKaprodi()
+    {
+        return true;
+    }
+
+    public function templates()
+    {
+        return $this->hasMany(SignatureTemplate::class);
+    }
 }

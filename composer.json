@@ -12,7 +12,9 @@
         "laravel/tinker": "^2.9",
         "milon/barcode": "^11.0",
         "nesbot/carbon": "^3.7",
-        "simplesoftwareio/simple-qrcode": "^4.2"
+        "setasign/fpdi": "^2.6",
+        "simplesoftwareio/simple-qrcode": "^4.2",
+        "tecnickcom/tcpdf": "^6.10"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
