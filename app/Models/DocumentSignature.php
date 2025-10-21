@@ -102,11 +102,11 @@ class DocumentSignature extends Model
     }
 
     /**
-     * Relasi ke User (signer)
+     * Relasi ke Kaprodi (signer)
      */
     public function signer()
     {
-        return $this->belongsTo(User::class, 'signed_by');
+        return $this->belongsTo(Kaprodi::class, 'signed_by');
     }
 
     /**

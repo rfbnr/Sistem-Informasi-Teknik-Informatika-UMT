@@ -116,7 +116,6 @@ class ApprovalRequestController extends Controller
     //     }
     // }
 
-    //TODO: have problem in file uploading
     public function upload(Request $request)
     {
         // Debug: Log incoming request
@@ -494,6 +493,16 @@ class ApprovalRequestController extends Controller
     public function approve(Request $request, $id)
     {
         try {
+            // check validation if not kaprodi
+            $userId = Auth::id();
+            $kaprodi = Kaprodi::where('id', $userId)->first();
+            if (!$kaprodi) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Unauthorized: Only Kaprodi can approve requests'
+                ], 403);
+            }
+
             // FIX #2: Fix input parameter name mismatch (was 'approval_notes', should be 'notes')
             $notes = $request->input('notes', null);
 
@@ -516,6 +525,7 @@ class ApprovalRequestController extends Controller
 
             // Approve the request (this creates DocumentSignature internally)
             $approvalRequest->approveApprovalRequest(Auth::id(), $notes ?? 'Approved by Kaprodi');
+            // $approvalRequest->approveApprovalRequest($kaprodi->id, $notes ?? 'Approved by Kaprodi');
 
             // FIX #6: Reload approvalRequest to get the freshly created documentSignature relation
             $approvalRequest->refresh();

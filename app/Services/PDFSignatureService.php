@@ -296,7 +296,7 @@ class PDFSignatureService
     {
         try {
             // Position QR code at bottom right corner
-            $qrSize = 25; // 25mm x 25mm
+            $qrSize = 28; // 28mm x 28mm
             $margin = 10; // 10mm from edges
 
             $x = $pageSize['width'] - $qrSize - $margin;
@@ -323,16 +323,16 @@ class PDFSignatureService
                 '',
                 false,
                 false,
-                1,
+                0,
                 false,
                 false,
                 false
             );
 
             // Add verification text below QR code
-            $pdf->SetFont('helvetica', '', 7);
-            $pdf->SetTextColor(100, 100, 100);
-            $pdf->Text($x, $y + $qrSize + 2, 'Scan untuk verifikasi');
+            // $pdf->SetFont('helvetica', '', 7);
+            // $pdf->SetTextColor(100, 100, 100);
+            // $pdf->Text($x, $y + $qrSize + 5, 'Scan untuk verifikasi');
 
         } catch (Exception $e) {
             Log::error('Failed to add QR code to PDF', [

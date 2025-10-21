@@ -32,6 +32,9 @@ class QRCodeService
 
             // Create verification URL dengan encrypted parameters
             $encryptedData = $this->createEncryptedVerificationData($documentSignature);
+
+            // $tempVerificationToken = $documentSignature->verification_token ?? \Illuminate\Support\Str::random(64);
+
             $verificationUrl = route('signature.verify', ['token' => $encryptedData]);
 
             // Generate QR Code
@@ -45,7 +48,7 @@ class QRCodeService
                 $logoPath = public_path('assets/logo.JPG');
                 if (File::exists($logoPath)) {
                     $logo = new Logo($logoPath);
-                    $logo->setResizeToWidth(60);
+                    $logo->setResizeToWidth(70);
                 }
             }
 

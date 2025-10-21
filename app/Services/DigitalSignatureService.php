@@ -294,14 +294,16 @@ class DigitalSignatureService
                     'signature_value' => $signatureData['signature_value'],
                     'cms_signature' => $signatureData['cms_signature'],
                     'signed_at' => $signatureData['signed_at'],
-                    'signed_by' => Auth::id(),
+                    // 'signed_by' => Auth::id(),
+                    // sign by kaprodi
+                    // 'signed_by' => Auth::guard('kaprodi')->id(),
                     'signature_status' => DocumentSignature::STATUS_SIGNED,
                     'signature_metadata' => $signatureData['metadata']
                 ]
             );
 
             // Update approval request status
-            $approvalRequest->markUserSigned();
+            // $approvalRequest->markUserSigned();
 
             Log::info('Approval request signed successfully', [
                 'approval_request_id' => $approvalRequestId,

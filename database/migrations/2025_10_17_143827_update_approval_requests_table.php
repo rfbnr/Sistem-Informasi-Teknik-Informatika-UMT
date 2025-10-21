@@ -51,8 +51,8 @@ return new class extends Migration
             $table->text('admin_notes')->nullable()->after('revision_count'); // Catatan admin
 
             // Foreign key constraints
-            $table->foreign('approved_by')->references('id')->on('users')->onDelete('set null');
-            $table->foreign('sign_approved_by')->references('id')->on('users')->onDelete('set null');
+            $table->foreign('approved_by')->references('id')->on('kaprodis')->onDelete('set null');
+            $table->foreign('sign_approved_by')->references('id')->on('kaprodis')->onDelete('set null');
 
             // Indexes untuk performa
             $table->index(['status', 'created_at']);

@@ -285,7 +285,7 @@ class ApprovalRequest extends Model
     /**
      * Approve tanda tangan
      */
-    public function approveSignature($approverId, $notes = null)
+    public function approveSignature($approverId, $signPath)
     {
         $oldStatus = $this->status;
 
@@ -293,12 +293,15 @@ class ApprovalRequest extends Model
             'status' => self::STATUS_SIGN_APPROVED,
             'sign_approved_at' => now(),
             'sign_approved_by' => $approverId,
-            'approval_notes' => $notes
+            'signed_document_path' => $signPath,
+            // 'approval_notes' => $notes
         ]);
 
         // Log audit
+        // $this->logStatusChange('signature_approved', $oldStatus, self::STATUS_SIGN_APPROVED,
+        //     'Digital signature has been approved and verified', ['notes' => $notes]);
         $this->logStatusChange('signature_approved', $oldStatus, self::STATUS_SIGN_APPROVED,
-            'Digital signature has been approved and verified', ['notes' => $notes]);
+            'Digital signature has been approved and verified');
     }
 
     /**
@@ -345,6 +348,7 @@ class ApprovalRequest extends Model
             'digital_signature_id' => $digitalSignature->id,
             'document_hash' => $documentHash,
             // 'signed_by' => $this->user_id,
+            'signed_by' => Auth::id(),
             'signature_status' => DocumentSignature::STATUS_PENDING
         ]);
     }

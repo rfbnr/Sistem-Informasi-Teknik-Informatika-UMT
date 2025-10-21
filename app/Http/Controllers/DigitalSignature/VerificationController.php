@@ -38,30 +38,17 @@ class VerificationController extends Controller
      */
     public function verifyByToken($token)
     {
-        // dd($token);
         // Rate limiting
-        // $key = 'verify_token:' . request()->ip();
-        // if (RateLimiter::tooManyAttempts($key, 10)) {
-        //     $seconds = RateLimiter::availableIn($key);
-        //     return view('digital-signature.verification.rate-limited', compact('seconds'));
-        // }
+        $key = 'verify_token:' . request()->ip();
+        if (RateLimiter::tooManyAttempts($key, 10)) {
+            $seconds = RateLimiter::availableIn($key);
+            return view('digital-signature.verification.rate-limited', compact('seconds'));
+        }
 
-        // RateLimiter::hit($key, 300); // 5 minutes decay
+        RateLimiter::hit($key, 300); // 5 minutes decay
 
         try {
             $verificationResult = $this->verificationService->verifyByToken($token);
-
-            // dd($verificationResult);
-
-            // $verificationResult['details']['checks'] = [
-            //     'document_exists' => 'Dokumen Ditemukan',
-            //     'digital_signature' => 'Kunci Digital Valid',
-            //     'approval_request' => 'Data Pengajuan Valid',
-            //     'document_integrity' => 'Integritas Dokumen',
-            //     'cms_signature' => 'Tanda Tangan Digital',
-            //     'timestamp' => 'Validitas Waktu',
-            //     'certificate' => 'Sertifikat Digital'
-            // ];
 
             // Log public verification attempt
             Log::info('Public verification attempt', [
@@ -94,7 +81,7 @@ class VerificationController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'verification_input' => 'required|string',
-            'verification_type' => 'required|in:token,url,id'
+            'verification_type' => 'required|in:token,url,qr,id'
         ]);
 
         if ($validator->fails()) {
@@ -128,6 +115,22 @@ class VerificationController extends Controller
                         $verificationResult = $this->verificationService->verifyByToken($token);
                     } else {
                         throw new \Exception('Invalid verification URL format');
+                    }
+                    break;
+
+                case 'qr':
+                    // QR code can contain either a URL or a direct token
+                    if (filter_var($input, FILTER_VALIDATE_URL)) {
+                        // Input is a URL, extract token from it
+                        $token = $this->extractTokenFromUrl($input);
+                        if ($token) {
+                            $verificationResult = $this->verificationService->verifyByToken($token);
+                        } else {
+                            throw new \Exception('Invalid QR code URL format');
+                        }
+                    } else {
+                        // Input is a direct token
+                        $verificationResult = $this->verificationService->verifyByToken($input);
                     }
                     break;
 

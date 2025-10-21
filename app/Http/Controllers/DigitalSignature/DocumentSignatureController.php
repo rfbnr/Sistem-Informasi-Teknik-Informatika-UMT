@@ -120,10 +120,15 @@ class DocumentSignatureController extends Controller
     {
         try {
             $documentSignature = DocumentSignature::findOrFail($id);
+            $approvalRequest = $documentSignature->approvalRequest;
 
             $verificationResult = $this->verificationService->verifyById($id);
 
             if ($verificationResult['is_valid']) {
+                $approvalRequest->approveSignature(
+                    Auth::id(),
+                    $documentSignature->final_pdf_path
+                );
                 $documentSignature->update([
                     'signature_status' => DocumentSignature::STATUS_VERIFIED,
                     'verified_at' => now(),
@@ -206,14 +211,14 @@ class DocumentSignatureController extends Controller
                 abort(403, 'Unauthorized to download this document');
             }
 
-            // Check if signature is valid
-            if (!$documentSignature->isValid()) {
-                Log::warning('Attempted to download invalid signature', [
+            // Allow download even if not verified yet (user might need to download for verification)
+            // Just log a warning if status is invalid
+            if ($documentSignature->signature_status === DocumentSignature::STATUS_INVALID) {
+                Log::warning('Downloading document with invalid signature', [
                     'document_signature_id' => $id,
-                    'status' => $documentSignature->signature_status
+                    'status' => $documentSignature->signature_status,
+                    'downloaded_by' => Auth::id()
                 ]);
-
-                return back()->with('error', 'Document signature is not valid');
             }
 
             // Determine which file to use
@@ -239,9 +244,14 @@ class DocumentSignatureController extends Controller
                 return back()->with('error', 'Document file not found');
             }
 
+            // Generate safe filename
+            $signedAtDate = $documentSignature->signed_at
+                ? $documentSignature->signed_at->format('Y-m-d')
+                : now()->format('Y-m-d');
+
             $filename = $approvalRequest->document_name .
                        ($fileType === 'signed' ? '_signed_' : '_') .
-                       $documentSignature->signed_at->format('Y-m-d') .
+                       $signedAtDate .
                        '.' . pathinfo($fullPath, PATHINFO_EXTENSION);
 
             Log::info('Document downloaded', [
@@ -328,6 +338,21 @@ class DocumentSignatureController extends Controller
     {
         try {
             $documentSignature = DocumentSignature::findOrFail($id);
+            $approvalRequest = $documentSignature->approvalRequest;
+
+            // AUTHORIZATION: Check if user is Kaprodi or document owner
+            $isKaprodi = Auth::guard('kaprodi')->check();
+            $isOwner = Auth::check() && $approvalRequest->user_id === Auth::id();
+
+            if (!$isKaprodi && !$isOwner) {
+                Log::warning('Unauthorized QR code download attempt', [
+                    'document_signature_id' => $id,
+                    'attempted_by' => Auth::id() ?? 'guest',
+                    'is_kaprodi' => $isKaprodi,
+                    'is_owner' => $isOwner
+                ]);
+                abort(403, 'Unauthorized to download this QR code');
+            }
 
             if (!$documentSignature->qr_code_path) {
                 // Generate QR code if not exists
@@ -361,6 +386,163 @@ class DocumentSignatureController extends Controller
         } catch (\Exception $e) {
             Log::error('Download QR code error: ' . $e->getMessage());
             return back()->with('error', 'Failed to download QR code');
+        }
+    }
+
+    /**
+     * ========================================================================
+     * USER MY SIGNATURES MANAGEMENT METHODS
+     * ========================================================================
+     */
+
+    /**
+     * Display list of user's document signatures (My Signatures page)
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View
+     */
+    public function userSignatures(Request $request)
+    {
+        try {
+            // Get authenticated user
+            $user = Auth::user();
+
+            // Query: Get all DocumentSignatures where approval_request belongs to user
+            $query = DocumentSignature::with([
+                    'approvalRequest',
+                    'digitalSignature',
+                    'signer'
+                ])
+                ->whereHas('approvalRequest', function($q) use ($user) {
+                    $q->where('user_id', $user->id);
+                });
+
+            // FILTER 1: Search by document name or number
+            if ($request->filled('search')) {
+                $search = $request->search;
+                $query->whereHas('approvalRequest', function($q) use ($search) {
+                    $q->where('document_name', 'like', "%{$search}%")
+                      ->orWhere('document_number', 'like', "%{$search}%");
+                });
+            }
+
+            // FILTER 2: Filter by signature status
+            if ($request->filled('status')) {
+                $query->where('signature_status', $request->status);
+            }
+
+            // FILTER 3: Filter by month
+            if ($request->filled('month')) {
+                if ($request->month === 'current') {
+                    $query->whereMonth('created_at', now()->month)
+                          ->whereYear('created_at', now()->year);
+                } elseif ($request->month === 'last') {
+                    $query->whereMonth('created_at', now()->subMonth()->month)
+                          ->whereYear('created_at', now()->subMonth()->year);
+                }
+            }
+
+            // Order by latest first
+            $query->orderBy('created_at', 'desc');
+
+            // Paginate results (12 per page for 2-column grid)
+            $signatures = $query->paginate(12);
+
+            // STATISTICS CALCULATION
+            $baseQuery = DocumentSignature::whereHas('approvalRequest', function($q) use ($user) {
+                $q->where('user_id', $user->id);
+            });
+
+            $statistics = [
+                'total' => (clone $baseQuery)->count(),
+
+                'verified' => (clone $baseQuery)->where('signature_status', 'verified')->count(),
+
+                'pending' => (clone $baseQuery)->whereIn('signature_status', ['pending', 'signed'])->count(),
+
+                'this_month' => (clone $baseQuery)
+                    ->whereMonth('created_at', now()->month)
+                    ->whereYear('created_at', now()->year)
+                    ->count()
+            ];
+
+            // Log access
+            Log::info('User accessed My Signatures page', [
+                'user_id' => $user->id,
+                'filters' => $request->only(['search', 'status', 'month']),
+                'results_count' => $signatures->total()
+            ]);
+
+            return view('digital-signature.user.my-signature.index', compact('signatures', 'statistics'));
+
+        } catch (\Exception $e) {
+            Log::error('Failed to load My Signatures page', [
+                'user_id' => Auth::id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return back()->with('error', 'Failed to load signatures. Please try again.');
+        }
+    }
+
+    /**
+     * Display details of specific user's document signature
+     *
+     * @param int $id - DocumentSignature ID
+     * @return \Illuminate\View\View
+     */
+    public function userSignatureDetails($id)
+    {
+        try {
+            // Get authenticated user
+            $user = Auth::user();
+
+            // Find DocumentSignature with relations
+            $documentSignature = DocumentSignature::with([
+                    'approvalRequest.user',  // Submitter info
+                    'digitalSignature',       // Crypto info
+                    'signer',                 // Who signed (if signed_by exists)
+                    'verifier'                // Who verified (if verified_by exists)
+                ])
+                ->findOrFail($id);
+
+            // AUTHORIZATION: User can only view their own signatures
+            if ($documentSignature->approvalRequest->user_id !== $user->id) {
+                Log::warning('Unauthorized access attempt to signature details', [
+                    'user_id' => $user->id,
+                    'document_signature_id' => $id,
+                    'owner_id' => $documentSignature->approvalRequest->user_id
+                ]);
+
+                abort(403, 'Unauthorized to view this signature');
+            }
+
+            // Log access
+            Log::info('User viewed signature details', [
+                'user_id' => $user->id,
+                'document_signature_id' => $id,
+                'signature_status' => $documentSignature->signature_status
+            ]);
+
+            return view('digital-signature.user.my-signature.details', compact('documentSignature'));
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            Log::warning('Signature not found', [
+                'user_id' => Auth::id(),
+                'document_signature_id' => $id
+            ]);
+
+            return back()->with('error', 'Signature not found.');
+
+        } catch (\Exception $e) {
+            Log::error('Failed to load signature details', [
+                'user_id' => Auth::id(),
+                'document_signature_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+
+            return back()->with('error', 'Failed to load signature details. Please try again.');
         }
     }
 

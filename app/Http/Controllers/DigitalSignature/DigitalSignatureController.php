@@ -330,13 +330,27 @@ class DigitalSignatureController extends Controller
                     // $tempVerificationToken = $documentSignature->verification_token ?? \Illuminate\Support\Str::random(64);
                     // $verificationUrl = route('signature.verify', ['token' => $tempVerificationToken]);
 
-                    // Generate QR code image for embedding
+                    // // Generate QR code image for embedding
                     // $qrCodeImagePath = $this->pdfSignatureService->generateQRCodeImage(
                     //     $verificationUrl,
                     //     $documentSignature->id
                     // );
+
                     // Generate QR code for verification
                     $qrData = $this->qrCodeService->generateVerificationQR($documentSignature->id);
+
+                    // ✅ FIX: Convert relative storage path
+                    // to absolute filesystem path
+                    $qrCodeAbsolutePath = null;
+                    if (isset($qrData['qr_code_path'])) {
+                        $qrCodeAbsolutePath = Storage::disk('public')->path($qrData['qr_code_path']);
+
+                        Log::info('QR code path converted for PDF embedding', [
+                            'relative_path' => $qrData['qr_code_path'],
+                            'absolute_path' => $qrCodeAbsolutePath,
+                            'file_exists' => file_exists($qrCodeAbsolutePath)
+                        ]);
+                    }
 
                     // Merge signature template into PDF
                     $signedPdfPath = $this->pdfSignatureService->mergeSignatureIntoPDF(
@@ -344,7 +358,8 @@ class DigitalSignatureController extends Controller
                         $request->template_id,
                         $positioningData,
                         $documentSignature,
-                        $qrData['qr_code_path'] ?? null
+                        $qrCodeAbsolutePath
+                        // $qrData['qr_code_path'] ?? null
                         // $qrCodeImagePath
                     );
 
@@ -377,23 +392,23 @@ class DigitalSignatureController extends Controller
                 }
             }
 
-            // // ========================================================================
-            // // STEP 2: Create CMS Signature from FINAL PDF (signed PDF or original)
-            // // This ensures hash and signature match the file user will download
-            // // ========================================================================
-            // Log::info('Creating CMS signature', [
-            //     'document_path_for_signing' => $documentPathForSigning,
-            //     'is_signed_pdf' => $signedPdfPath !== null
-            // ]);
+            // ========================================================================
+            // STEP 2: Create CMS Signature from FINAL PDF (signed PDF or original)
+            // This ensures hash and signature match the file user will download
+            // ========================================================================
+            Log::info('Creating CMS signature', [
+                'document_path_for_signing' => $documentPathForSigning,
+                'is_signed_pdf' => $signedPdfPath !== null
+            ]);
 
-            // $this->digitalSignatureService->signApprovalRequest(
-            //     $approvalRequestId,
-            //     $digitalSignature->id,
-            //     $documentPathForSigning  // ✅ Pass the correct path (signed PDF or original)
-            // );
+            $this->digitalSignatureService->signApprovalRequest(
+                $approvalRequestId,
+                $digitalSignature->id,
+                $documentPathForSigning  // ✅ Pass the correct path (signed PDF or original)
+            );
 
-            // // Reload to get updated signature data
-            // $documentSignature->refresh();
+            // Reload to get updated signature data
+            $documentSignature->refresh();
 
             // ========================================================================
             // STEP 3: Update DocumentSignature with all metadata
@@ -416,23 +431,23 @@ class DigitalSignatureController extends Controller
             // Reload to get updated signature data
             // $documentSignature->refresh();
 
-            // ========================================================================
-            // STEP 2: Create CMS Signature from FINAL PDF (signed PDF or original)
-            // This ensures hash and signature match the file user will download
-            // ========================================================================
-            Log::info('Creating CMS signature', [
-                'document_path_for_signing' => $documentPathForSigning,
-                'is_signed_pdf' => $signedPdfPath !== null
-            ]);
+            // // ========================================================================
+            // // STEP 2: Create CMS Signature from FINAL PDF (signed PDF or original)
+            // // This ensures hash and signature match the file user will download
+            // // ========================================================================
+            // Log::info('Creating CMS signature', [
+            //     'document_path_for_signing' => $documentPathForSigning,
+            //     'is_signed_pdf' => $signedPdfPath !== null
+            // ]);
 
-            $this->digitalSignatureService->signApprovalRequest(
-                $approvalRequestId,
-                $digitalSignature->id,
-                $documentPathForSigning  // ✅ Pass the correct path (signed PDF or original)
-            );
+            // $this->digitalSignatureService->signApprovalRequest(
+            //     $approvalRequestId,
+            //     $digitalSignature->id,
+            //     $documentPathForSigning  // ✅ Pass the correct path (signed PDF or original)
+            // );
 
-            // Reload to get updated signature data
-            $documentSignature->refresh();
+            // // Reload to get updated signature data
+            // $documentSignature->refresh();
 
             // Save canvas data if provided (for backward compatibility with old canvas method)
             if ($request->has('canvas_data')) {
@@ -443,7 +458,7 @@ class DigitalSignatureController extends Controller
             }
 
             // Generate QR code data for response
-            $qrData = $this->qrCodeService->generateVerificationQR($documentSignature->id);
+            // $qrData = $this->qrCodeService->generateVerificationQR($documentSignature->id);
 
             // Update approval request status
             $approvalRequest->markUserSigned();

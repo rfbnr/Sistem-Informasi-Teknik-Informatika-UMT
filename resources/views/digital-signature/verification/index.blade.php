@@ -183,6 +183,8 @@
                                             <i class="fas fa-camera"></i> Mulai Scan
                                         </button>
                                         <div id="qrReader" style="display: none; margin-top: 1rem;"></div>
+                                        <!-- Hidden input for QR data -->
+                                        <input type="hidden" id="qrInput" name="verification_input" data-method="qr">
                                     </div>
                                 </div>
 
@@ -195,7 +197,7 @@
                                                 <i class="fas fa-link"></i>
                                             </span>
                                             <input type="url" class="form-control" id="verificationUrl" name="verification_input"
-                                                   placeholder="https://example.com/signature/verify/...">
+                                                   placeholder="https://example.com/signature/verify/..." disabled data-method="url">
                                         </div>
                                         <small class="text-muted">Paste URL verifikasi yang Anda terima</small>
                                     </div>
@@ -210,7 +212,7 @@
                                                 <i class="fas fa-key"></i>
                                             </span>
                                             <input type="text" class="form-control" id="verificationToken" name="verification_input"
-                                                   placeholder="Masukkan token verifikasi">
+                                                   placeholder="Masukkan token verifikasi" disabled data-method="token">
                                         </div>
                                         <small class="text-muted">Token berupa kombinasi huruf dan angka</small>
                                     </div>
@@ -304,19 +306,28 @@
             // Update form
             $('#verificationType').val(method);
 
-            // Reset form inputs
-            $('input[name="verification_input"]').val('');
+            // CRITICAL FIX: Disable all inputs first, then enable only the active one
+            $('input[name="verification_input"]').prop('disabled', true).val('');
+
+            // Enable only the input for the selected method
+            $(`input[name="verification_input"][data-method="${method}"]`).prop('disabled', false);
+
+            // Disable verify button until input is filled
             $('#verifyButton').prop('disabled', true);
 
             // Stop QR scanner if switching away
             if (method !== 'qr' && html5QrCode) {
-                html5QrCode.stop();
+                html5QrCode.stop().catch(err => {
+                    console.log('QR scanner already stopped');
+                });
+                $('#qrReader').hide();
             }
         }
 
         // QR Code Scanner
         $('#startQRScanner').click(function() {
             $('#qrReader').show();
+            $(this).prop('disabled', true).text('Scanning...');
 
             html5QrCode = new Html5Qrcode("qrReader");
             html5QrCode.start(
@@ -329,53 +340,61 @@
                     // QR Code successfully scanned
                     console.log(`QR Code detected: ${decodedText}`);
 
-                    // Extract token from URL if needed
-                    let token = extractTokenFromQRData(decodedText);
-
-                    // Set the token and verify
-                    $('input[name="verification_input"]').val(token);
+                    // Set the scanned data to QR input (not extract, send full data)
+                    $('#qrInput').val(decodedText);
                     $('#verifyButton').prop('disabled', false);
+
+                    // Stop scanning
+                    html5QrCode.stop().then(() => {
+                        $('#qrReader').hide();
+                        $('#startQRScanner').prop('disabled', false).html('<i class="fas fa-camera"></i> Mulai Scan');
+                    }).catch(err => {
+                        console.log('Error stopping scanner:', err);
+                    });
 
                     // Auto-submit or show confirmation
                     if (confirm('QR Code berhasil discan. Lanjutkan verifikasi?')) {
                         $('#verificationForm').submit();
                     }
-
-                    // Stop scanning
-                    html5QrCode.stop();
                 },
                 (errorMessage) => {
-                    // QR Code scan error
-                    console.log(`QR Code scan error: ${errorMessage}`);
+                    // QR Code scan error (this is normal during scanning)
+                    // Don't log every frame error
                 }
             ).catch(err => {
                 console.error('Camera access denied or not available:', err);
-                alert('Tidak dapat mengakses kamera. Silakan gunakan metode lain.');
+                alert('Tidak dapat mengakses kamera. Pastikan Anda memberikan izin akses kamera dan menggunakan HTTPS.');
+                $('#startQRScanner').prop('disabled', false).html('<i class="fas fa-camera"></i> Mulai Scan');
+                $('#qrReader').hide();
             });
         });
 
-        // Input validation
+        // Input validation - only for visible/enabled inputs
         $('input[name="verification_input"]').on('input', function() {
-            const value = $(this).val().trim();
-            $('#verifyButton').prop('disabled', value.length === 0);
+            // Only validate if this input is enabled (active method)
+            if (!$(this).prop('disabled')) {
+                const value = $(this).val().trim();
+                $('#verifyButton').prop('disabled', value.length === 0);
+            }
         });
 
         // Form submission
         $('#verificationForm').on('submit', function(e) {
+            // Validate that we have input in the active method
+            const activeInput = $('input[name="verification_input"]:not(:disabled)');
+            const value = activeInput.val().trim();
+
+            if (value.length === 0) {
+                e.preventDefault();
+                alert('Mohon masukkan data verifikasi terlebih dahulu.');
+                return false;
+            }
+
+            // Show loading state
             $('#loadingState').show();
             $('#verifyButton').prop('disabled', true);
+            $('.verification-section').hide();
         });
-
-        // Utility functions
-        function extractTokenFromQRData(data) {
-            // If it's a full URL, extract the token part
-            if (data.includes('verify/')) {
-                const parts = data.split('verify/');
-                return parts[parts.length - 1];
-            }
-            // If it's already a token, return as is
-            return data;
-        }
 
         // Initialize default method
         $(document).ready(function() {
