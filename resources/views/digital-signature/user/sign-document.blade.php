@@ -1,6 +1,7 @@
 {{-- resources/views/digital-signature/user/sign-document-new.blade.php --}}
 {{-- NEW VERSION: Drag & Drop Template TTD Kaprodi --}}
-@extends('digital-signature.layouts.app')
+{{-- @extends('digital-signature.layouts.app') --}}
+@extends('user.layouts.app')
 
 @section('title', 'Digital Document Signing - Drag & Drop')
 
@@ -15,7 +16,8 @@
 
 /* ========== SIGNING STEPS INDICATOR ========== */
 .signing-steps {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    /* background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); */
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
     color: white;
     border-radius: 1rem;
     padding: 1.5rem;
@@ -312,6 +314,9 @@
 .signing-controls {
     position: sticky;
     bottom: 2rem;
+    margin-bottom: 2rem;
+    margin-right: 2rem;
+    margin-left: 2rem;
     background: white;
     border-radius: 1rem;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
@@ -383,6 +388,11 @@
 @endpush
 
 @section('content')
+<!-- Section Header -->
+<section id="header-section">
+    <h1>Signing Digital Document</h1>
+</section>
+
 <div class="signing-container">
     <!-- Signing Steps Indicator -->
     <div class="signing-steps">

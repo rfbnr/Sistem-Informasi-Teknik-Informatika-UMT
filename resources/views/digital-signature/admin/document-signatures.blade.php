@@ -163,10 +163,12 @@
                                 </td>
                                 <td>
                                     <div class="btn-group btn-group-sm">
-                                        <a href="{{ route('admin.signature.documents.show', $docSig->id) }}"
-                                           class="btn btn-outline-primary" title="View Details">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
+                                        @if($docSig->signature_status !== 'pending')
+                                            <a href="{{ route('admin.signature.documents.show', $docSig->id) }}"
+                                            class="btn btn-outline-primary" title="View Details">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        @endif
                                         @if($docSig->signature_status === 'signed')
                                             <button class="btn btn-outline-success"
                                                     onclick="verifySignature({{ $docSig->id }})"

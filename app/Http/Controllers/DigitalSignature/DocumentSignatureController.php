@@ -97,8 +97,12 @@ class DocumentSignatureController extends Controller
             // Get signature info
             $signatureInfo = $documentSignature->getSignatureInfo();
 
+            // dd($signatureInfo);
+
             // Perform verification
             $verificationResult = $this->verificationService->verifyById($id);
+
+            // dd($verificationResult);
 
             return view('digital-signature.admin.signature-details', compact(
                 'documentSignature',

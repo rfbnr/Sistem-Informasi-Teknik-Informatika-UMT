@@ -22,6 +22,8 @@ class ApprovalRequest extends Model
         'status',
         'approved_at',
         'approved_by',
+        'rejected_at',
+        'rejected_by',
         'user_signed_at',
         'sign_approved_at',
         'sign_approved_by',
@@ -32,12 +34,13 @@ class ApprovalRequest extends Model
         'workflow_metadata',
         'department',
         'deadline',
-        'revision_count',
+        // 'revision_count',
         'admin_notes'
     ];
 
     protected $casts = [
         'approved_at' => 'datetime',
+        'rejected_at' => 'datetime',
         'user_signed_at' => 'datetime',
         'sign_approved_at' => 'datetime',
         'deadline' => 'datetime',
@@ -116,24 +119,24 @@ class ApprovalRequest extends Model
     }
 
     /**
-     * Relasi ke User (approver)
+     * Relasi ke Kaprodi (approver)
      */
     public function approver()
     {
-        return $this->belongsTo(User::class, 'approved_by');
+        return $this->belongsTo(Kaprodi::class, 'approved_by');
     }
 
     /**
-     * Relasi ke User (sign approver)
+     * Relasi ke Kaprodi (sign approver)
      */
     public function signApprover()
     {
-        return $this->belongsTo(User::class, 'sign_approved_by');
+        return $this->belongsTo(Kaprodi::class, 'sign_approved_by');
     }
 
     public function rejector()
     {
-        return $this->belongsTo(User::class, 'approved_by');
+        return $this->belongsTo(Kaprodi::class, 'rejected_by');
     }
 
     // public function digitalSignature()
@@ -257,7 +260,8 @@ class ApprovalRequest extends Model
         $this->update([
             'status' => self::STATUS_REJECTED,
             'rejection_reason' => $reason,
-            'approved_by' => $rejectedBy ?? Auth::id()
+            'rejected_by' => $rejectedBy ?? Auth::id(),
+            'rejected_at' => now()
         ]);
 
         // Log audit

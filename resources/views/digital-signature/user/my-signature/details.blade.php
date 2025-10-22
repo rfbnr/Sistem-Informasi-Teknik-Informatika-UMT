@@ -1,9 +1,14 @@
 {{-- resources/views/digital-signature/user/my-signatures/details.blade.php --}}
-@extends('digital-signature.layouts.app')
+@extends('user.layouts.app')
 
 @section('title', 'Signature Details')
 
 @section('content')
+<!-- Section Header -->
+<section id="header-section">
+    <h1>Signature Details</h1>
+</section>
+
 <div class="main-content">
     <!-- Page Header -->
     <div class="page-header">
@@ -16,7 +21,7 @@
                 <p class="mb-0 opacity-75">{{ $documentSignature->approvalRequest->document_name }}</p>
             </div>
             <div class="col-lg-4 text-end">
-                <a href="{{ route('user.signature.my.signatures.index') }}" class="btn btn-outline-secondary">
+                <a href="{{ route('user.signature.my.signatures.index') }}" class="btn btn-outline-warning">
                     <i class="fas fa-arrow-left me-1"></i> Back to List
                 </a>
             </div>
@@ -33,6 +38,11 @@
         <div class="alert alert-info">
             <i class="fas fa-clock me-2"></i>
             <strong>Pending Verification:</strong> Your signature is awaiting final verification by Kaprodi.
+        </div>
+    @elseif($documentSignature->signature_status === 'invalid')
+        <div class="alert alert-danger">
+            <i class="fas fa-times-circle me-2"></i>
+            <strong>Invalid Signature:</strong> This signature has been marked as invalid.
         </div>
     @endif
 
@@ -60,30 +70,122 @@
                     </div>
 
                     <div class="row mb-3">
-                        <div class="col-md-6">
-                            <strong>Submission Date:</strong><br>
-                            {{ $documentSignature->approvalRequest->created_at->format('d F Y, H:i') }}
+                        <div class="col-md-4">
+                            <strong>Document Type:</strong><br>
+                            @if($documentSignature->approvalRequest->document_type)
+                                <span class="badge bg-secondary">
+                                    {{ $documentSignature->approvalRequest->document_type }}
+                                </span>
+                            @else
+                                <span class="text-muted">Not specified</span>
+                            @endif
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <strong>Priority:</strong><br>
                             <span class="priority-badge priority-{{ $documentSignature->approvalRequest->priority }}">
                                 {{ ucfirst($documentSignature->approvalRequest->priority) }}
                             </span>
                         </div>
+                        <div class="col-md-4">
+                            <strong>Department:</strong><br>
+                            {{ $documentSignature->approvalRequest->department ?? 'N/A' }}
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Submission Date:</strong><br>
+                            {{ $documentSignature->approvalRequest->created_at->format('d F Y, H:i') }}
+                            <small class="text-muted d-block">{{ $documentSignature->approvalRequest->created_at->diffForHumans() }}</small>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Deadline:</strong><br>
+                            @if($documentSignature->approvalRequest->deadline)
+                                {{ $documentSignature->approvalRequest->deadline->format('d F Y, H:i') }}
+                                @if($documentSignature->approvalRequest->isOverdue())
+                                    <span class="badge bg-danger ms-2">Overdue</span>
+                                @elseif($documentSignature->approvalRequest->isNearDeadline())
+                                    <span class="badge bg-warning ms-2">Near Deadline</span>
+                                @endif
+                            @else
+                                <span class="text-muted">No deadline set</span>
+                            @endif
+                        </div>
                     </div>
 
                     @if($documentSignature->approvalRequest->notes)
-                    <div class="row">
+                    <div class="row mb-3">
                         <div class="col-12">
-                            <strong>Notes:</strong><br>
+                            <strong>Submission Notes:</strong><br>
                             <p class="text-muted mb-0">{{ $documentSignature->approvalRequest->notes }}</p>
                         </div>
                     </div>
                     @endif
+
+                    @if($documentSignature->approvalRequest->approval_notes)
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <strong>Approval Notes:</strong><br>
+                            <div class="mb-0">
+                                {{ $documentSignature->approvalRequest->approval_notes }}
+                            </div>
+                        </div>
+                    </div>
+                    @endif
+
+                    @if($documentSignature->approvalRequest->admin_notes)
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <strong>Admin Notes:</strong><br>
+                            <div class="alert alert-warning mb-0">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                {{ $documentSignature->approvalRequest->admin_notes }}
+                            </div>
+                        </div>
+                    </div>
+                    @endif
+
+                    <!-- Document Files Section -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>Original Document:</strong><br>
+                            @if($documentSignature->approvalRequest->document_path)
+                                <div class="d-flex align-items-center gap-2">
+                                    <code class="small flex-grow-1" style="word-break: break-all;">
+                                        {{ basename($documentSignature->approvalRequest->document_path) }}
+                                    </code>
+                                    <button type="button" class="btn btn-sm btn-outline-primary"
+                                            onclick="previewDocument('original')"
+                                            title="Preview Original Document">
+                                        <i class="fas fa-eye"></i> Show
+                                    </button>
+                                </div>
+                            @else
+                                <span class="text-muted">Not available</span>
+                            @endif
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Signed Document:</strong><br>
+                            @if($documentSignature->approvalRequest->signed_document_path || $documentSignature->final_pdf_path)
+                                <div class="d-flex align-items-center gap-2">
+                                    <code class="small flex-grow-1" style="word-break: break-all;">
+                                        {{ basename($documentSignature->approvalRequest->signed_document_path ?? $documentSignature->final_pdf_path) }}
+                                    </code>
+                                    <button type="button" class="btn btn-sm btn-outline-success"
+                                            onclick="previewDocument('signed')"
+                                            title="Preview Signed Document">
+                                        <i class="fas fa-eye"></i> Show
+                                    </button>
+                                </div>
+                            @else
+                                <span class="text-muted">Not yet signed</span>
+                            @endif
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Signature Information -->
+            <!-- Digital Signature Information -->
             <div class="card mb-4">
                 <div class="card-header bg-success text-white">
                     <h5 class="mb-0">
@@ -94,10 +196,29 @@
                 <div class="card-body">
                     <div class="row mb-3">
                         <div class="col-md-6">
+                            <strong>Signature ID:</strong><br>
+                            <code>{{ $documentSignature->digitalSignature->signature_id ?? 'N/A' }}</code>
+                        </div>
+                        <div class="col-md-6">
                             <strong>Signature Status:</strong><br>
                             <span class="status-badge status-{{ strtolower($documentSignature->signature_status) }}">
                                 {{ ucfirst($documentSignature->signature_status) }}
                             </span>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Signed By:</strong><br>
+                            @if($documentSignature->signer)
+                                {{ $documentSignature->signer->name }}<br>
+                                <small class="text-muted">
+                                    NIDN: {{ $documentSignature->signer->NIDN ?? '-' }}<br>
+                                    Email: {{ $documentSignature->signer->email }}
+                                </small>
+                            @else
+                                <span class="text-muted">Not signed yet</span>
+                            @endif
                         </div>
                         <div class="col-md-6">
                             <strong>Signed At:</strong><br>
@@ -111,17 +232,56 @@
                     </div>
 
                     <div class="row mb-3">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <strong>Signature Algorithm:</strong><br>
                             <span class="badge bg-info">
                                 {{ $documentSignature->digitalSignature->algorithm ?? 'N/A' }}
                             </span>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <strong>Key Length:</strong><br>
                             <span class="badge bg-success">
                                 {{ $documentSignature->digitalSignature->key_length ?? 'N/A' }} bits
                             </span>
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Certificate Status:</strong><br>
+                            @if($documentSignature->digitalSignature && $documentSignature->digitalSignature->isValid())
+                                <span class="badge bg-success">
+                                    <i class="fas fa-check-circle"></i> Valid
+                                </span>
+                            @else
+                                <span class="badge bg-danger">
+                                    <i class="fas fa-times-circle"></i> Invalid
+                                </span>
+                            @endif
+                        </div>
+                    </div>
+
+                    @if($documentSignature->digitalSignature)
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Certificate Valid From:</strong><br>
+                            {{ $documentSignature->digitalSignature->valid_from->format('d F Y, H:i') }}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Certificate Valid Until:</strong><br>
+                            {{ $documentSignature->digitalSignature->valid_until->format('d F Y, H:i') }}
+                            @if($documentSignature->digitalSignature->isExpiringSoon())
+                                <span class="badge bg-warning ms-2">Expiring Soon</span>
+                            @endif
+                        </div>
+                    </div>
+                    @endif
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Document Hash:</strong><br>
+                            <code class="small">{{ substr($documentSignature->document_hash, 0, 32) }}...</code>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Signature Value:</strong><br>
+                            <code class="small">{{ substr($documentSignature->signature_value, 0, 32) }}...</code>
                         </div>
                     </div>
 
@@ -130,22 +290,28 @@
                         <div class="col-md-6">
                             <strong>Verified At:</strong><br>
                             {{ $documentSignature->verified_at->format('d F Y, H:i:s') }}
+                            <br><small class="text-muted">{{ $documentSignature->verified_at->diffForHumans() }}</small>
                         </div>
                         <div class="col-md-6">
-                            <strong>Document Hash:</strong><br>
-                            <code class="small">{{ substr($documentSignature->document_hash, 0, 20) }}...</code>
+                            <strong>Verified By:</strong><br>
+                            @if($documentSignature->verifier)
+                                {{ $documentSignature->verifier->name }}<br>
+                                <small class="text-muted">{{ $documentSignature->verifier->email }}</small>
+                            @else
+                                <span class="text-muted">System</span>
+                            @endif
                         </div>
                     </div>
                     @endif
                 </div>
             </div>
 
-            <!-- Approval Timeline -->
+            <!-- Approval Workflow Timeline -->
             <div class="card mb-4">
                 <div class="card-header bg-info text-white">
                     <h5 class="mb-0">
                         <i class="fas fa-history me-2"></i>
-                        Document Timeline
+                        Approval Workflow Timeline
                     </h5>
                 </div>
                 <div class="card-body">
@@ -157,6 +323,9 @@
                                 <strong>Document Submitted</strong>
                                 <div class="small text-muted">
                                     {{ $documentSignature->approvalRequest->created_at->format('d M Y, H:i') }}
+                                </div>
+                                <div class="small text-muted">
+                                    By: {{ $documentSignature->approvalRequest->user->name }}
                                 </div>
                             </div>
                         </div>
@@ -170,6 +339,11 @@
                                 <div class="small text-muted">
                                     {{ $documentSignature->approvalRequest->approved_at->format('d M Y, H:i') }}
                                 </div>
+                                @if($documentSignature->approvalRequest->approver)
+                                <div class="small text-muted">
+                                    By: {{ $documentSignature->approvalRequest->approver->name }}
+                                </div>
+                                @endif
                             </div>
                         </div>
                         @endif
@@ -183,6 +357,29 @@
                                 <div class="small text-muted">
                                     {{ $documentSignature->signed_at->format('d M Y, H:i') }}
                                 </div>
+                                @if($documentSignature->signer)
+                                <div class="small text-muted">
+                                    By: {{ $documentSignature->signer->name }} (NIDN: {{ $documentSignature->signer->NIDN ?? '-' }})
+                                </div>
+                                @endif
+                            </div>
+                        </div>
+                        @endif
+
+                        <!-- Signature Approved -->
+                        @if($documentSignature->approvalRequest->sign_approved_at)
+                        <div class="timeline-item">
+                            <div class="timeline-dot completed"></div>
+                            <div>
+                                <strong>Signature Approved & Finalized</strong>
+                                <div class="small text-muted">
+                                    {{ $documentSignature->approvalRequest->sign_approved_at->format('d M Y, H:i') }}
+                                </div>
+                                @if($documentSignature->approvalRequest->signApprover)
+                                <div class="small text-muted">
+                                    By: {{ $documentSignature->approvalRequest->signApprover->name }}
+                                </div>
+                                @endif
                             </div>
                         </div>
                         @endif
@@ -196,6 +393,11 @@
                                 <div class="small text-success">
                                     {{ $documentSignature->verified_at->format('d M Y, H:i') }}
                                 </div>
+                                @if($documentSignature->verifier)
+                                <div class="small text-muted">
+                                    By: {{ $documentSignature->verifier->name }}
+                                </div>
+                                @endif
                             </div>
                         </div>
                         @endif
@@ -203,18 +405,63 @@
                 </div>
             </div>
 
-            <!-- Signature Preview -->
-            @if($documentSignature->canvas_data)
+            <!-- Technical Details -->
+            <div class="card mb-4">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-cog me-2"></i>
+                        Technical Details
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Verification Token:</strong><br>
+                            <code class="small">{{ substr($documentSignature->verification_token, 0, 32) }}...</code>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Document Signature ID:</strong><br>
+                            <code class="small">#{{ $documentSignature->id }}</code>
+                        </div>
+                    </div>
+
+                    @if($documentSignature->positioning_data)
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <strong>Signature Positioning Data:</strong><br>
+                            <div class="bg-light p-2 rounded">
+                                <code class="small">{{ json_encode($documentSignature->positioning_data, JSON_PRETTY_PRINT) }}</code>
+                            </div>
+                        </div>
+                    </div>
+                    @endif
+
+                    @if($documentSignature->signature_metadata)
+                    <div class="row">
+                        <div class="col-12">
+                            <strong>Signature Metadata:</strong><br>
+                            <div class="bg-light p-2 rounded">
+                                <code class="small">{{ json_encode($documentSignature->signature_metadata, JSON_PRETTY_PRINT) }}</code>
+                            </div>
+                        </div>
+                    </div>
+                    @endif
+                </div>
+            </div>
+
+            <!-- Canvas Signature Preview -->
+            @if($documentSignature->canvas_data_path)
             <div class="card">
                 <div class="card-header bg-warning text-dark">
                     <h5 class="mb-0">
                         <i class="fas fa-paint-brush me-2"></i>
-                        Your Signature
+                        Signature Preview
                     </h5>
                 </div>
                 <div class="card-body text-center">
-                    <img src="{{ $documentSignature->canvas_data }}" alt="Your Signature"
+                    <img src="{{ Storage::url($documentSignature->canvas_data_path) }}" alt="Your Signature"
                          class="img-fluid" style="max-height: 200px; border: 2px dashed #dee2e6; border-radius: 0.5rem; padding: 1rem;">
+                    <p class="small text-muted mt-2 mb-0">Your digital signature canvas</p>
                 </div>
             </div>
             @endif
@@ -227,7 +474,7 @@
                 <div class="card-header bg-primary text-white">
                     <h5 class="mb-0">
                         <i class="fas fa-bolt me-2"></i>
-                        Actions
+                        Quick Actions
                     </h5>
                 </div>
                 <div class="card-body">
@@ -280,7 +527,7 @@
 
             <!-- Verification URL -->
             @if($documentSignature->verification_url)
-            <div class="card">
+            <div class="card mb-4">
                 <div class="card-header bg-dark text-white">
                     <h5 class="mb-0">
                         <i class="fas fa-link me-2"></i>
@@ -301,6 +548,94 @@
                 </div>
             </div>
             @endif
+
+            <!-- Document Status Summary -->
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Status Summary
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">
+                            <strong>Approval Status:</strong><br>
+                            <span class="badge status-badge status-approval-{{ strtolower($documentSignature->approvalRequest->status) }}">
+                                {{ str_replace('_', ' ', ucwords($documentSignature->approvalRequest->status, '_')) }}
+                            </span>
+                        </li>
+                        <li class="mb-2">
+                            <strong>Signature Status:</strong><br>
+                            <span class="badge status-badge status-{{ strtolower($documentSignature->signature_status) }}">
+                                {{ ucfirst($documentSignature->signature_status) }}
+                            </span>
+                        </li>
+                        <li class="mb-2">
+                            <strong>Certificate Status:</strong><br>
+                            @if($documentSignature->digitalSignature && $documentSignature->digitalSignature->isValid())
+                                <span class="badge bg-success">Valid</span>
+                            @else
+                                <span class="badge bg-danger">Invalid/Expired</span>
+                            @endif
+                        </li>
+                        <li class="mb-2">
+                            <strong>Revision Count:</strong><br>
+                            <span class="badge bg-secondary">{{ $documentSignature->approvalRequest->revision_count ?? 0 }} Revisions</span>
+                        </li>
+                        <li class="mb-2">
+                            <strong>Progress:</strong><br>
+                            <div class="progress" style="height: 20px;">
+                                <div class="progress-bar bg-success" role="progressbar"
+                                     style="width: {{ $documentSignature->approvalRequest->workflow_progress }}%"
+                                     aria-valuenow="{{ $documentSignature->approvalRequest->workflow_progress }}"
+                                     aria-valuemin="0" aria-valuemax="100">
+                                    {{ $documentSignature->approvalRequest->workflow_progress }}%
+                                </div>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Document Preview Modal -->
+<div class="modal fade" id="documentPreviewModal" tabindex="-1" aria-labelledby="documentPreviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="documentPreviewModalLabel">
+                    <i class="fas fa-file-pdf me-2"></i>
+                    <span id="previewTitle">Document Preview</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0" style="height: 80vh;">
+                <div id="pdfLoadingIndicator" class="text-center py-5" style="display: none;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-3 text-muted">Loading document...</p>
+                </div>
+                <iframe id="documentPreviewFrame"
+                        style="width: 100%; height: 100%; border: none; display: none;"
+                        frameborder="0">
+                </iframe>
+                <div id="previewError" class="alert alert-danger m-3" style="display: none;">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Error:</strong> <span id="errorMessage">Unable to load document preview.</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i> Close
+                </button>
+                <a id="downloadDocumentBtn" href="#" class="btn btn-success" target="_blank">
+                    <i class="fas fa-download me-1"></i> Download Document
+                </a>
+            </div>
         </div>
     </div>
 </div>
@@ -308,6 +643,77 @@
 
 @push('scripts')
 <script>
+// Document paths for preview
+const documentPaths = {
+    original: @json($documentSignature->approvalRequest->document_path ? Storage::url($documentSignature->approvalRequest->document_path) : null),
+    signed: @json(
+        $documentSignature->approvalRequest->signed_document_path
+            ? Storage::url($documentSignature->approvalRequest->signed_document_path)
+            : ($documentSignature->final_pdf_path ? Storage::url($documentSignature->final_pdf_path) : null)
+    )
+};
+
+function previewDocument(type) {
+    const modal = new bootstrap.Modal(document.getElementById('documentPreviewModal'));
+    const iframe = document.getElementById('documentPreviewFrame');
+    const loading = document.getElementById('pdfLoadingIndicator');
+    const errorDiv = document.getElementById('previewError');
+    const titleSpan = document.getElementById('previewTitle');
+    const downloadBtn = document.getElementById('downloadDocumentBtn');
+
+    // Reset modal state
+    iframe.style.display = 'none';
+    errorDiv.style.display = 'none';
+    loading.style.display = 'block';
+
+    // Set title based on type
+    if (type === 'original') {
+        titleSpan.textContent = 'Original Document Preview';
+    } else {
+        titleSpan.textContent = 'Signed Document Preview';
+    }
+
+    // Get document path
+    const docPath = documentPaths[type];
+
+    if (!docPath) {
+        loading.style.display = 'none';
+        errorDiv.style.display = 'block';
+        document.getElementById('errorMessage').textContent = 'Document not available for preview.';
+        modal.show();
+        return;
+    }
+
+    // Set download button
+    downloadBtn.href = docPath;
+
+    // Show modal
+    modal.show();
+
+    // Load PDF in iframe
+    iframe.onload = function() {
+        loading.style.display = 'none';
+        iframe.style.display = 'block';
+    };
+
+    iframe.onerror = function() {
+        loading.style.display = 'none';
+        errorDiv.style.display = 'block';
+        document.getElementById('errorMessage').textContent = 'Failed to load document. The file may be corrupted or not accessible.';
+    };
+
+    // Set iframe source (add #toolbar=0 to hide PDF toolbar for cleaner view)
+    iframe.src = docPath + '#toolbar=0';
+
+    // Fallback timeout in case onload doesn't fire
+    setTimeout(function() {
+        if (loading.style.display !== 'none') {
+            loading.style.display = 'none';
+            iframe.style.display = 'block';
+        }
+    }, 3000);
+}
+
 function copyVerificationLink() {
     const input = document.getElementById('verificationUrl');
     input.select();
@@ -321,10 +727,12 @@ function copyVerificationLink() {
         const originalHTML = button.innerHTML;
         button.innerHTML = '<i class="fas fa-check"></i> Copied!';
         button.classList.add('btn-success');
+        button.classList.remove('btn-outline-secondary', 'btn-outline-info');
 
         setTimeout(() => {
             button.innerHTML = originalHTML;
             button.classList.remove('btn-success');
+            button.classList.add('btn-outline-secondary');
         }, 2000);
     } catch (err) {
         alert('Failed to copy. Please copy manually.');
@@ -383,6 +791,56 @@ function copyVerificationLink() {
     0% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.7); }
     70% { box-shadow: 0 0 0 10px rgba(0, 123, 255, 0); }
     100% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0); }
+}
+
+.priority-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.priority-low { background-color: #e9ecef; color: #495057; }
+.priority-normal { background-color: #cfe2ff; color: #084298; }
+.priority-high { background-color: #fff3cd; color: #664d03; }
+.priority-urgent { background-color: #f8d7da; color: #842029; }
+
+.status-badge {
+    padding: 0.35rem 0.65rem;
+    border-radius: 0.25rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.status-pending { background-color: #fff3cd; color: #664d03; }
+.status-signed { background-color: #cfe2ff; color: #084298; }
+.status-verified { background-color: #d1e7dd; color: #0f5132; }
+.status-invalid { background-color: #f8d7da; color: #842029; }
+
+.status-approval-pending { background-color: #fff3cd; color: #664d03; }
+.status-approval-approved { background-color: #d1e7dd; color: #0f5132; }
+.status-approval-rejected { background-color: #f8d7da; color: #842029; }
+.status-approval-user_signed { background-color: #cfe2ff; color: #084298; }
+.status-approval-sign_approved { background-color: #d1e7dd; color: #0f5132; }
+.status-approval-cancelled { background-color: #f8d7da; color: #842029; }
+
+/* Document Preview Styling */
+.modal-xl {
+    max-width: 90%;
+}
+
+/* Compact button styling for document preview */
+.btn-sm.btn-outline-primary,
+.btn-sm.btn-outline-success {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    white-space: nowrap;
+}
+
+/* Loading indicator animation */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 </style>
 @endpush

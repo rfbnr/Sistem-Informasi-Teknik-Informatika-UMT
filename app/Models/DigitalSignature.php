@@ -22,6 +22,8 @@ class DigitalSignature extends Model
         'valid_from',
         'valid_until',
         'status',
+        'revocation_reason',
+        'revoked_at',
         'created_by',
         'signature_purpose',
         'metadata'
@@ -30,6 +32,7 @@ class DigitalSignature extends Model
     protected $casts = [
         'valid_from' => 'datetime',
         'valid_until' => 'datetime',
+        'revoked_at' => 'datetime',
         'metadata' => 'array',
     ];
 
@@ -66,7 +69,7 @@ class DigitalSignature extends Model
      */
     public function creator()
     {
-        return $this->belongsTo(User::class, 'created_by');
+        return $this->belongsTo(Kaprodi::class, 'created_by');
     }
 
     /**
@@ -102,6 +105,8 @@ class DigitalSignature extends Model
     {
         $this->update([
             'status' => self::STATUS_REVOKED,
+            'revocation_reason' => $reason,
+            'revoked_at' => now(),
             'metadata' => array_merge($this->metadata ?? [], [
                 'revoked_at' => now()->toISOString(),
                 'revoke_reason' => $reason

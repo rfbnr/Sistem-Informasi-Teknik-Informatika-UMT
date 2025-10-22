@@ -7,6 +7,37 @@
     @include('digital-signature.admin.partials.sidebar')
 @endsection
 
+@push('styles')
+<style>
+    .stats-card {
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+        text-align: center;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    .stats-number {
+        font-size: 2rem;
+        font-weight: bold;
+    }
+    .status-badge {
+        padding: 5px 10px;
+        border-radius: 5px;
+        color: #fff;
+        font-size: 0.9rem;
+    }
+    .status-active {
+        background-color: #28a745;
+    }
+    .status-expired {
+        background-color: #dc3545;
+    }
+    .status-revoked {
+        background-color: #6c757d;
+    }
+</style>
+@endpush
+
 @section('content')
 <div class="main-content">
     <!-- Page Header -->
@@ -124,7 +155,7 @@
                                     <span class="badge bg-info">{{ $signature->algorithm }}</span>
                                 </td>
                                 <td>{{ $signature->key_length }} bits</td>
-                                <td>{{ Str::limit($signature->purpose, 30) }}</td>
+                                <td>{{ Str::limit($signature->signature_purpose, 30) }}</td>
                                 <td>{{ $signature->created_at->format('d M Y') }}</td>
                                 <td>
                                     <span class="{{ $signature->valid_until->isPast() ? 'text-danger' : ($signature->valid_until->diffInDays() < 30 ? 'text-warning' : '') }}">
@@ -147,13 +178,13 @@
                                            class="btn btn-outline-primary" title="View Details">
                                             <i class="fas fa-eye"></i>
                                         </a>
-                                        @if($signature->status === 'active')
+                                        {{-- @if($signature->status === 'active')
                                             <button class="btn btn-outline-danger"
                                                     onclick="revokeKey({{ $signature->id }})"
                                                     title="Revoke Key">
                                                 <i class="fas fa-ban"></i>
                                             </button>
-                                        @endif
+                                        @endif --}}
                                     </div>
                                 </td>
                             </tr>
@@ -198,12 +229,14 @@
                     </div>
                     <div class="mb-3">
                         <label for="key_length" class="form-label">Key Length *</label>
-                        <select class="form-select" id="key_length" name="key_length" required>
-                            <option value="2048">2048 bits (Standard)</option>
+                        <input type="text" class="form-control" id="key_length" name="key_length" value="2048" hidden readonly>
+                        <input type="text" class="form-control" value="2048 bits (Standard)" disabled>
+                        {{-- <select class="form-select" id="key_length" name="key_length" required>
+                            <option value="2048">2048 bits (Standar)</option>
                             <option value="3072">3072 bits (Enhanced)</option>
                             <option value="4096" selected>4096 bits (Maximum Security)</option>
                         </select>
-                        <small class="text-muted">Higher key length = stronger security</small>
+                        <small class="text-muted">Higher key length = stronger security</small> --}}
                     </div>
                     <div class="mb-3">
                         <label for="validity_years" class="form-label">Validity Period *</label>

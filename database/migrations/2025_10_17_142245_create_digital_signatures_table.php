@@ -22,12 +22,14 @@ return new class extends Migration
             $table->timestamp('valid_from'); // Waktu mulai berlaku
             $table->timestamp('valid_until'); // Waktu berakhir
             $table->enum('status', ['active', 'expired', 'revoked'])->default('active');
+            $table->text('revocation_reason')->nullable(); // Alasan pencabutan
+            $table->timestamp('revoked_at')->nullable(); // Waktu pencabutan
             $table->foreignId('created_by'); // Admin yang membuat signature
             $table->text('signature_purpose')->nullable(); // Tujuan penggunaan signature
             $table->json('metadata')->nullable(); // Additional metadata
             $table->timestamps();
 
-            $table->foreign('created_by')->references('id')->on('users')->onDelete('cascade');
+            $table->foreign('created_by')->references('id')->on('kaprodis')->onDelete('cascade');
             $table->index(['status', 'valid_from', 'valid_until']);
             $table->index('signature_id');
         });

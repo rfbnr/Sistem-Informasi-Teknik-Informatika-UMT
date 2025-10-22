@@ -55,18 +55,18 @@ class DocumentSignature extends Model
     {
         parent::boot();
 
-        // static::creating(function ($model) {
-        //     // Generate verification URL
-        //     if (empty($model->verification_url)) {
-        //         $encryptedId = Crypt::encryptString($model->approval_request_id . '|' . time());
-        //         $model->verification_url = route('signature.verify', ['token' => $encryptedId]);
-        //     }
+        static::creating(function ($model) {
+            // Generate verification URL
+            // if (empty($model->verification_url)) {
+            //     $encryptedId = Crypt::encryptString($model->approval_request_id . '|' . time());
+            //     $model->verification_url = route('signature.verify', ['token' => $encryptedId]);
+            // }
 
-        //     // Generate verification token
-        //     if (empty($model->verification_token)) {
-        //         $model->verification_token = Str::random(64);
-        //     }
-        // });
+            // Generate verification token
+            if (empty($model->verification_token)) {
+                $model->verification_token = Str::random(64);
+            }
+        });
 
         static::created(function ($model) {
             // Log audit trail
@@ -114,7 +114,7 @@ class DocumentSignature extends Model
      */
     public function verifier()
     {
-        return $this->belongsTo(User::class, 'verified_by');
+        return $this->belongsTo(Kaprodi::class, 'verified_by');
     }
 
     /**
@@ -294,6 +294,7 @@ class DocumentSignature extends Model
     {
         return [
             'document_name' => $this->approvalRequest->document_name,
+            'document_type' => $this->approvalRequest->document_type,
             'document_number' => $this->approvalRequest->full_document_number,
             'signed_by' => $this->signer->name,
             'signed_at' => $this->signed_at ? $this->signed_at->format('d F Y H:i:s') : null,

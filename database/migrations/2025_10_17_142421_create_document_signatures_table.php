@@ -27,7 +27,7 @@ return new class extends Migration
             $table->string('canvas_data_path')->nullable(); // Path canvas data untuk signature
             $table->json('positioning_data')->nullable(); // Data posisi barcode dan signature
             $table->string('final_pdf_path')->nullable(); // Path PDF final yang sudah ditandatangani
-            $table->string('verification_token')->nullable(); // Token untuk verifikasi publik
+            $table->text('verification_token')->nullable(); // Token untuk verifikasi publik
             $table->timestamp('verified_at')->nullable(); // Waktu verifikasi
             $table->foreignId('verified_by')->nullable(); // Yang melakukan verifikasi
             $table->timestamps();
@@ -35,11 +35,11 @@ return new class extends Migration
             $table->foreign('approval_request_id')->references('id')->on('approval_requests')->onDelete('cascade');
             $table->foreign('digital_signature_id')->references('id')->on('digital_signatures')->onDelete('cascade');
             $table->foreign('signed_by')->references('id')->on('kaprodis')->onDelete('cascade');
-            $table->foreign('verified_by')->references('id')->on('users')->onDelete('set null');
+            $table->foreign('verified_by')->references('id')->on('kaprodis')->onDelete('set null');
 
             $table->index(['document_hash', 'signature_status']);
             // $table->index('verification_url');
-            $table->index('verification_token');
+            // $table->index('verification_token');
             $table->index(['signed_at', 'signature_status']);
         });
     }

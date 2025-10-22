@@ -29,8 +29,8 @@
                 </li>
 
                 <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="servicesDropdown" role="button" data-bs-toggle="dropdown">
-                        <i class="fas fa-digital-tachograph me-1"></i> Digital Services
+                    <a class="nav-link dropdown-toggle text-white" href="#" id="servicesDropdown" role="button" data-bs-toggle="dropdown">
+                        LAYANAN DIGITAL
                     </a>
                     <ul class="dropdown-menu">
                         @auth('web')

@@ -66,8 +66,6 @@ class VerificationService
             // Perform comprehensive verification
             $verificationResult = $this->performComprehensiveVerification($documentSignature);
 
-            // dd($verificationResult);
-
             // Log verification attempt
             // $this->logVerificationAttempt($documentSignature, $verificationResult);
 
@@ -151,6 +149,7 @@ class VerificationService
                     'details' => [
                         'id' => $approvalRequest->id,
                         'document_name' => $approvalRequest->document_name,
+                        'document_type' => $approvalRequest->document_type,
                         'document_number' => $approvalRequest->full_document_number,
                         'status' => $approvalRequest->status,
                         'submitted_by' => $approvalRequest->user->name ?? 'Unknown',

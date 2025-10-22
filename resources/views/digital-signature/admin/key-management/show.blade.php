@@ -7,6 +7,29 @@
     @include('digital-signature.admin.partials.sidebar')
 @endsection
 
+@push('styles')
+<style>
+    .status-badge {
+        padding: 0.25em 0.5em;
+        border-radius: 0.25rem;
+        font-weight: 600;
+        text-transform: capitalize;
+    }
+    .status-active {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    .status-expired {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+    .status-revoked {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+</style>
+@endpush
+
 @section('content')
 <div class="main-content">
     <!-- Page Header -->
@@ -91,7 +114,7 @@
                     <div class="row mb-3">
                         <div class="col-md-12">
                             <strong>Purpose:</strong><br>
-                            {{ $signature->purpose }}
+                            {{ $signature->signature_purpose }}
                         </div>
                     </div>
 
@@ -180,14 +203,14 @@
                            class="btn btn-outline-primary">
                             <i class="fas fa-file-signature me-2"></i> View Signed Documents
                         </a>
-                        <button class="btn btn-outline-info" onclick="downloadPublicKey()">
+                        {{-- <button class="btn btn-outline-info" onclick="downloadPublicKey()">
                             <i class="fas fa-download me-2"></i> Download Public Key
                         </button>
                         @if($signature->status === 'active')
                             <button class="btn btn-outline-secondary" onclick="generateCertificate()">
                                 <i class="fas fa-certificate me-2"></i> Generate Certificate
                             </button>
-                        @endif
+                        @endif --}}
                     </div>
                 </div>
             </div>

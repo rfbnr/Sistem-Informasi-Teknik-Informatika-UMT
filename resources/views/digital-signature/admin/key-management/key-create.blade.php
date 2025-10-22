@@ -1,4 +1,4 @@
-@extends('digital-signature.layouts.app')
+{{-- @extends('digital-signature.layouts.app')
 
 @section('title', 'Create Signature Key')
 
@@ -207,4 +207,4 @@ $(document).ready(function() {
     });
 });
 </script>
-@endpush
+@endpush --}}

@@ -19,7 +19,7 @@
 
     <!-- Key Management -->
     <li class="nav-item">
-        <a class="nav-link {{ request()->routeIs('admin.signature.key-management') || request()->routeIs('admin.signature.view') ? 'active' : '' }}"
+        <a class="nav-link {{ request()->routeIs('admin.signature.keys.index') || request()->routeIs('admin.signature.keys.view') ? 'active' : '' }}"
            href="{{ route('admin.signature.keys.index') }}">
             <i class="fas fa-key me-2"></i>
             Digital Signatures

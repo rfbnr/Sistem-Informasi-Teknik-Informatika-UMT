@@ -33,7 +33,7 @@ class QRCodeService
             // Create verification URL dengan encrypted parameters
             $encryptedData = $this->createEncryptedVerificationData($documentSignature);
 
-            // $tempVerificationToken = $documentSignature->verification_token ?? \Illuminate\Support\Str::random(64);
+            // $verificationToken = $encryptedData;
 
             $verificationUrl = route('signature.verify', ['token' => $encryptedData]);
 
@@ -85,6 +85,7 @@ class QRCodeService
                 'qr_code_path' => $qrCodePath,
                 'qr_code_url' => Storage::url($qrCodePath),
                 'verification_url' => $verificationUrl,
+                // 'verification_token' => $verificationToken,
                 'size' => $qrCode->getSize(),
                 'format' => 'png'
             ];
@@ -170,6 +171,8 @@ class QRCodeService
      */
     private function createEncryptedVerificationData($documentSignature)
     {
+        //
+
         $verificationData = [
             'document_signature_id' => $documentSignature->id,
             'approval_request_id' => $documentSignature->approval_request_id,
@@ -289,6 +292,27 @@ class QRCodeService
 
             $documentSignature = DocumentSignature::findOrFail($verificationData['document_signature_id']);
             $approvalRequest = $documentSignature->approvalRequest;
+
+            // Verify Approval Request ID match
+            if ($documentSignature->approval_request_id !== $verificationData['approval_request_id']) {
+                throw new \Exception('Approval Request ID mismatch');
+            }
+
+            // Verify Document Signature ID match
+            if ($documentSignature->id !== $verificationData['document_signature_id']) {
+                throw new \Exception('Document Signature ID mismatch');
+            }
+
+            // Verify existence
+            if (!$documentSignature || !$approvalRequest) {
+                throw new \Exception('Document or Approval Request not found');
+            }
+
+            // Verify Signature Status Verified & Approval Request Sign Approved
+            if ($documentSignature->signature_status !== 'verified' ||
+                $approvalRequest->status !== 'sign_approved') {
+                throw new \Exception('Document is not verified or approval request not approved for signing');
+            }
 
             // Verify token match
             if ($documentSignature->verification_token !== $verificationData['verification_token']) {

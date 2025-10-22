@@ -28,7 +28,7 @@
 
     <style>
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #0056b3 0%, #0056b3 100%);
             min-height: 100vh;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
@@ -54,6 +54,7 @@
             padding: 2rem;
             text-align: center;
             color: white;
+            justify-content: center;
         }
 
         .result-header.valid {
@@ -95,6 +96,7 @@
             border-radius: 0.5rem;
             padding: 1.5rem;
             margin-bottom: 1rem;
+            border: 1px solid #dee2e6;
         }
 
         .btn-download {
@@ -165,7 +167,7 @@
                 <div class="col-lg-10 col-xl-8">
                     <div class="result-card">
                         <!-- Header -->
-                        <div class="result-header {{ $verificationResult['is_valid'] ? 'valid' : 'invalid' }}">
+                        <div class="result-header {{ $verificationResult['is_valid'] ? 'valid' : 'invalid' }} justify-content-center d-flex flex-column align-items-center">
                             <img src="{{ asset('assets/logo.JPG') }}" alt="Logo UMT" class="university-logo">
 
                             @if($verificationResult['is_valid'])
@@ -190,7 +192,7 @@
                                 <!-- Document Information -->
                                 @if(isset($verificationResult['details']['approval_request']))
                                     @php $document = $verificationResult['details']['approval_request']; @endphp
-                                    <div class="info-card">
+                                    <div class="info-card ">
                                         <h5 class="mb-3">
                                             <i class="fas fa-file-alt text-primary"></i> Informasi Dokumen
                                         </h5>
@@ -201,10 +203,34 @@
                                             </div>
                                             <div class="col-md-6">
                                                 <strong>Nomor Dokumen:</strong><br>
-                                                {{-- {{ $document->full_document_number }} --}}
+                                                {{ $document->full_document_number }}
                                             </div>
                                         </div>
-                                        <div class="row mt-2">
+                                        <div class="row mt-3">
+                                            <div class="col-md-6">
+                                                <strong>Tipe Dokumen:</strong><br>
+                                                {{ $document->document_type ?? 'Tidak diketahui' }}
+                                            </div>
+                                            <div class="col-md-6">
+                                                <strong>Status Dokumen:</strong><br>
+                                                @if($document->status === 'approved')
+                                                    <span class="badge bg-success">Disetujui</span>
+                                                @elseif($document->status === 'rejected')
+                                                    <span class="badge bg-danger">Ditolak</span>
+                                                @elseif($document->status === 'pending')
+                                                    <span class="badge bg-warning text-dark">Menunggu</span>
+                                                @elseif($document->status === 'cancelled')
+                                                    <span class="badge bg-secondary">Dibatalkan</span>
+                                                @elseif($document->status === 'user_signed')
+                                                    <span class="badge bg-info text-dark">Ditandatangani Pengguna</span>
+                                                @elseif($document->status === 'sign_approved')
+                                                    <span class="badge bg-primary">Tanda Tangan Disetujui</span>
+                                                @else
+                                                    <span class="badge bg-secondary">Tidak diketahui</span>
+                                                @endif
+                                            </div>
+                                        </div>
+                                        <div class="row mt-4">
                                             <div class="col-md-6">
                                                 <strong>Pengaju:</strong><br>
                                                 {{ $document->user->name ?? 'Tidak diketahui' }}

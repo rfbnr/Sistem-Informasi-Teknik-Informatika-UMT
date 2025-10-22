@@ -35,7 +35,9 @@ return new class extends Migration
             // Tambahkan kolom baru untuk digital signature workflow
             $table->timestamp('approved_at')->nullable()->after('status');
             $table->foreignId('approved_by')->nullable()->after('approved_at');
-            $table->timestamp('user_signed_at')->nullable()->after('approved_by');
+            $table->timestamp('rejected_at')->nullable()->after('approved_by');
+            $table->foreignId('rejected_by')->nullable()->after('rejected_at');
+            $table->timestamp('user_signed_at')->nullable()->after('rejected_by');
             $table->timestamp('sign_approved_at')->nullable()->after('user_signed_at');
             $table->foreignId('sign_approved_by')->nullable()->after('sign_approved_at');
             $table->text('approval_notes')->nullable()->after('sign_approved_by');
@@ -47,8 +49,8 @@ return new class extends Migration
             $table->json('workflow_metadata')->nullable()->after('priority'); // Metadata workflow
             $table->string('department')->nullable()->after('workflow_metadata'); // Departemen pemohon
             $table->timestamp('deadline')->nullable()->after('department'); // Deadline penyelesaian
-            $table->integer('revision_count')->default(0)->after('deadline'); // Jumlah revisi
-            $table->text('admin_notes')->nullable()->after('revision_count'); // Catatan admin
+            // $table->integer('revision_count')->default(0)->after('deadline'); // Jumlah revisi
+            $table->text('admin_notes')->nullable()->after('deadline'); // Catatan admin
 
             // Foreign key constraints
             $table->foreign('approved_by')->references('id')->on('kaprodis')->onDelete('set null');
@@ -58,6 +60,7 @@ return new class extends Migration
             $table->index(['status', 'created_at']);
             $table->index(['user_id', 'status']);
             $table->index(['approved_by', 'approved_at']);
+            $table->index(['rejected_by', 'rejected_at']);
             $table->index(['priority', 'deadline']);
             $table->index('nomor');
         });

@@ -1,5 +1,5 @@
-{{-- resources/views/digital-signature/user/approval-request.blade.php --}}
-@extends('digital-signature.layouts.app')
+{{-- @extends('digital-signature.layouts.app') --}}
+@extends('user.layouts.app')
 
 @section('title', 'Submit Document for Digital Signature')
 
@@ -167,7 +167,7 @@
 .status-rejected { background: #dc3545; }
 
 .guidelines-box {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
     color: white;
     border-radius: 1rem;
     padding: 1.5rem;
@@ -203,7 +203,12 @@
 @endpush
 
 @section('content')
-<div class="container-fluid">
+<!-- Section Header -->
+<section id="header-section">
+    <h1>Digital Document Approval Request</h1>
+</section>
+
+<div class="container-fluid mx-auto mt-4">
     <!-- Header Section -->
     <div class="page-header">
         <div class="row align-items-center">
@@ -324,30 +329,30 @@
 
                     <!-- Document Type -->
                     <div class="mb-4">
-                        <label for="document_name" class="form-label fw-bold">
+                        <label for="document_type" class="form-label fw-bold">
                             <i class="fas fa-file-alt text-primary me-1"></i> Document Type *
                         </label>
-                        <select class="form-select" name="document_name" id="document_name" required>
+                        <select class="form-select" name="document_type" id="document_type" required>
                             <option value="" disabled selected>-- Select Document Type --</option>
-                            <option value="Surat Dispensasi" {{ old('document_name') == 'Surat Dispensasi' ? 'selected' : '' }}>
+                            <option value="Surat Dispensasi" {{ old('document_type') == 'Surat Dispensasi' ? 'selected' : '' }}>
                                 Surat Dispensasi
                             </option>
-                            <option value="Surat Peminjaman Ruang" {{ old('document_name') == 'Surat Peminjaman Ruang' ? 'selected' : '' }}>
+                            <option value="Surat Peminjaman Ruang" {{ old('document_type') == 'Surat Peminjaman Ruang' ? 'selected' : '' }}>
                                 Surat Peminjaman Ruang
                             </option>
-                            <option value="Surat Peminjaman Alat" {{ old('document_name') == 'Surat Peminjaman Alat' ? 'selected' : '' }}>
+                            <option value="Surat Peminjaman Alat" {{ old('document_type') == 'Surat Peminjaman Alat' ? 'selected' : '' }}>
                                 Surat Peminjaman Alat
                             </option>
-                            <option value="Kartu Ujian" {{ old('document_name') == 'Kartu Ujian' ? 'selected' : '' }}>
+                            <option value="Kartu Ujian" {{ old('document_type') == 'Kartu Ujian' ? 'selected' : '' }}>
                                 Kartu Ujian
                             </option>
-                            <option value="Surat Keterangan Aktif" {{ old('document_name') == 'Surat Keterangan Aktif' ? 'selected' : '' }}>
+                            <option value="Surat Keterangan Aktif" {{ old('document_type') == 'Surat Keterangan Aktif' ? 'selected' : '' }}>
                                 Surat Keterangan Aktif
                             </option>
-                            <option value="Surat Rekomendasi" {{ old('document_name') == 'Surat Rekomendasi' ? 'selected' : '' }}>
+                            <option value="Surat Rekomendasi" {{ old('document_type') == 'Surat Rekomendasi' ? 'selected' : '' }}>
                                 Surat Rekomendasi
                             </option>
-                            <option value="Lainnya" {{ old('document_name') == 'Lainnya' ? 'selected' : '' }}>
+                            <option value="Lainnya" {{ old('document_type') == 'Lainnya' ? 'selected' : '' }}>
                                 Lainnya
                             </option>
                         </select>
@@ -358,7 +363,7 @@
                     </div>
 
                     <!-- Priority Level -->
-                    <div class="mb-4">
+                    {{-- <div class="mb-4">
                         <label class="form-label fw-bold">
                             <i class="fas fa-flag text-primary me-1"></i> Priority Level
                         </label>
@@ -391,10 +396,10 @@
                             <i class="fas fa-info-circle"></i>
                             Higher priority documents are processed faster
                         </div>
-                    </div>
+                    </div> --}}
 
                     <!-- Expected Completion Date -->
-                    <div class="mb-4">
+                    {{-- <div class="mb-4">
                         <label for="deadline" class="form-label fw-bold">
                             <i class="fas fa-calendar-alt text-primary me-1"></i> Expected Completion Date
                         </label>
@@ -404,7 +409,7 @@
                             <i class="fas fa-info-circle"></i>
                             Optional: When do you need this document completed?
                         </div>
-                    </div>
+                    </div> --}}
 
                     <!-- Description/Notes -->
                     <div class="mb-4">
@@ -745,7 +750,7 @@ $(document).ready(function() {
         let errors = [];
 
         // Validation checks
-        if (!$('#document_name').val()) {
+        if (!$('#document_type').val()) {
             errors.push('Please select a document type.');
             isValid = false;
         }

@@ -149,6 +149,7 @@
                                 </th>
                                 <th>Nomor</th>
                                 <th>Document</th>
+                                <th>Type</th>
                                 <th>Submitted By</th>
                                 <th>Date</th>
                                 <th>Priority</th>
@@ -179,6 +180,11 @@
                                                 {{ Str::limit($request->notes, 50) }}
                                             </small>
                                         @endif
+                                    </div>
+                                </td>
+                                <td>
+                                    <div>
+                                        {{ ucfirst($request->document_type ?? 'N/A') }}
                                     </div>
                                 </td>
                                 <td>
@@ -241,7 +247,7 @@
                                         @if($request->status === 'pending')
                                             <!-- Approve Button -->
                                             <button class="btn btn-outline-success"
-                                                    onclick="showApproveModal({{ $request->id }}, '{{ $request->document_name }}')"
+                                                    onclick="showApproveModal({{ $request->id }}, '{{ $request->document_name }}', '{{ $request->document_type }}')"
                                                     title="Approve">
                                                 <i class="fas fa-check"></i>
                                             </button>
@@ -367,10 +373,11 @@ function viewDocument(id, documentUrl) {
 }
 
 // Show Approve Modal
-function showApproveModal(id, documentName) {
+function showApproveModal(id, documentName, documentType) {
     const modal = new bootstrap.Modal(document.getElementById('approveModal'));
     document.getElementById('approveRequestId').value = id;
     document.getElementById('approveDocumentName').textContent = documentName;
+    document.getElementById('approveDocumentType').textContent = documentType;
     modal.show();
 }
 

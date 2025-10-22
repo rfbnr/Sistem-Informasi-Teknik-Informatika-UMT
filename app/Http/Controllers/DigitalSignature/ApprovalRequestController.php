@@ -135,7 +135,7 @@ class ApprovalRequestController extends Controller
 
         // Validation dengan pesan error yang lebih spesifik
         $validator = Validator::make($request->all(), [
-            'document_name' => 'required|string|max:255',
+            'document_type' => 'required|string|max:255',
             'document' => 'required|file|mimes:pdf|max:25600', // max file size 25MB
             'notes' => 'required|string|max:1000', // Ubah menjadi required sesuai form
             'priority' => 'nullable|in:low,normal,high,urgent',
@@ -197,12 +197,14 @@ class ApprovalRequestController extends Controller
         try {
             // Store the uploaded file
             // $documentPath = $request->file('document')->store('documents', 'public');
-            $documentPath = $uploadedFile->store('documents', 'public');
-            // $documentPath = $uploadedFile->storeAs(
-            //     'documents',
-            //     time() . '_' . preg_replace('/[^a-zA-Z0-9_\.-]/', '_', $uploadedFile->getClientOriginalName()),
-            //     'public'
-            // );
+            // $documentPath = $uploadedFile->store('documents', 'public');
+            $documentPath = $uploadedFile->storeAs(
+                'documents',
+                time() . '_' . preg_replace('/[^a-zA-Z0-9_\.-]/', '_', $uploadedFile->getClientOriginalName()),
+                'public'
+            );
+
+            $documentName = $uploadedFile->getClientOriginalName();
 
             Log::info('File stored successfully', [
                 'path' => $documentPath,
@@ -214,7 +216,8 @@ class ApprovalRequestController extends Controller
             // Create approval request
             $approvalRequest = ApprovalRequest::create([
                 'user_id' => Auth::id(),
-                'document_name' => $request->input('document_name'),
+                'document_name' => $documentName,
+                'document_type' => $request->input('document_type'),
                 'document_path' => $documentPath,
                 'notes' => $request->input('notes'),
                 'priority' => $request->input('priority', ApprovalRequest::PRIORITY_NORMAL),
@@ -615,9 +618,9 @@ class ApprovalRequestController extends Controller
             $approvalRequest->reject($request->rejection_reason, Auth::id());
 
             // Send notification to student
-            Mail::to($approvalRequest->user->email)->send(
-                new ApprovalRequestRejectedNotification($approvalRequest)
-            );
+            // Mail::to($approvalRequest->user->email)->send(
+            //     new ApprovalRequestRejectedNotification($approvalRequest)
+            // );
 
             Log::info('Approval request rejected', [
                 'approval_request_id' => $id,
@@ -625,11 +628,18 @@ class ApprovalRequestController extends Controller
                 'reason' => $request->rejection_reason
             ]);
 
-            return back()->with('success', 'Request rejected successfully!');
+            // return back()->with('success', 'Request rejected successfully!');
+            return response()->json([
+                'success' => true,
+                'message' => 'Request rejected successfully!'
+            ]);
 
         } catch (\Exception $e) {
             Log::error('Rejection failed: ' . $e->getMessage());
-            return back()->with('error', 'Failed to reject request');
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to reject request'
+            ], 500);
         }
     }
 

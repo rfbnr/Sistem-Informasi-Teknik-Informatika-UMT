@@ -86,7 +86,7 @@ class DigitalSignatureController extends Controller
                 ->orderBy('created_at', 'desc')
                 ->paginate(15);
 
-            return view('digital-signature.admin.key-management', compact('signatures'));
+            return view('digital-signature.admin.key-management.index', compact('signatures'));
 
         } catch (\Exception $e) {
             Log::error('Key management error: ' . $e->getMessage());
@@ -148,7 +148,7 @@ class DigitalSignatureController extends Controller
             $signature = DigitalSignature::with('creator', 'documentSignatures')->findOrFail($id);
             $stats = $this->digitalSignatureService->getSignatureStatistics($id);
 
-            return view('digital-signature.admin.key-details', compact('signature', 'stats'));
+            return view('digital-signature.admin.key-management.show', compact('signature', 'stats'));
 
         } catch (\Exception $e) {
             Log::error('View signature key error: ' . $e->getMessage());
@@ -416,6 +416,7 @@ class DigitalSignatureController extends Controller
             $documentSignature->update([
                 'qr_code_path' => $qrData['qr_code_path'] ?? null,
                 'verification_url' => $qrData['verification_url'] ?? $documentSignature->verification_url,
+                // 'verification_token' => $qrData['verification_token'] ?? $documentSignature->verification_token,
                 'final_pdf_path' => $signedPdfPath, // Set immediately
                 'positioning_data' => $positioningData,
                 'signature_metadata' => array_merge($documentSignature->signature_metadata ?? [], [

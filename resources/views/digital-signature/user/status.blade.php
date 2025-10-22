@@ -1,5 +1,6 @@
 {{-- resources/views/digital-signature/user/status.blade.php --}}
-@extends('digital-signature.layouts.app')
+{{-- @extends('digital-signature.layouts.app') --}}
+@extends('user.layouts.app')
 
 @section('title', 'My Document Status')
 
@@ -8,12 +9,16 @@
 .status-container {
     background: white;
     border-radius: 1rem;
+    margin-top: 4rem;
+    margin-right: 1rem;
+    margin-left: 1rem;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     margin-bottom: 2rem;
 }
 
 .status-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    /* background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); */
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
     color: white;
     padding: 2rem;
     border-radius: 1rem 1rem 0 0;
@@ -22,6 +27,7 @@
 .document-card {
     border: none;
     border-radius: 1rem;
+    background: white;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     margin-bottom: 1.5rem;
     transition: all 0.3s ease;
@@ -170,6 +176,11 @@
 @endpush
 
 @section('content')
+<!-- Section Header -->
+<section id="header-section">
+    <h1>My Document Status</h1>
+</section>
+
 <div class="container-fluid">
     <!-- Page Header -->
     <div class="status-container">
@@ -392,7 +403,7 @@
                             @endif
 
                             <!-- Verification Link -->
-                            @if($request->documentSignature)
+                            @if($request->documentSignature && $request->documentSignature->verification_url)
                                 <button class="btn btn-outline-primary"
                                         onclick="copyVerificationLink('{{ $request->documentSignature->verification_url }}')">
                                     <i class="fas fa-link me-1"></i> Copy Verification Link

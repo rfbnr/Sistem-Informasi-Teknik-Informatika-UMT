@@ -450,9 +450,9 @@ $(document).ready(function() {
                                             </small>
                                         </td>
                                         <td>
-                                            Test
-                                            {{-- <div class="btn-group btn-group-sm">
-                                                <a href="{{ route('admin.signature.view', $signature->id) }}"
+                                            {{-- Test --}}
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{{ route('admin.signature.keys.index', $signature->id) }}"
                                                    class="btn btn-outline-primary">
                                                     <i class="fas fa-eye"></i>
                                                 </a>
@@ -462,7 +462,7 @@ $(document).ready(function() {
                                                         <i class="fas fa-ban"></i>
                                                     </button>
                                                 @endif
-                                            </div> --}}
+                                            </div>
                                         </td>
                                     </tr>
                                     @endforeach

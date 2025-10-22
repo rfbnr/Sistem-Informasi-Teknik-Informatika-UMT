@@ -27,7 +27,7 @@
                 </div>
 
                 <!-- Document Details -->
-                <div class="card bg-light border-0 mb-3">
+                <div class="card bg-light border-0 mb-3 shadow-sm">
                     <div class="card-body">
                         <h6 class="card-subtitle mb-2 text-muted">
                             <i class="fas fa-file-alt me-1"></i>
@@ -36,6 +36,25 @@
                         <p class="card-text fw-bold" id="approveDocumentName"></p>
                     </div>
                 </div>
+
+                <div class="card bg-light border-0 mb-3 shadow-sm">
+                    <div class="card-body">
+                        <h6 class="card-subtitle mb-2 text-muted">
+                            <i class="fas fa-file-alt me-1"></i>
+                            Document Type:
+                        </h6>
+                        <p class="card-text fw-bold" id="approveDocumentType"></p>
+                    </div>
+                </div>
+
+                <!-- Document Type -->
+                {{-- <div class="mb-3">
+                    <label for="document_type" class="form-label">
+                        <i class="fas fa-file-alt me-1"></i>
+                        Document Type:
+                    </label>
+                    <p class="form-control-plaintext" id="approveDocumentType"></p>
+                </div> --}}
 
                 <!-- Approval Notes (Optional) -->
                 <div class="mb-3">
