@@ -157,6 +157,75 @@ class DocumentSignatureController extends Controller
     }
 
     /**
+     * Quick preview with verification for modal
+     */
+    public function quickPreview($id)
+    {
+        try {
+            $documentSignature = DocumentSignature::with([
+                'approvalRequest.user',
+                'digitalSignature',
+                'signer',
+                'verifier'
+            ])->findOrFail($id);
+
+            // Get signature info
+            $signatureInfo = $documentSignature->getSignatureInfo();
+
+            // Perform verification (7 comprehensive checks)
+            $verificationResult = $this->verificationService->verifyById($id);
+
+            // Prepare response data
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'document' => [
+                        'id' => $documentSignature->id,
+                        'name' => $documentSignature->approvalRequest->document_name,
+                        'number' => $documentSignature->approvalRequest->full_document_number,
+                        'type' => $documentSignature->approvalRequest->document_type,
+                        'submitted_by' => $documentSignature->approvalRequest->user->name,
+                        'submitted_at' => $documentSignature->approvalRequest->created_at->format('d F Y H:i'),
+                        'notes' => $documentSignature->approvalRequest->notes,
+                    ],
+                    'signature' => [
+                        'status' => $documentSignature->signature_status,
+                        'signed_by' => $documentSignature->signer->name ?? 'Unknown',
+                        'signed_at' => $documentSignature->signed_at ? $documentSignature->signed_at->format('d F Y H:i:s') : null,
+                        'signed_at_human' => $documentSignature->signed_at ? $documentSignature->signed_at->diffForHumans() : null,
+                        'algorithm' => $documentSignature->digitalSignature->algorithm ?? 'N/A',
+                        'key_length' => $documentSignature->digitalSignature->key_length ?? 'N/A',
+                        'document_hash' => substr($documentSignature->document_hash, 0, 16) . '...',
+                        'has_signed_pdf' => $documentSignature->final_pdf_path ? true : false,
+                        'pdf_path' => $documentSignature->final_pdf_path,
+                    ],
+                    'verification' => [
+                        'is_valid' => $verificationResult['is_valid'],
+                        'message' => $verificationResult['message'],
+                        'verified_at' => $verificationResult['verified_at'],
+                        'checks' => $verificationResult['details']['checks'] ?? [],
+                        'warnings' => $verificationResult['details']['warnings'] ?? [],
+                        'summary' => $verificationResult['details']['verification_summary'] ?? [],
+                    ],
+                    'urls' => [
+                        'view' => route('admin.signature.documents.view', $documentSignature->id),
+                        'download' => route('admin.signature.documents.download', $documentSignature->id),
+                        'detail' => route('admin.signature.documents.show', $documentSignature->id),
+                        'verify' => route('admin.signature.documents.verify', $documentSignature->id),
+                    ]
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Quick preview error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to load document preview'
+            ], 500);
+        }
+    }
+
+    /**
      * Invalidate document signature
      */
     public function invalidate(Request $request, $id)

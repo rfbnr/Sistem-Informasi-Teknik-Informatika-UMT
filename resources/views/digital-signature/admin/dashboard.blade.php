@@ -502,16 +502,16 @@ $(document).ready(function() {
                     <div class="d-grid gap-2">
                         {{-- <a href="{{ route('admin.signature.create') }}" class="btn btn-outline-primary">
                             <i class="fas fa-plus me-2"></i> Create New Signature
-                        </a>
+                        </a> --}}
                         <a href="{{ route('admin.signature.documents.index') }}" class="btn btn-outline-info">
                             <i class="fas fa-file-signature me-2"></i> View Documents
                         </a>
-                        <a href="{{ route('admin.signature.verification-tools') }}" class="btn btn-outline-warning">
+                        {{-- <a href="{{ route('admin.signature.verification-tools') }}" class="btn btn-outline-warning">
                             <i class="fas fa-shield-alt me-2"></i> Verification Tools
-                        </a>
+                        </a> --}}
                         <a href="{{ route('admin.signature.templates.index') }}" class="btn btn-outline-secondary">
                             <i class="fas fa-template me-2"></i> Manage Templates
-                        </a> --}}
+                        </a>
                     </div>
                 </div>
             </div>

@@ -121,6 +121,8 @@ Route::middleware(['auth:kaprodi'])->prefix('admin/signature')->name('admin.sign
             ->name('index');
         Route::get('{id}', [DocumentSignatureController::class, 'show'])
             ->name('show');
+        Route::get('{id}/quick-preview', [DocumentSignatureController::class, 'quickPreview'])
+            ->name('quick.preview');
         Route::post('{id}/verify', [DocumentSignatureController::class, 'verify'])
             ->name('verify');
         Route::post('{id}/invalidate', [DocumentSignatureController::class, 'invalidate'])
