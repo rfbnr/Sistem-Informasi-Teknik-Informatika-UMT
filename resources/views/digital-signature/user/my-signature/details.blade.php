@@ -70,7 +70,7 @@
                     </div>
 
                     <div class="row mb-3">
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <strong>Document Type:</strong><br>
                             @if($documentSignature->approvalRequest->document_type)
                                 <span class="badge bg-secondary">
@@ -80,16 +80,16 @@
                                 <span class="text-muted">Not specified</span>
                             @endif
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <strong>Priority:</strong><br>
                             <span class="priority-badge priority-{{ $documentSignature->approvalRequest->priority }}">
                                 {{ ucfirst($documentSignature->approvalRequest->priority) }}
                             </span>
                         </div>
-                        <div class="col-md-4">
+                        {{-- <div class="col-md-4">
                             <strong>Department:</strong><br>
                             {{ $documentSignature->approvalRequest->department ?? 'N/A' }}
-                        </div>
+                        </div> --}}
                     </div>
 
                     <div class="row mb-3">
@@ -98,7 +98,7 @@
                             {{ $documentSignature->approvalRequest->created_at->format('d F Y, H:i') }}
                             <small class="text-muted d-block">{{ $documentSignature->approvalRequest->created_at->diffForHumans() }}</small>
                         </div>
-                        <div class="col-md-6">
+                        {{-- <div class="col-md-6">
                             <strong>Deadline:</strong><br>
                             @if($documentSignature->approvalRequest->deadline)
                                 {{ $documentSignature->approvalRequest->deadline->format('d F Y, H:i') }}
@@ -110,28 +110,30 @@
                             @else
                                 <span class="text-muted">No deadline set</span>
                             @endif
-                        </div>
+                        </div> --}}
                     </div>
 
-                    @if($documentSignature->approvalRequest->notes)
                     <div class="row mb-3">
-                        <div class="col-12">
-                            <strong>Submission Notes:</strong><br>
-                            <p class="text-muted mb-0">{{ $documentSignature->approvalRequest->notes }}</p>
-                        </div>
-                    </div>
-                    @endif
-
-                    @if($documentSignature->approvalRequest->approval_notes)
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <strong>Approval Notes:</strong><br>
-                            <div class="mb-0">
-                                {{ $documentSignature->approvalRequest->approval_notes }}
+                        @if($documentSignature->approvalRequest->notes)
+                        <div class="col-md-6">
+                            <div class="col-12">
+                                <strong>Submission Notes:</strong><br>
+                                <p class="text-muted mb-0">{{ $documentSignature->approvalRequest->notes }}</p>
                             </div>
                         </div>
+                        @endif
+
+                        @if($documentSignature->approvalRequest->approval_notes)
+                        <div class="col-md-6">
+                            <div class="col-12">
+                                <strong>Approval Notes:</strong><br>
+                                <div class="mb-0">
+                                    {{ $documentSignature->approvalRequest->approval_notes }}
+                                </div>
+                            </div>
+                        </div>
+                        @endif
                     </div>
-                    @endif
 
                     @if($documentSignature->approvalRequest->admin_notes)
                     <div class="row mb-3">
@@ -186,125 +188,127 @@
             </div>
 
             <!-- Digital Signature Information -->
-            <div class="card mb-4">
-                <div class="card-header bg-success text-white">
-                    <h5 class="mb-0">
-                        <i class="fas fa-signature me-2"></i>
-                        Digital Signature Information
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <strong>Signature ID:</strong><br>
-                            <code>{{ $documentSignature->digitalSignature->signature_id ?? 'N/A' }}</code>
-                        </div>
-                        <div class="col-md-6">
-                            <strong>Signature Status:</strong><br>
-                            <span class="status-badge status-{{ strtolower($documentSignature->signature_status) }}">
-                                {{ ucfirst($documentSignature->signature_status) }}
-                            </span>
-                        </div>
+            @if($documentSignature->signature_status !== 'pending')
+                <div class="card mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-signature me-2"></i>
+                            Digital Signature Information
+                        </h5>
                     </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <strong>Signature ID:</strong><br>
+                                <code>{{ $documentSignature->digitalSignature->signature_id ?? 'N/A' }}</code>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Signature Status:</strong><br>
+                                <span class="status-badge status-{{ strtolower($documentSignature->signature_status) }}">
+                                    {{ ucfirst($documentSignature->signature_status) }}
+                                </span>
+                            </div>
+                        </div>
 
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <strong>Signed By:</strong><br>
-                            @if($documentSignature->signer)
-                                {{ $documentSignature->signer->name }}<br>
-                                <small class="text-muted">
-                                    NIDN: {{ $documentSignature->signer->NIDN ?? '-' }}<br>
-                                    Email: {{ $documentSignature->signer->email }}
-                                </small>
-                            @else
-                                <span class="text-muted">Not signed yet</span>
-                            @endif
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <strong>Signed By:</strong><br>
+                                @if($documentSignature->signer)
+                                    {{ $documentSignature->signer->name }}<br>
+                                    <small class="text-muted">
+                                        NIDN: {{ $documentSignature->signer->NIDN ?? '-' }}<br>
+                                        Email: {{ $documentSignature->signer->email }}
+                                    </small>
+                                @else
+                                    <span class="text-muted">Not signed yet</span>
+                                @endif
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Signed At:</strong><br>
+                                @if($documentSignature->signed_at)
+                                    {{ $documentSignature->signed_at->format('d F Y, H:i:s') }}
+                                    <br><small class="text-muted">{{ $documentSignature->signed_at->diffForHumans() }}</small>
+                                @else
+                                    <span class="text-muted">Not signed yet</span>
+                                @endif
+                            </div>
                         </div>
-                        <div class="col-md-6">
-                            <strong>Signed At:</strong><br>
-                            @if($documentSignature->signed_at)
-                                {{ $documentSignature->signed_at->format('d F Y, H:i:s') }}
-                                <br><small class="text-muted">{{ $documentSignature->signed_at->diffForHumans() }}</small>
-                            @else
-                                <span class="text-muted">Not signed yet</span>
-                            @endif
-                        </div>
-                    </div>
 
-                    <div class="row mb-3">
-                        <div class="col-md-4">
-                            <strong>Signature Algorithm:</strong><br>
-                            <span class="badge bg-info">
-                                {{ $documentSignature->digitalSignature->algorithm ?? 'N/A' }}
-                            </span>
-                        </div>
-                        <div class="col-md-4">
-                            <strong>Key Length:</strong><br>
-                            <span class="badge bg-success">
-                                {{ $documentSignature->digitalSignature->key_length ?? 'N/A' }} bits
-                            </span>
-                        </div>
-                        <div class="col-md-4">
-                            <strong>Certificate Status:</strong><br>
-                            @if($documentSignature->digitalSignature && $documentSignature->digitalSignature->isValid())
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <strong>Signature Algorithm:</strong><br>
+                                <span class="badge bg-info">
+                                    {{ $documentSignature->digitalSignature->algorithm ?? 'N/A' }}
+                                </span>
+                            </div>
+                            <div class="col-md-4">
+                                <strong>Key Length:</strong><br>
                                 <span class="badge bg-success">
-                                    <i class="fas fa-check-circle"></i> Valid
+                                    {{ $documentSignature->digitalSignature->key_length ?? 'N/A' }} bits
                                 </span>
-                            @else
-                                <span class="badge bg-danger">
-                                    <i class="fas fa-times-circle"></i> Invalid
-                                </span>
-                            @endif
+                            </div>
+                            <div class="col-md-4">
+                                <strong>Certificate Status:</strong><br>
+                                @if($documentSignature->digitalSignature && $documentSignature->digitalSignature->isValid())
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-check-circle"></i> Valid
+                                    </span>
+                                @else
+                                    <span class="badge bg-danger">
+                                        <i class="fas fa-times-circle"></i> Invalid
+                                    </span>
+                                @endif
+                            </div>
                         </div>
-                    </div>
 
-                    @if($documentSignature->digitalSignature)
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <strong>Certificate Valid From:</strong><br>
-                            {{ $documentSignature->digitalSignature->valid_from->format('d F Y, H:i') }}
+                        @if($documentSignature->digitalSignature)
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <strong>Certificate Valid From:</strong><br>
+                                {{ $documentSignature->digitalSignature->valid_from->format('d F Y, H:i') }}
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Certificate Valid Until:</strong><br>
+                                {{ $documentSignature->digitalSignature->valid_until->format('d F Y, H:i') }}
+                                @if($documentSignature->digitalSignature->isExpiringSoon())
+                                    <span class="badge bg-warning ms-2">Expiring Soon</span>
+                                @endif
+                            </div>
                         </div>
-                        <div class="col-md-6">
-                            <strong>Certificate Valid Until:</strong><br>
-                            {{ $documentSignature->digitalSignature->valid_until->format('d F Y, H:i') }}
-                            @if($documentSignature->digitalSignature->isExpiringSoon())
-                                <span class="badge bg-warning ms-2">Expiring Soon</span>
-                            @endif
-                        </div>
-                    </div>
-                    @endif
+                        @endif
 
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <strong>Document Hash:</strong><br>
-                            <code class="small">{{ substr($documentSignature->document_hash, 0, 32) }}...</code>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <strong>Document Hash:</strong><br>
+                                <code class="small">{{ substr($documentSignature->document_hash, 0, 32) }}...</code>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Signature Value:</strong><br>
+                                <code class="small">{{ substr($documentSignature->signature_value, 0, 32) }}...</code>
+                            </div>
                         </div>
-                        <div class="col-md-6">
-                            <strong>Signature Value:</strong><br>
-                            <code class="small">{{ substr($documentSignature->signature_value, 0, 32) }}...</code>
-                        </div>
-                    </div>
 
-                    @if($documentSignature->verified_at)
-                    <div class="row">
-                        <div class="col-md-6">
-                            <strong>Verified At:</strong><br>
-                            {{ $documentSignature->verified_at->format('d F Y, H:i:s') }}
-                            <br><small class="text-muted">{{ $documentSignature->verified_at->diffForHumans() }}</small>
+                        @if($documentSignature->verified_at)
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>Verified At:</strong><br>
+                                {{ $documentSignature->verified_at->format('d F Y, H:i:s') }}
+                                <br><small class="text-muted">{{ $documentSignature->verified_at->diffForHumans() }}</small>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Verified By:</strong><br>
+                                @if($documentSignature->verifier)
+                                    {{ $documentSignature->verifier->name }}<br>
+                                    <small class="text-muted">{{ $documentSignature->verifier->email }}</small>
+                                @else
+                                    <span class="text-muted">System</span>
+                                @endif
+                            </div>
                         </div>
-                        <div class="col-md-6">
-                            <strong>Verified By:</strong><br>
-                            @if($documentSignature->verifier)
-                                {{ $documentSignature->verifier->name }}<br>
-                                <small class="text-muted">{{ $documentSignature->verifier->email }}</small>
-                            @else
-                                <span class="text-muted">System</span>
-                            @endif
-                        </div>
+                        @endif
                     </div>
-                    @endif
                 </div>
-            </div>
+            @endif
 
             <!-- Approval Workflow Timeline -->
             <div class="card mb-4">
@@ -406,7 +410,7 @@
             </div>
 
             <!-- Technical Details -->
-            <div class="card mb-4">
+            {{-- <div class="card mb-4">
                 <div class="card-header bg-dark text-white">
                     <h5 class="mb-0">
                         <i class="fas fa-cog me-2"></i>
@@ -447,7 +451,7 @@
                     </div>
                     @endif
                 </div>
-            </div>
+            </div> --}}
 
             <!-- Canvas Signature Preview -->
             @if($documentSignature->canvas_data_path)
@@ -666,11 +670,14 @@ function previewDocument(type) {
     errorDiv.style.display = 'none';
     loading.style.display = 'block';
 
+    const originalFileName = '{{ basename($documentSignature->approvalRequest->document_path) }}';
+    const signedFileName = '{{ $documentSignature->final_pdf_path ? basename($documentSignature->final_pdf_path) : "Not Signed Yet" }}';
+
     // Set title based on type
     if (type === 'original') {
-        titleSpan.textContent = 'Original Document Preview';
+        titleSpan.textContent = 'Original Document Preview | ' + originalFileName;
     } else {
-        titleSpan.textContent = 'Signed Document Preview';
+        titleSpan.textContent = 'Signed Document Preview | ' + signedFileName;
     }
 
     // Get document path
