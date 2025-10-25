@@ -79,6 +79,32 @@
     <div class="row">
         <!-- Key Information -->
         <div class="col-lg-8">
+            <!-- Usage Statistics -->
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>
+                        Usage Statistics
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-4">
+                            <div class="h3 text-primary">{{ $stats['total_documents_signed'] ?? 0 }}</div>
+                            <small class="text-muted">Total Signatures</small>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="h3 text-success">{{ $stats['successful_signatures'] ?? 0 }}</div>
+                            <small class="text-muted">Verified</small>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="h3 text-warning">{{ $stats['pending_signatures'] ?? 0 }}</div>
+                            <small class="text-muted">Pending</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="card mb-4">
                 <div class="card-header bg-primary text-white">
                     <h5 class="mb-0">
@@ -144,34 +170,10 @@
                 </div>
             </div>
 
-            <!-- Usage Statistics -->
-            <div class="card mb-4">
-                <div class="card-header bg-success text-white">
-                    <h5 class="mb-0">
-                        <i class="fas fa-chart-bar me-2"></i>
-                        Usage Statistics
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="row text-center">
-                        <div class="col-md-4">
-                            <div class="h3 text-primary">{{ $stats['total_signatures'] ?? 0 }}</div>
-                            <small class="text-muted">Total Signatures</small>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="h3 text-success">{{ $stats['verified_signatures'] ?? 0 }}</div>
-                            <small class="text-muted">Verified</small>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="h3 text-warning">{{ $stats['pending_signatures'] ?? 0 }}</div>
-                            <small class="text-muted">Pending</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
+
 
             <!-- Public Key -->
-            <div class="card">
+            {{-- <div class="card">
                 <div class="card-header bg-info text-white">
                     <h5 class="mb-0">
                         <i class="fas fa-code me-2"></i>
@@ -184,7 +186,7 @@
                         <i class="fas fa-copy me-1"></i> Copy to Clipboard
                     </button>
                 </div>
-            </div>
+            </div> --}}
         </div>
 
         <!-- Sidebar Info -->

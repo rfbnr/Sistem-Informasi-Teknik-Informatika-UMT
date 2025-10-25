@@ -97,8 +97,6 @@ class DocumentSignatureController extends Controller
             // Get signature info
             $signatureInfo = $documentSignature->getSignatureInfo();
 
-            // dd($signatureInfo);
-
             // Perform verification
             $verificationResult = $this->verificationService->verifyById($id);
 
@@ -111,7 +109,7 @@ class DocumentSignatureController extends Controller
             ));
 
         } catch (\Exception $e) {
-            dd($e);
+            // dd($e);
             Log::error('Document signature show error: ' . $e->getMessage());
             return back()->with('error', 'Document signature not found');
         }

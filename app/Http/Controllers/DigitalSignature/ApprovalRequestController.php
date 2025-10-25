@@ -200,7 +200,7 @@ class ApprovalRequestController extends Controller
             // $documentPath = $uploadedFile->store('documents', 'public');
             $documentPath = $uploadedFile->storeAs(
                 'documents',
-                time() . '_' . preg_replace('/[^a-zA-Z0-9_\.-]/', '_', $uploadedFile->getClientOriginalName()),
+                now()->format('YmdHis') . '_' . preg_replace('/[^a-zA-Z0-9_\.-]/', '_', $uploadedFile->getClientOriginalName()),
                 'public'
             );
 

@@ -2,9 +2,9 @@
 <div class="sidebar-header text-center py-3">
     <h5 class="text-white mb-0">
         <i class="fas fa-user-shield me-2"></i>
-        Admin Panel
+        Kaprodi Panel
     </h5>
-    <small class="text-white-50">Digital Signature Management</small>
+    <small class="text-white-50">UMT Informatika | Digital Signature Management</small>
 </div>
 
 <ul class="nav flex-column">
@@ -79,7 +79,8 @@
 
     <!-- Reports & Analytics -->
     <li class="nav-item">
-        <a class="nav-link" href="#" onclick="generateReport()">
+        <a class="nav-link {{ request()->routeIs('admin.signature.reports.*') ? 'active' : '' }}"
+           href="{{ route('admin.signature.reports.index') }}">
             <i class="fas fa-chart-bar me-2"></i>
             Reports & Analytics
         </a>
@@ -105,12 +106,12 @@
     <hr class="my-3 text-white-50">
 
     <!-- Public Verification -->
-    {{-- <li class="nav-item">
+    <li class="nav-item">
         <a class="nav-link" href="{{ route('signature.verify.page') }}" target="_blank">
             <i class="fas fa-external-link-alt me-2"></i>
             Public Verification
         </a>
-    </li> --}}
+    </li>
 
     <!-- Help & Documentation -->
     <li class="nav-item">
@@ -124,26 +125,21 @@
 <!-- Quick Stats at Bottom -->
 <div class="mt-auto pt-3">
     <div class="bg-white bg-opacity-20 rounded p-3 mx-2">
-        <h6 class="text-white mb-2">Quick Stats</h6>
+        <h6 class="text-black mb-2">Quick Stats</h6>
         <div class="row text-center">
             <div class="col-6">
-                <div class="text-white h6">{{ \App\Models\DigitalSignature::active()->count() }}</div>
-                <small class="text-white-50">Active Keys</small>
+                <div class="text-black h6">{{ \App\Models\DigitalSignature::active()->count() }}</div>
+                <small class="text-black-50">Active Keys</small>
             </div>
             <div class="col-6">
-                <div class="text-white h6">{{ \App\Models\DocumentSignature::where('signature_status', 'verified')->count() }}</div>
-                <small class="text-white-50">Verified</small>
+                <div class="text-black h6">{{ \App\Models\DocumentSignature::where('signature_status', 'verified')->count() }}</div>
+                <small class="text-black-50">Verified</small>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-function generateReport() {
-    // Show report modal or redirect to reports page
-    alert('Reports feature coming soon!');
-}
-
 function showSettings() {
     // Show settings modal
     alert('Settings panel coming soon!');

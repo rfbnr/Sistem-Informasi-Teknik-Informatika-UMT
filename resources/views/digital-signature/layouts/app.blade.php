@@ -18,8 +18,8 @@
     <!-- Custom Styles -->
     <style>
         :root {
-            --primary-color: #667eea;
-            --secondary-color: #764ba2;
+            --primary-color: #0056b3;
+            --secondary-color: #007bff;
             --success-color: #28a745;
             --warning-color: #ffc107;
             --danger-color: #dc3545;
@@ -183,7 +183,7 @@
 
             <a class="navbar-brand" href="/">
                 <i class="fas fa-signature me-2"></i>
-                Digital Signature System
+                UMT Informatika | Digital Signature System
             </a>
 
             <div class="navbar-nav ms-auto">

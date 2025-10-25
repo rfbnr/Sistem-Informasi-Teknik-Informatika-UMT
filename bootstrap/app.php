@@ -13,6 +13,14 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         //
     })
+    ->withSchedule(function (\Illuminate\Console\Scheduling\Schedule $schedule) {
+        // Cleanup expired verification code mappings monthly
+        $schedule->command('verification:cleanup --force')
+            ->monthly()
+            ->at('02:00')
+            ->timezone('Asia/Jakarta')
+            ->emailOutputOnFailure(config('mail.admin_email', 'admin@example.com'));
+    })
     ->withExceptions(function (Exceptions $exceptions) {
         //
     })->create();

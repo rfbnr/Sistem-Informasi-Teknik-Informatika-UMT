@@ -52,7 +52,8 @@ return [
     |
     */
 
-    'url' => env('APP_URL', 'https://informatikaumt.online/'),
+    // 'url' => env('APP_URL', 'https://informatikaumt.online/'),
+    'url' => env('APP_URL', 'http://localhost/'),
 
     /*
     |--------------------------------------------------------------------------

@@ -22,6 +22,7 @@ use App\Http\Controllers\DigitalSignature\ApprovalRequestController;
 use App\Http\Controllers\DigitalSignature\DigitalSignatureController;
 use App\Http\Controllers\DigitalSignature\DocumentSignatureController;
 use App\Http\Controllers\DigitalSignature\SignatureTemplateController;
+use App\Http\Controllers\DigitalSignature\ReportAnalyticsController;
 
 // ===================================================================
 // PUBLIC ROUTES (No Authentication Required)
@@ -195,6 +196,18 @@ Route::middleware(['auth:kaprodi'])->prefix('admin/signature')->name('admin.sign
         ->name('statistics');
     Route::get('export', [DigitalSignatureController::class, 'exportStatistics'])
         ->name('export');
+
+    // ==================== REPORTS & ANALYTICS ====================
+    Route::prefix('reports')->name('reports.')->group(function () {
+        Route::get('/', [ReportAnalyticsController::class, 'index'])
+            ->name('index');
+        Route::get('export', [ReportAnalyticsController::class, 'export'])
+            ->name('export');
+        Route::get('qr-codes', [ReportAnalyticsController::class, 'qrCodeReport'])
+            ->name('qr-codes');
+        Route::get('performance', [ReportAnalyticsController::class, 'performanceMetrics'])
+            ->name('performance');
+    });
 });
 
 // ===================================================================

@@ -12,6 +12,7 @@ use Endroid\QrCode\Writer\PngWriter;
 use Endroid\QrCode\Writer\SvgWriter;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Crypt;
+use App\Models\VerificationCodeMapping;
 use Endroid\QrCode\Label\Font\NotoSans;
 use Illuminate\Support\Facades\Storage;
 
@@ -167,49 +168,219 @@ class QRCodeService
     }
 
     /**
-     * Create encrypted verification data
+     * Create encrypted verification data with short code mapping
+     *
+     * HYBRID APPROACH:
+     * 1. Maintain full encryption (existing security)
+     * 2. Create short code mapping (improved usability)
+     * 3. Return short code for QR/URL
      */
     private function createEncryptedVerificationData($documentSignature)
     {
-        //
+        // ═══════════════════════════════════════════════════════════════════
+        // STEP 0: Get DigitalSignature & Calculate Dynamic Expiration
+        // ═══════════════════════════════════════════════════════════════════
+        $digitalSignature = $documentSignature->digitalSignature;
 
+        if (!$digitalSignature) {
+            Log::error('Digital signature not found for document signature', [
+                'document_signature_id' => $documentSignature->id
+            ]);
+            throw new \Exception('Digital signature not found. Cannot create verification QR code.');
+        }
+
+        // Validate digital signature status
+        if ($digitalSignature->status === 'revoked') {
+            Log::warning('Attempting to create QR for revoked digital signature', [
+                'digital_signature_id' => $digitalSignature->id,
+                'revoked_at' => $digitalSignature->revoked_at,
+                'revocation_reason' => $digitalSignature->revocation_reason
+            ]);
+            throw new \Exception('Cannot create QR code: Digital signature has been revoked.');
+        }
+
+        if ($digitalSignature->valid_until < now()) {
+            Log::warning('Attempting to create QR for expired digital signature', [
+                'digital_signature_id' => $digitalSignature->id,
+                'expired_at' => $digitalSignature->valid_until
+            ]);
+            throw new \Exception('Cannot create QR code: Digital signature has expired.');
+        }
+
+        // Calculate dynamic expiration: minimum of signature validity or 5 years
+        $signatureExpiry = $digitalSignature->valid_until;
+        $defaultExpiry = now()->addYears(5);
+
+        // Use the earlier date (minimum)
+        $expiresAt = $signatureExpiry < $defaultExpiry
+            ? $signatureExpiry
+            : $defaultExpiry;
+        // $expiresAt = $defaultExpiry;
+
+        // Ensure expiration is not in the past
+        if ($expiresAt < now()) {
+            Log::error('Calculated expiration is in the past', [
+                'expires_at' => $expiresAt->toDateTimeString(),
+                'digital_signature_id' => $digitalSignature->id
+            ]);
+            throw new \Exception('Cannot create QR code: Calculated expiration date is in the past.');
+        }
+
+        Log::info('QR code expiration calculated dynamically', [
+            'document_signature_id' => $documentSignature->id,
+            'digital_signature_id' => $digitalSignature->id,
+            'signature_expiry' => $signatureExpiry->toDateTimeString(),
+            'default_expiry' => $defaultExpiry->toDateTimeString(),
+            'chosen_expiry' => $expiresAt->toDateTimeString(),
+            'expiry_reason' => $signatureExpiry < $defaultExpiry ? 'signature_validity' : 'default_cap',
+            'days_until_expiry' => now()->diffInDays($expiresAt)
+        ]);
+
+        // ═══════════════════════════════════════════════════════════════════
+        // STEP 1: Create full encrypted payload with DYNAMIC expiration
+        // ═══════════════════════════════════════════════════════════════════
         $verificationData = [
             'document_signature_id' => $documentSignature->id,
             'approval_request_id' => $documentSignature->approval_request_id,
             'verification_token' => $documentSignature->verification_token,
             'created_at' => now()->timestamp,
-            'expires_at' => now()->addYears(5)->timestamp // QR code valid for 5 years
+            'expires_at' => $expiresAt->timestamp // ✅ DYNAMIC from DigitalSignature!
         ];
 
-        return Crypt::encryptString(json_encode($verificationData));
+        // Full encryption - TETAP SAMA seperti sebelumnya!
+        $encryptedPayload = Crypt::encryptString(json_encode($verificationData));
+
+        Log::info('Created encrypted verification payload', [
+            'document_signature_id' => $documentSignature->id,
+            'payload_length' => strlen($encryptedPayload),
+            'expires_at' => $expiresAt->toDateTimeString()
+        ]);
+
+        // ═══════════════════════════════════════════════════════════════════
+        // STEP 2: Create short code mapping with DYNAMIC expiration
+        // ═══════════════════════════════════════════════════════════════════
+        try {
+            $mapping = VerificationCodeMapping::createMapping(
+                $encryptedPayload,
+                $documentSignature->id,
+                $expiresAt // ✅ Pass Carbon instance with dynamic expiration!
+            );
+
+            Log::info('Short code mapping created successfully', [
+                'short_code' => $mapping->short_code,
+                'document_signature_id' => $documentSignature->id,
+                'expires_at' => $mapping->expires_at->toDateTimeString(),
+                'url_length_before' => strlen($encryptedPayload),
+                'url_length_after' => strlen($mapping->short_code),
+                'reduction_percentage' => round((1 - strlen($mapping->short_code) / strlen($encryptedPayload)) * 100, 2)
+            ]);
+
+            // Return short code instead of full encrypted string
+            return $mapping->short_code;
+
+        } catch (\Exception $e) {
+            Log::error('Failed to create short code mapping', [
+                'error' => $e->getMessage(),
+                'document_signature_id' => $documentSignature->id
+            ]);
+
+            // Fallback: return full encrypted payload if mapping fails
+            Log::warning('Falling back to full encrypted token in URL');
+            return $encryptedPayload;
+        }
     }
 
     /**
      * Decrypt verification data dari QR code
+     *
+     * HYBRID APPROACH:
+     * 1. Check if input is short code or full encrypted string
+     * 2. If short code: lookup mapping and get encrypted payload
+     * 3. Decrypt payload (same as before)
+     * 4. Track access (bonus feature!)
      */
-    public function decryptVerificationData($encryptedData)
+    public function decryptVerificationData($token)
     {
         try {
-            // dd($encryptedData);
-            $decryptedJson = Crypt::decryptString($encryptedData);
+            $encryptedPayload = null;
+            $isShortCode = false;
+
+            // ═══════════════════════════════════════════════════════════════════
+            // STEP 1: Determine if token is short code or full encrypted string
+            // ═══════════════════════════════════════════════════════════════════
+
+            // Short code pattern: XXXX-XXXX-XXXX (12-20 chars with dashes)
+            // Encrypted string: eyJpdiI6... (100+ chars, base64)
+            if (strlen($token) <= 30 && strpos($token, '-') !== false) {
+                // This looks like a short code
+                $isShortCode = true;
+
+                Log::info('Processing short code verification', [
+                    'short_code' => $token,
+                    'token_length' => strlen($token)
+                ]);
+
+                // ═══════════════════════════════════════════════════════════════════
+                // STEP 2: Lookup mapping table
+                // ═══════════════════════════════════════════════════════════════════
+                $mapping = VerificationCodeMapping::findByShortCode($token);
+
+                // Track access (audit trail + analytics)
+                $mapping->trackAccess();
+
+                // Check rate limiting (security)
+                if ($mapping->shouldRateLimit(10)) {
+                    throw new \Exception('Too many verification attempts. Please try again later.');
+                }
+
+                // Get encrypted payload from mapping
+                $encryptedPayload = $mapping->encrypted_payload;
+
+                Log::info('Short code mapping found and validated', [
+                    'short_code' => $token,
+                    'document_signature_id' => $mapping->document_signature_id,
+                    'access_count' => $mapping->access_count
+                ]);
+
+            } else {
+                // This looks like full encrypted string (backward compatibility)
+                $isShortCode = false;
+                $encryptedPayload = $token;
+
+                Log::info('Processing full encrypted token (legacy format)', [
+                    'token_length' => strlen($token)
+                ]);
+            }
+
+            // ═══════════════════════════════════════════════════════════════════
+            // STEP 3: Decrypt payload (SAME AS BEFORE - UNCHANGED!)
+            // ═══════════════════════════════════════════════════════════════════
+            $decryptedJson = Crypt::decryptString($encryptedPayload);
             $data = json_decode($decryptedJson, true);
 
-            // dd($decryptedJson, $data);
-
-            // dd($decryptedJson, $data);
+            if (!$data) {
+                throw new \Exception('Failed to decode verification data');
+            }
 
             // Check expiration
             if ($data['expires_at'] < now()->timestamp) {
                 throw new \Exception('QR Code has expired');
             }
 
+            Log::info('Verification data decrypted successfully', [
+                'document_signature_id' => $data['document_signature_id'],
+                'is_short_code' => $isShortCode
+            ]);
+
             return $data;
 
         } catch (\Exception $e) {
+            Log::warning('QR Code verification data decryption failed', [
+                'error' => $e->getMessage(),
+                'token_preview' => substr($token, 0, 20) . '...'
+            ]);
 
-            // dd($e->getMessage());
-            Log::warning('QR Code verification data decryption failed: ' . $e->getMessage());
-            throw new \Exception('Invalid or expired QR Code');
+            throw new \Exception('Invalid or expired QR Code: ' . $e->getMessage());
         }
     }
 

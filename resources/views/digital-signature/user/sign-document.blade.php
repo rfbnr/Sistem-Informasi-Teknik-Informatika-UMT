@@ -458,6 +458,10 @@
                             <span class="text-muted">{{ $approvalRequest->full_document_number }}</span>
                         </div>
                         <div class="col-sm-6">
+                            <strong>Document Type:</strong><br>
+                            <span class="text-muted">{{ $approvalRequest->document_type ? $approvalRequest->document_type : 'N/A' }}</span>
+                        </div>
+                        <div class="col-sm-6">
                             <strong>Submitted:</strong><br>
                             <span class="text-muted">{{ $approvalRequest->created_at->format('d M Y H:i') }}</span>
                         </div>

@@ -166,8 +166,14 @@ class PDFSignatureService
                 }
             }
 
+            // Get original filename
+            $originalFileName = basename($originalPdfPath);
+
+            // Sign file name with original name
+            $signedFileName = 'signed_' . $originalFileName;
+
             // Generate filename for signed PDF
-            $signedFileName = 'signed_' . now()->format('YmdHis') . '_' . $documentSignature->id . '.pdf';
+            // $signedFileName = 'signed_' . now()->format('YmdHis') . '_' . $documentSignature->id . '.pdf';
             $signedPdfStoragePath = 'signed-documents/' . $signedFileName;
             // $signedPdfAbsolutePath = Storage::path($signedPdfStoragePath);
             $signedPdfAbsolutePath = Storage::disk('public')->path($signedPdfStoragePath);

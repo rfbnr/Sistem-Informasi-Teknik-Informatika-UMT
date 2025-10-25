@@ -241,17 +241,20 @@ class VerificationService
                 $pathToVerify = $documentSignature->final_pdf_path;
                 $documentContent = Storage::disk('public')->get($pathToVerify);
                 Log::info('Verifying signed PDF integrity', ['path' => $pathToVerify]);
-            } elseif ($approvalRequest->document_path) {
-                // Fallback to original document
-                $pathToVerify = $approvalRequest->document_path;
-                $documentContent = Storage::disk('public')->get($pathToVerify);
-                Log::info('Verifying original PDF integrity', ['path' => $pathToVerify]);
             } else {
                 return [
                     'status' => false,
-                    'message' => 'Document file not found'
+                    'message' => 'Document Signature final PDF not found for integrity check',
+                    'details' => ['file_path' => $documentSignature->final_pdf_path]
                 ];
             }
+            // elseif ($approvalRequest->document_path) {
+            //     // Fallback to original document
+            //     $pathToVerify = $approvalRequest->document_path;
+            //     $documentContent = Storage::disk('public')->get($pathToVerify);
+            //     Log::info('Verifying original PDF integrity', ['path' => $pathToVerify]);
+            // }
+
 
             if (!$documentContent) {
                 return [

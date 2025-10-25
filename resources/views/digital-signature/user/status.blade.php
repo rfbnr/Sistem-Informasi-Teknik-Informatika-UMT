@@ -145,6 +145,12 @@
     margin-bottom: 1rem;
 }
 
+.document-type {
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
 .meta-item {
     display: flex;
     align-items: center;
@@ -252,6 +258,9 @@
                         <div class="d-flex justify-content-between align-items-start">
                             <div>
                                 <h5 class="mb-1">{{ $request->document_name }}</h5>
+                                <span class="badge bg-secondary mb-2">
+                                    {{ $request->document_type ? $request->document_type : 'N/A' }}
+                                </span>
                                 <div class="document-meta">
                                     <div class="meta-item">
                                         <i class="fas fa-hashtag"></i>
