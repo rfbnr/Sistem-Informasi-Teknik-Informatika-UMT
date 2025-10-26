@@ -753,7 +753,7 @@ class DigitalSignatureController extends Controller
                 ], 403);
             }
 
-            // Get active templates
+            // Get active templates - simplified for user signing (only signature, no logo)
             $templates = SignatureTemplate::active()
                 ->with('kaprodi')
                 ->get()
@@ -763,13 +763,8 @@ class DigitalSignatureController extends Controller
                         'name' => $template->name,
                         'description' => $template->description,
                         'signature_image_url' => Storage::url($template->signature_image_path),
-                        'thumbnail_url' => Storage::url($template->signature_image_path),
                         'is_default' => $template->is_default,
-                        'canvas_width' => $template->canvas_width,
-                        'canvas_height' => $template->canvas_height,
-                        'text_config' => $template->text_config,
-                        'layout_config' => $template->layout_config,
-                        'kaprodi_name' => $template->kaprodi->name ?? 'N/A',
+                        'kaprodi_name' => $template->kaprodi->nama ?? 'N/A',
                         'usage_count' => $template->usage_count,
                     ];
                 });

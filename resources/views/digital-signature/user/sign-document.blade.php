@@ -366,22 +366,244 @@
 }
 
 /* ========== RESPONSIVE ========== */
+/* Tablet (768px - 991px) */
+@media (max-width: 991px) {
+    .signing-container {
+        padding: 1.5rem;
+    }
+
+    .template-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+
+    .control-panel-section {
+        padding: 1.5rem;
+    }
+
+    .pdf-preview-wrapper {
+        max-height: 600px;
+    }
+}
+
+/* Mobile (max 768px) */
 @media (max-width: 768px) {
     .signing-container {
         padding: 1rem;
     }
 
-    .template-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .pdf-preview-wrapper {
-        max-height: 500px;
+    .signing-steps {
+        padding: 1rem;
+        margin-bottom: 1.5rem;
     }
 
     .step-indicator {
         flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .step-item {
+        flex-direction: row;
+        justify-content: flex-start;
+        gap: 0.75rem;
+    }
+
+    .step-number {
+        width: 35px;
+        height: 35px;
+        margin-bottom: 0;
+    }
+
+    .template-grid {
+        grid-template-columns: 1fr;
         gap: 1rem;
+    }
+
+    .template-preview-img {
+        height: 120px;
+    }
+
+    .pdf-preview-section {
+        padding: 1rem;
+    }
+
+    .pdf-preview-wrapper {
+        max-height: 400px;
+    }
+
+    .control-panel-section {
+        padding: 1rem;
+    }
+
+    .control-group {
+        margin-bottom: 1rem;
+    }
+
+    .range-value {
+        min-width: 50px;
+        font-size: 14px;
+    }
+
+    .signing-controls {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        margin: 0;
+        border-radius: 1rem 1rem 0 0;
+        padding: 1rem;
+    }
+
+    .signing-controls .d-flex {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .signing-controls .d-flex.gap-2 {
+        width: 100%;
+    }
+
+    .signing-controls button {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .page-navigation {
+        padding: 0.75rem;
+        gap: 0.5rem;
+    }
+
+    .page-navigation button {
+        padding: 0.4rem 0.75rem;
+        font-size: 14px;
+    }
+
+    .page-info {
+        font-size: 14px;
+    }
+}
+
+/* Small Mobile (max 576px) */
+@media (max-width: 576px) {
+    .signing-container {
+        padding: 0.75rem;
+    }
+
+    .signing-steps {
+        padding: 0.75rem;
+    }
+
+    .signing-steps h5 {
+        font-size: 1rem;
+    }
+
+    .signing-steps p {
+        font-size: 0.85rem;
+    }
+
+    .step-number {
+        width: 30px;
+        height: 30px;
+        font-size: 14px;
+    }
+
+    .step-item small {
+        font-size: 0.75rem;
+    }
+
+    .pdf-preview-section {
+        padding: 0.75rem;
+    }
+
+    .pdf-preview-wrapper {
+        max-height: 350px;
+    }
+
+    .control-panel-section {
+        padding: 0.75rem;
+    }
+
+    .control-panel-section h4 {
+        font-size: 1rem;
+    }
+
+    .control-group label {
+        font-size: 14px;
+    }
+
+    .signing-controls {
+        padding: 0.75rem;
+    }
+
+    .signing-controls .form-check-label {
+        font-size: 13px;
+    }
+
+    .signing-controls small {
+        font-size: 11px;
+    }
+
+    .page-navigation button {
+        padding: 0.35rem 0.5rem;
+        font-size: 13px;
+    }
+
+    .page-navigation button i {
+        font-size: 12px;
+    }
+
+    .page-info {
+        font-size: 13px;
+    }
+
+    /* Hide button text, show only icons on very small screens */
+    .page-navigation button .btn-text {
+        display: none;
+    }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+    /* Increase touch targets */
+    .signature-handles {
+        width: 24px;
+        height: 24px;
+        background: #007bff;
+        border: 3px solid white;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .handle-nw { top: -12px; left: -12px; }
+    .handle-ne { top: -12px; right: -12px; }
+    .handle-sw { bottom: -12px; left: -12px; }
+    .handle-se { bottom: -12px; right: -12px; }
+
+    .delete-signature-btn {
+        width: 32px;
+        height: 32px;
+        top: -16px;
+        right: -16px;
+        font-size: 18px;
+    }
+
+    .template-item {
+        padding: 1.25rem;
+        cursor: pointer;
+    }
+
+    .placed-signature {
+        border-width: 3px;
+        padding: 0.75rem;
+    }
+
+    /* Prevent text selection during drag */
+    .template-item,
+    .placed-signature {
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        -webkit-touch-callout: none;
     }
 }
 </style>
@@ -510,13 +732,13 @@
         <!-- Page Navigation -->
         <div class="page-navigation">
             <button id="prevPageBtn" onclick="previousPage()">
-                <i class="fas fa-chevron-left"></i> Previous
+                <i class="fas fa-chevron-left"></i> <span class="btn-text">Previous</span>
             </button>
             <div class="page-info">
                 Page <span id="currentPage">1</span> of <span id="totalPages">1</span>
             </div>
             <button id="nextPageBtn" onclick="nextPage()">
-                Next <i class="fas fa-chevron-right"></i>
+                <span class="btn-text">Next</span> <i class="fas fa-chevron-right"></i>
             </button>
         </div>
     </div>
@@ -681,9 +903,41 @@ let selectedTemplate = null;
 const approvalRequestId = {{ $approvalRequest->id }};
 const documentPath = "{{ Storage::url($approvalRequest->document_path) }}";
 
+// Touch support variables
+let isTouchDevice = false;
+let touchStartX = 0;
+let touchStartY = 0;
+let currentTouchTemplate = null;
+
+// ==================== UTILITY FUNCTIONS ====================
+// Debounce function for performance optimization
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// Detect touch device
+function detectTouchDevice() {
+    isTouchDevice = ('ontouchstart' in window) ||
+                    (navigator.maxTouchPoints > 0) ||
+                    (navigator.msMaxTouchPoints > 0);
+    console.log('Touch device detected:', isTouchDevice);
+    return isTouchDevice;
+}
+
 // ==================== INITIALIZATION ====================
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Initializing document signing...');
+
+    // Detect touch device
+    detectTouchDevice();
 
     // Initialize PDF.js worker
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -842,7 +1096,9 @@ function renderTemplates() {
         const templateElement = document.createElement('div');
         templateElement.className = 'template-item' + (template.is_default ? ' default-badge' : '');
         templateElement.dataset.templateId = template.id;
-        templateElement.draggable = true;
+        templateElement.dataset.templateName = template.name;
+        templateElement.dataset.signatureUrl = template.signature_image_url;
+        templateElement.draggable = !isTouchDevice; // Disable native drag on touch devices
 
         templateElement.innerHTML = `
             <img src="${template.signature_image_url}"
@@ -857,9 +1113,20 @@ function renderTemplates() {
             </div>
         `;
 
-        // Add drag event listeners
-        templateElement.addEventListener('dragstart', handleDragStart);
-        templateElement.addEventListener('dragend', handleDragEnd);
+        // Add mouse drag event listeners for desktop
+        if (!isTouchDevice) {
+            templateElement.addEventListener('dragstart', handleDragStart);
+            templateElement.addEventListener('dragend', handleDragEnd);
+        }
+
+        // Add touch event listeners for mobile
+        if (isTouchDevice) {
+            templateElement.addEventListener('touchstart', handleTouchStart, { passive: false });
+            templateElement.addEventListener('touchmove', handleTouchMove, { passive: false });
+            templateElement.addEventListener('touchend', handleTouchEnd, { passive: false });
+        }
+
+        // Add click listener for both
         templateElement.addEventListener('click', () => selectTemplate(template));
 
         grid.appendChild(templateElement);
@@ -884,6 +1151,85 @@ function handleDragEnd(e) {
 function selectTemplate(template) {
     selectedTemplate = template;
     console.log('Template selected:', template.name);
+}
+
+// ==================== TOUCH EVENTS ====================
+function handleTouchStart(e) {
+    const templateElement = e.currentTarget;
+    currentTouchTemplate = {
+        id: templateElement.dataset.templateId,
+        name: templateElement.dataset.templateName,
+        signature_image_url: templateElement.dataset.signatureUrl,
+        element: templateElement
+    };
+
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+
+    // Visual feedback
+    templateElement.classList.add('dragging');
+    console.log('Touch start on template:', currentTouchTemplate.name);
+}
+
+function handleTouchMove(e) {
+    if (!currentTouchTemplate) return;
+
+    e.preventDefault(); // Prevent scrolling while dragging
+
+    const touch = e.touches[0];
+    const moveX = Math.abs(touch.clientX - touchStartX);
+    const moveY = Math.abs(touch.clientY - touchStartY);
+
+    // Only trigger if moved more than 10px (prevent accidental drags)
+    if (moveX > 10 || moveY > 10) {
+        // Check if touch is over PDF canvas
+        const canvasRect = canvas.getBoundingClientRect();
+        if (touch.clientX >= canvasRect.left && touch.clientX <= canvasRect.right &&
+            touch.clientY >= canvasRect.top && touch.clientY <= canvasRect.bottom) {
+            // Give visual feedback that drop zone is active
+            pdfWrapper.style.borderColor = '#007bff';
+            pdfWrapper.style.background = 'rgba(0, 123, 255, 0.05)';
+        } else {
+            pdfWrapper.style.borderColor = '#dee2e6';
+            pdfWrapper.style.background = '#f8f9fa';
+        }
+    }
+}
+
+function handleTouchEnd(e) {
+    if (!currentTouchTemplate) return;
+
+    e.preventDefault();
+
+    const touch = e.changedTouches[0];
+    const canvasRect = canvas.getBoundingClientRect();
+
+    // Check if touch ended over PDF canvas
+    if (touch.clientX >= canvasRect.left && touch.clientX <= canvasRect.right &&
+        touch.clientY >= canvasRect.top && touch.clientY <= canvasRect.bottom) {
+
+        // Calculate position relative to canvas
+        const x = touch.clientX - canvasRect.left;
+        const y = touch.clientY - canvasRect.top;
+
+        console.log('Touch drop at:', { x, y });
+
+        // Find template in availableTemplates array
+        const template = availableTemplates.find(t => t.id == currentTouchTemplate.id);
+        if (template) {
+            placeSignatureOnPDF(template, x, y);
+        }
+    }
+
+    // Reset
+    if (currentTouchTemplate.element) {
+        currentTouchTemplate.element.classList.remove('dragging');
+    }
+    currentTouchTemplate = null;
+    pdfWrapper.style.borderColor = '#dee2e6';
+    pdfWrapper.style.background = '#f8f9fa';
+
+    console.log('Touch end');
 }
 
 // ==================== PDF DROP ZONE ====================
@@ -992,6 +1338,7 @@ function makeSignatureDraggable(element) {
     let initialX;
     let initialY;
 
+    // Mouse events for desktop
     element.addEventListener('mousedown', function(e) {
         if (e.target.classList.contains('signature-handles') || e.target.classList.contains('delete-signature-btn')) {
             return;
@@ -1016,6 +1363,35 @@ function makeSignatureDraggable(element) {
     document.addEventListener('mouseup', function() {
         isDragging = false;
     });
+
+    // Touch events for mobile
+    element.addEventListener('touchstart', function(e) {
+        if (e.target.classList.contains('signature-handles') || e.target.classList.contains('delete-signature-btn')) {
+            return;
+        }
+
+        e.preventDefault();
+        isDragging = true;
+        const touch = e.touches[0];
+        initialX = touch.clientX - element.offsetLeft;
+        initialY = touch.clientY - element.offsetTop;
+    }, { passive: false });
+
+    document.addEventListener('touchmove', function(e) {
+        if (!isDragging) return;
+
+        e.preventDefault();
+        const touch = e.touches[0];
+        currentX = touch.clientX - initialX;
+        currentY = touch.clientY - initialY;
+
+        element.style.left = currentX + 'px';
+        element.style.top = currentY + 'px';
+    }, { passive: false });
+
+    document.addEventListener('touchend', function() {
+        isDragging = false;
+    });
 }
 
 function makeSignatureResizable(element) {
@@ -1025,6 +1401,7 @@ function makeSignatureResizable(element) {
         let isResizing = false;
         let startX, startY, startWidth, startHeight, startLeft, startTop;
 
+        // Mouse events for desktop
         handle.addEventListener('mousedown', function(e) {
             e.stopPropagation();
             isResizing = true;
@@ -1042,6 +1419,44 @@ function makeSignatureResizable(element) {
             const dx = e.clientX - startX;
             const dy = e.clientY - startY;
 
+            applyResize(handle, dx, dy);
+        });
+
+        document.addEventListener('mouseup', function() {
+            isResizing = false;
+        });
+
+        // Touch events for mobile
+        handle.addEventListener('touchstart', function(e) {
+            e.stopPropagation();
+            e.preventDefault();
+            isResizing = true;
+            const touch = e.touches[0];
+            startX = touch.clientX;
+            startY = touch.clientY;
+            startWidth = parseInt(window.getComputedStyle(element).width, 10);
+            startHeight = parseInt(window.getComputedStyle(element).height, 10);
+            startLeft = element.offsetLeft;
+            startTop = element.offsetTop;
+        }, { passive: false });
+
+        document.addEventListener('touchmove', function(e) {
+            if (!isResizing) return;
+
+            e.preventDefault();
+            const touch = e.touches[0];
+            const dx = touch.clientX - startX;
+            const dy = touch.clientY - startY;
+
+            applyResize(handle, dx, dy);
+        }, { passive: false });
+
+        document.addEventListener('touchend', function() {
+            isResizing = false;
+        });
+
+        // Common resize logic
+        function applyResize(handle, dx, dy) {
             if (handle.classList.contains('handle-se')) {
                 element.style.width = (startWidth + dx) + 'px';
                 element.style.height = (startHeight + dy) + 'px';
@@ -1061,11 +1476,7 @@ function makeSignatureResizable(element) {
             }
 
             updateControlPanelValues();
-        });
-
-        document.addEventListener('mouseup', function() {
-            isResizing = false;
-        });
+        }
     });
 }
 
@@ -1081,44 +1492,61 @@ function removeSignature() {
 
 // ==================== CONTROL PANEL ====================
 function setupEventListeners() {
-    // Width slider
-    document.getElementById('widthSlider').addEventListener('input', function(e) {
+    // Debounced slider update functions
+    const debouncedWidthUpdate = debounce(function(value) {
         if (placedSignature) {
-            placedSignature.style.width = e.target.value + 'px';
-            document.getElementById('widthValue').textContent = e.target.value;
+            placedSignature.style.width = value + 'px';
         }
-    });
+    }, 10);
 
-    // Height slider
-    document.getElementById('heightSlider').addEventListener('input', function(e) {
+    const debouncedHeightUpdate = debounce(function(value) {
         if (placedSignature) {
-            placedSignature.style.height = e.target.value + 'px';
-            document.getElementById('heightValue').textContent = e.target.value;
+            placedSignature.style.height = value + 'px';
         }
-    });
+    }, 10);
 
-    // Position X slider
-    document.getElementById('positionXSlider').addEventListener('input', function(e) {
+    const debouncedPositionXUpdate = debounce(function(value) {
         if (placedSignature) {
             const canvasWidth = canvas.width;
             const sigWidth = placedSignature.offsetWidth;
             const maxX = canvasWidth - sigWidth;
-            const x = (e.target.value / 100) * maxX;
+            const x = (value / 100) * maxX;
             placedSignature.style.left = x + 'px';
-            document.getElementById('positionXValue').textContent = e.target.value;
         }
-    });
+    }, 10);
 
-    // Position Y slider
-    document.getElementById('positionYSlider').addEventListener('input', function(e) {
+    const debouncedPositionYUpdate = debounce(function(value) {
         if (placedSignature) {
             const canvasHeight = canvas.height;
             const sigHeight = placedSignature.offsetHeight;
             const maxY = canvasHeight - sigHeight;
-            const y = (e.target.value / 100) * maxY;
+            const y = (value / 100) * maxY;
             placedSignature.style.top = y + 'px';
-            document.getElementById('positionYValue').textContent = e.target.value;
         }
+    }, 10);
+
+    // Width slider
+    document.getElementById('widthSlider').addEventListener('input', function(e) {
+        document.getElementById('widthValue').textContent = e.target.value;
+        debouncedWidthUpdate(e.target.value);
+    });
+
+    // Height slider
+    document.getElementById('heightSlider').addEventListener('input', function(e) {
+        document.getElementById('heightValue').textContent = e.target.value;
+        debouncedHeightUpdate(e.target.value);
+    });
+
+    // Position X slider
+    document.getElementById('positionXSlider').addEventListener('input', function(e) {
+        document.getElementById('positionXValue').textContent = e.target.value;
+        debouncedPositionXUpdate(e.target.value);
+    });
+
+    // Position Y slider
+    document.getElementById('positionYSlider').addEventListener('input', function(e) {
+        document.getElementById('positionYValue').textContent = e.target.value;
+        debouncedPositionYUpdate(e.target.value);
     });
 
     // Confirm checkbox
