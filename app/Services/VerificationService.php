@@ -98,8 +98,6 @@ class VerificationService
                 ]
             ];
 
-            // dd($checks);
-
             // 2. Check digital signature validity
             $digitalSignature = $documentSignature->digitalSignature;
             if (!$digitalSignature) {

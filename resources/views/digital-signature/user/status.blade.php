@@ -312,10 +312,13 @@
                                         <div class="small text-muted">Waiting for Kaprodi approval...</div>
                                     @elseif($request->status === 'rejected')
                                         <div class="small text-danger">
-                                            Rejected: {{ $request->rejection_reason }}
+                                            <strong>Rejected:</strong> {{ $request->rejection_reason }}
                                         </div>
                                         @if($request->rejected_at)
                                         <div class="small text-muted">{{ $request->rejected_at->format('d M Y H:i') }}</div>
+                                        @endif
+                                        @if($request->rejector)
+                                        <div class="small text-muted">by {{ $request->rejector->name }}</div>
                                         @endif
                                     @else
                                         <div class="small text-success">Approved by Kaprodi</div>
@@ -369,8 +372,40 @@
                             @endif
                         </div>
 
+                        <!-- REJECTED STATUS ALERT -->
+                        @if($request->status === 'rejected' || $request->documentSignature && $request->documentSignature->signature_status === 'rejected')
+                        <div class="alert alert-danger">
+                            <div class="d-flex align-items-start">
+                                <i class="fas fa-exclamation-circle fa-2x me-3 mt-1"></i>
+                                <div>
+                                    <h6 class="alert-heading mb-2">Signature Rejected</h6>
+                                    <p class="mb-2"><strong>Reason:</strong> {{ $request->rejection_reason }}</p>
+                                    @if($request->documentSignature && $request->documentSignature->signature_status === 'rejected')
+                                        <p class="mb-2 small">
+                                            <strong>Issue Type:</strong>
+                                            @if(str_contains($request->rejection_reason, 'placement'))
+                                                Signature Placement Problem
+                                            @elseif(str_contains($request->rejection_reason, 'size') || str_contains($request->rejection_reason, 'large'))
+                                                Signature Size Issue
+                                            @elseif(str_contains($request->rejection_reason, 'quality'))
+                                                Signature Quality Problem
+                                            @else
+                                                General Signature Issue
+                                            @endif
+                                        </p>
+                                    @endif
+                                    <hr class="my-2">
+                                    <p class="mb-0 small">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Please submit a new document request with the corrections mentioned above.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        @endif
+
                         <!-- QR Code Display -->
-                        @if($request->documentSignature && $request->documentSignature->qr_code_path)
+                        @if($request->documentSignature && $request->documentSignature->qr_code_path && in_array($request->status, ['sign_approved', 'user_signed']))
                         <div class="qr-code-display">
                             <h6>Verification QR Code</h6>
                             <img src="{{ Storage::url($request->documentSignature->qr_code_path) }}"
@@ -383,6 +418,17 @@
 
                         <!-- Action Buttons -->
                         <div class="action-buttons mt-3">
+                            @if($request->status === 'rejected')
+                                <a href="{{ route('user.signature.approval.request') }}"
+                                   class="btn btn-primary">
+                                    <i class="fas fa-redo me-1"></i> Submit New Request
+                                </a>
+                                {{-- <a href="{{ route('user.signature.approval.request') }}"
+                                   class="btn btn-outline-secondary">
+                                    <i class="fas fa-question-circle me-1"></i> Need Help?
+                                </a> --}}
+                            @endif
+
                             @if($request->status === 'approved')
                                 <a href="{{ route('user.signature.sign.document', $request->id) }}"
                                    class="btn btn-primary">
@@ -404,7 +450,7 @@
                                 </a>
                             @endif
 
-                            @if($request->documentSignature && $request->documentSignature->qr_code_path)
+                            @if($request->documentSignature && $request->documentSignature->qr_code_path && in_array($request->status, ['sign_approved', 'user_signed']))
                                 <a href="{{ route('user.signature.my.signatures.qr', $request->documentSignature->id) }}"
                                    class="btn btn-outline-secondary">
                                     <i class="fas fa-qrcode me-1"></i> Download QR
@@ -412,7 +458,7 @@
                             @endif
 
                             <!-- Verification Link -->
-                            @if($request->documentSignature && $request->documentSignature->verification_url)
+                            @if($request->documentSignature && $request->documentSignature->verification_url && in_array($request->status, ['sign_approved', 'user_signed']))
                                 <button class="btn btn-outline-primary"
                                         onclick="copyVerificationLink('{{ $request->documentSignature->verification_url }}')">
                                     <i class="fas fa-link me-1"></i> Copy Verification Link

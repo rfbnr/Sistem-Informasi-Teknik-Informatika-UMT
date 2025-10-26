@@ -66,6 +66,7 @@ class DocumentSignatureController extends Controller
                 'pending' => DocumentSignature::where('signature_status', DocumentSignature::STATUS_PENDING)->count(),
                 'signed' => DocumentSignature::where('signature_status', DocumentSignature::STATUS_SIGNED)->count(),
                 'verified' => DocumentSignature::where('signature_status', DocumentSignature::STATUS_VERIFIED)->count(),
+                'rejected' => DocumentSignature::where('signature_status', DocumentSignature::STATUS_REJECTED)->count(),
                 'invalid' => DocumentSignature::where('signature_status', DocumentSignature::STATUS_INVALID)->count(),
             ];
 
@@ -96,6 +97,8 @@ class DocumentSignatureController extends Controller
 
             // Get signature info
             $signatureInfo = $documentSignature->getSignatureInfo();
+
+            // dd($signatureInfo);
 
             // Perform verification
             $verificationResult = $this->verificationService->verifyById($id);
@@ -222,6 +225,50 @@ class DocumentSignatureController extends Controller
                 'success' => false,
                 'message' => 'Failed to load document preview'
             ], 500);
+        }
+    }
+
+    /**
+     * Reject document signature (for placement/quality issues)
+     */
+    public function reject(Request $request, $id)
+    {
+        $validator = Validator::make($request->all(), [
+            'reason' => 'required|string|max:500'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 400);
+        }
+
+        try {
+            $documentSignature = DocumentSignature::findOrFail($id);
+
+            // Only allow rejection for SIGNED signatures
+            if ($documentSignature->signature_status !== DocumentSignature::STATUS_SIGNED) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Can only reject signatures with "signed" status'
+                ], 400);
+            }
+
+            $documentSignature->rejectSignature($request->reason, Auth::id());
+
+            Log::info('Document signature rejected', [
+                'document_signature_id' => $id,
+                'reason' => $request->reason,
+                'rejected_by' => Auth::id(),
+                'approval_request_id' => $documentSignature->approval_request_id
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Document signature rejected successfully. User will need to re-sign the document.'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Document signature rejection error: ' . $e->getMessage());
+            return response()->json(['error' => 'Rejection failed'], 500);
         }
     }
 
@@ -365,11 +412,13 @@ class DocumentSignatureController extends Controller
             if ($documentSignature->final_pdf_path) {
                 // Use signed PDF (stored in local disk)
                 $filePath = $documentSignature->final_pdf_path;
+                // $fullPath = Storage::url($filePath);
                 $fullPath = Storage::disk('public')->path($filePath);
                 $fileType = 'signed';
             } else {
                 // Fallback to original document (stored in public disk)
                 $filePath = $approvalRequest->document_path;
+                // $fullPath = Storage::url($filePath);
                 $fullPath = Storage::disk('public')->path($filePath);
                 $fileType = 'original';
             }
@@ -387,7 +436,8 @@ class DocumentSignatureController extends Controller
             Log::info('Document viewed', [
                 'document_signature_id' => $id,
                 'viewed_by' => Auth::id(),
-                'file_type' => $fileType
+                'file_type' => $fileType,
+                'full_path' => $fullPath
             ]);
 
             // Return PDF file inline (untuk preview di browser)
@@ -482,7 +532,9 @@ class DocumentSignatureController extends Controller
             $query = DocumentSignature::with([
                     'approvalRequest',
                     'digitalSignature',
-                    'signer'
+                    'signer',
+                    'verifier',
+                    'rejector'
                 ])
                 ->whereHas('approvalRequest', function($q) use ($user) {
                     $q->where('user_id', $user->id);
@@ -531,6 +583,8 @@ class DocumentSignatureController extends Controller
 
                 'pending' => (clone $baseQuery)->whereIn('signature_status', ['pending', 'signed'])->count(),
 
+                'rejected' => (clone $baseQuery)->where('signature_status', 'rejected')->count(),
+
                 'this_month' => (clone $baseQuery)
                     ->whereMonth('created_at', now()->month)
                     ->whereYear('created_at', now()->year)
@@ -572,9 +626,12 @@ class DocumentSignatureController extends Controller
             // Find DocumentSignature with relations
             $documentSignature = DocumentSignature::with([
                     'approvalRequest.user',  // Submitter info
+                    'approvalRequest.approver',  // Who approved
+                    'approvalRequest.signApprover',  // Who approved signature
                     'digitalSignature',       // Crypto info
                     'signer',                 // Who signed (if signed_by exists)
-                    'verifier'                // Who verified (if verified_by exists)
+                    'verifier',               // Who verified (if verified_by exists)
+                    'rejector'                // Who rejected (if rejected_by exists)
                 ])
                 ->findOrFail($id);
 

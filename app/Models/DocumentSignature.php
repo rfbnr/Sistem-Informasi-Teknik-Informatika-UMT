@@ -35,12 +35,16 @@ class DocumentSignature extends Model
         'final_pdf_path',
         'verification_token',
         'verified_at',
-        'verified_by'
+        'verified_by',
+        'rejected_at',
+        'rejected_by',
+        'rejection_reason'
     ];
 
     protected $casts = [
         'signed_at' => 'datetime',
         'verified_at' => 'datetime',
+        'rejected_at' => 'datetime',
         'signature_metadata' => 'array',
         'positioning_data' => 'array',
     ];
@@ -49,6 +53,7 @@ class DocumentSignature extends Model
     const STATUS_PENDING = 'pending';
     const STATUS_SIGNED = 'signed';
     const STATUS_VERIFIED = 'verified';
+    const STATUS_REJECTED = 'rejected';
     const STATUS_INVALID = 'invalid';
 
     public static function boot()
@@ -115,6 +120,14 @@ class DocumentSignature extends Model
     public function verifier()
     {
         return $this->belongsTo(Kaprodi::class, 'verified_by');
+    }
+
+    /**
+     * Relasi ke Kaprodi (rejector)
+     */
+    public function rejector()
+    {
+        return $this->belongsTo(Kaprodi::class, 'rejected_by');
     }
 
     /**
@@ -254,6 +267,29 @@ class DocumentSignature extends Model
     }
 
     /**
+     * Reject signature (placement or quality issues)
+     */
+    public function rejectSignature($reason, $rejectedBy = null)
+    {
+        $oldStatus = $this->signature_status;
+        $this->signature_status = self::STATUS_REJECTED;
+        $this->rejected_at = now();
+        $this->rejected_by = $rejectedBy ?? Auth::id();
+        $this->rejection_reason = $reason;
+        $this->save();
+
+        // Also reject the approval request
+        if ($this->approvalRequest) {
+            $this->approvalRequest->reject($reason, $rejectedBy ?? Auth::id());
+        }
+
+        $this->logAudit('signature_rejected', $oldStatus, self::STATUS_REJECTED,
+            'Document signature has been rejected. Reason: ' . $reason);
+
+        return true;
+    }
+
+    /**
      * Invalidate signature
      */
     public function invalidate($reason = null)
@@ -319,6 +355,7 @@ class DocumentSignature extends Model
             self::STATUS_PENDING => 'Menunggu Tanda Tangan',
             self::STATUS_SIGNED => 'Sudah Ditandatangani',
             self::STATUS_VERIFIED => 'Terverifikasi',
+            self::STATUS_REJECTED => 'Ditolak',
             self::STATUS_INVALID => 'Tidak Valid'
         ];
 
@@ -334,7 +371,8 @@ class DocumentSignature extends Model
             self::STATUS_PENDING => 'badge-warning',
             self::STATUS_SIGNED => 'badge-info',
             self::STATUS_VERIFIED => 'badge-success',
-            self::STATUS_INVALID => 'badge-danger'
+            self::STATUS_REJECTED => 'badge-danger',
+            self::STATUS_INVALID => 'badge-secondary'
         ];
 
         return $classes[$this->signature_status] ?? 'badge-secondary';

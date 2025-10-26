@@ -66,6 +66,78 @@
         </div>
     @endif
 
+    <!-- REJECTION ALERT - Approval Request Rejected -->
+    @if($approvalRequest->status === 'rejected')
+        <div class="alert alert-danger border-danger">
+            <div class="d-flex align-items-start">
+                <i class="fas fa-times-circle fa-3x me-3 mt-1"></i>
+                <div class="flex-grow-1">
+                    <h5 class="alert-heading mb-2">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Approval Request Rejected
+                    </h5>
+                    <p class="mb-2"><strong>Rejection Reason:</strong></p>
+                    <div class="alert alert-light border mb-2">
+                        {{ $approvalRequest->rejection_reason ?? 'No reason provided' }}
+                    </div>
+                    @if($approvalRequest->rejected_at)
+                        <p class="mb-1 small">
+                            <i class="fas fa-clock me-1"></i>
+                            <strong>Rejected On:</strong> {{ $approvalRequest->rejected_at->format('d F Y, H:i') }}
+                            ({{ $approvalRequest->rejected_at->diffForHumans() }})
+                        </p>
+                    @endif
+                    @if($approvalRequest->rejectedBy)
+                        <p class="mb-0 small">
+                            <i class="fas fa-user me-1"></i>
+                            <strong>Rejected By:</strong> {{ $approvalRequest->rejectedBy->name }} ({{ $approvalRequest->rejectedBy->email }})
+                        </p>
+                    @endif
+                </div>
+            </div>
+        </div>
+    @endif
+
+    <!-- REJECTION ALERT - Document Signature Rejected -->
+    @if($approvalRequest->documentSignature && $approvalRequest->documentSignature->signature_status === 'rejected')
+        <div class="alert alert-danger border-danger">
+            <div class="d-flex align-items-start">
+                <i class="fas fa-ban fa-3x me-3 mt-1"></i>
+                <div class="flex-grow-1">
+                    <h5 class="alert-heading mb-2">
+                        <i class="fas fa-signature me-2"></i>
+                        Document Signature Rejected
+                    </h5>
+                    <p class="mb-2">
+                        The signed document has been rejected due to signature quality or placement issues.
+                    </p>
+                    <p class="mb-2"><strong>Rejection Reason:</strong></p>
+                    <div class="alert alert-light border mb-2">
+                        {{ $approvalRequest->documentSignature->rejection_reason ?? 'No reason provided' }}
+                    </div>
+                    @if($approvalRequest->documentSignature->rejected_at)
+                        <p class="mb-1 small">
+                            <i class="fas fa-clock me-1"></i>
+                            <strong>Rejected On:</strong> {{ $approvalRequest->documentSignature->rejected_at->format('d F Y, H:i') }}
+                            ({{ $approvalRequest->documentSignature->rejected_at->diffForHumans() }})
+                        </p>
+                    @endif
+                    @if($approvalRequest->documentSignature->rejector)
+                        <p class="mb-2 small">
+                            <i class="fas fa-user me-1"></i>
+                            <strong>Rejected By:</strong> {{ $approvalRequest->documentSignature->rejector->name }} ({{ $approvalRequest->documentSignature->rejector->email }})
+                        </p>
+                    @endif
+                    <hr class="my-2">
+                    <p class="mb-0 small text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        The user needs to re-sign the document with corrections. The approval request status has been updated to "rejected".
+                    </p>
+                </div>
+            </div>
+        </div>
+    @endif
+
     <div class="row">
         <!-- Left Column: Document Details & Preview -->
         <div class="col-lg-8">
@@ -180,7 +252,7 @@
             </div>
 
             <!-- Signature Verification (if signed) -->
-            {{-- @if($approvalRequest->documentSignature && $verificationResult)
+            @if($approvalRequest->documentSignature && $verificationResult)
                 <div class="card mb-4 border-{{ $verificationResult['is_valid'] ? 'success' : 'danger' }}">
                     <div class="card-header bg-{{ $verificationResult['is_valid'] ? 'success' : 'danger' }} text-white">
                         <h5 class="mb-0">
@@ -231,7 +303,7 @@
                         </div>
                     </div>
                 </div>
-            @endif --}}
+            @endif
         </div>
 
         <!-- Right Column: Timeline & Actions -->

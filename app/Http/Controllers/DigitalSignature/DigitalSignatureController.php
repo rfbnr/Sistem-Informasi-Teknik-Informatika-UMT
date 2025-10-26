@@ -49,7 +49,11 @@ class DigitalSignatureController extends Controller
                 'expired_signatures' => DigitalSignature::where('valid_until', '<', now())->count(),
                 'total_documents_signed' => DocumentSignature::count(),
                 'pending_signatures' => DocumentSignature::where('signature_status', DocumentSignature::STATUS_PENDING)->count(),
-                'verified_signatures' => DocumentSignature::where('signature_status', DocumentSignature::STATUS_VERIFIED)->count()
+                'verified_signatures' => DocumentSignature::where('signature_status', DocumentSignature::STATUS_VERIFIED)->count(),
+                // NEW: Approval Request stats
+                'pending_approvals' => ApprovalRequest::where('status', ApprovalRequest::STATUS_PENDING)->count(),
+                'need_verification' => DocumentSignature::where('signature_status', DocumentSignature::STATUS_SIGNED)->count(),
+                'rejected_signatures' => DocumentSignature::where('signature_status', DocumentSignature::STATUS_REJECTED)->count(),
             ];
 
             $recentSignatures = DigitalSignature::with('creator')
@@ -61,12 +65,32 @@ class DigitalSignatureController extends Controller
                 ->with('creator')
                 ->get();
 
+            // NEW: Pending Approval Requests for quick approve
+            $pendingApprovals = ApprovalRequest::with(['user:id,name,NIM'])
+                ->where('status', ApprovalRequest::STATUS_PENDING)
+                ->latest()
+                ->limit(5)
+                ->get();
+
+            // NEW: Signed Documents needing verification for quick verify
+            $needVerification = DocumentSignature::with([
+                    'approvalRequest:id,document_name,nomor,user_id',
+                    'approvalRequest.user:id,name,NIM',
+                    'signer:id,name'
+                ])
+                ->where('signature_status', DocumentSignature::STATUS_SIGNED)
+                ->latest('signed_at')
+                ->limit(5)
+                ->get();
+
             $verificationStats = $this->verificationService->getVerificationStatistics();
 
             return view('digital-signature.admin.dashboard', compact(
                 'stats',
                 'recentSignatures',
                 'expiringSignatures',
+                'pendingApprovals',
+                'needVerification',
                 'verificationStats'
             ));
 

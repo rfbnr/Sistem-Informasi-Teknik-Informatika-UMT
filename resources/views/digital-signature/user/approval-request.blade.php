@@ -308,7 +308,7 @@
                 @endif
 
                 {{-- FIXED FORM: Route action dan method yang benar --}}
-                <form action="{{ route('user.signature.approval.upload') }}" method="POST" enctype="multipart/form-data" id="uploadForm" novalidate>
+                <form action="{{ route('user.signature.approval.upload') }}" method="POST" enctype="multipart/form-data" id="uploadForm" >
                     @csrf
 
                     <!-- User Information -->

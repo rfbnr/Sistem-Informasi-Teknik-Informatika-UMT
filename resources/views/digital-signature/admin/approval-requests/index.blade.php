@@ -238,10 +238,17 @@
                                         </button>
 
                                         <!-- Download Original -->
-                                        <a href="{{ route('admin.signature.approval.download', $request->id) }}"
+                                        {{-- <a href="{{ route('admin.signature.approval.download', $request->id) }}"
                                            class="btn btn-outline-secondary"
                                            title="Download Original Document">
                                             <i class="fas fa-download"></i>
+                                        </a> --}}
+
+                                        {{-- View Details --}}
+                                        <a href="{{ route('admin.signature.approval.show', $request->id) }}"
+                                           class="btn btn-outline-primary"
+                                           title="View Details">
+                                            <i class="fas fa-info-circle"></i>
                                         </a>
 
                                         @if($request->status === 'pending')

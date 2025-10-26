@@ -37,10 +37,10 @@
 
     <!-- Statistics -->
     <div class="row mb-4">
-        <div class="col-md-3">
+        <div class="col-md-2">
             <div class="stats-card">
                 <div class="stats-number text-primary">{{ $statistics['total'] ?? 0 }}</div>
-                <div class="text-muted">Total Signatures</div>
+                <div class="text-muted">Total</div>
             </div>
         </div>
         <div class="col-md-3">
@@ -49,10 +49,16 @@
                 <div class="text-muted">Verified</div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-2">
             <div class="stats-card">
                 <div class="stats-number text-info">{{ $statistics['pending'] ?? 0 }}</div>
                 <div class="text-muted">Pending</div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="stats-card">
+                <div class="stats-number text-danger">{{ $statistics['rejected'] ?? 0 }}</div>
+                <div class="text-muted">Rejected</div>
             </div>
         </div>
         <div class="col-md-3">
@@ -78,6 +84,7 @@
                         <option value="signed" {{ request('status') == 'signed' ? 'selected' : '' }}>Signed</option>
                         <option value="verified" {{ request('status') == 'verified' ? 'selected' : '' }}>Verified</option>
                         <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
+                        <option value="rejected" {{ request('status') == 'rejected' ? 'selected' : '' }}>Rejected</option>
                     </select>
                 </div>
                 <div class="col-md-3">
@@ -102,7 +109,11 @@
             @foreach($signatures as $signature)
             <div class="col-lg-6 mb-4">
                 <div class="card h-100">
-                    <div class="card-header {{ $signature->signature_status === 'verified' ? 'bg-success' : ($signature->signature_status === 'signed' ? 'bg-info' : 'bg-warning') }} text-white">
+                    <div class="card-header {{
+                        $signature->signature_status === 'verified' ? 'bg-success' :
+                        ($signature->signature_status === 'signed' ? 'bg-info' :
+                        ($signature->signature_status === 'rejected' ? 'bg-danger' : 'bg-warning'))
+                    }} text-white">
                         <div class="d-flex justify-content-between align-items-center">
                             <h6 class="mb-0">
                                 <i class="fas fa-file-signature me-2"></i>
@@ -208,6 +219,32 @@
                             </div>
                         </div>
 
+                        <!-- Rejection Status -->
+                        @if($signature->signature_status === 'rejected')
+                        <div class="mb-3">
+                            <div class="alert alert-danger mb-0 py-2">
+                                <i class="fas fa-times-circle me-2"></i>
+                                <strong class="small">Signature Rejected</strong>
+                                <small class="d-block mt-1" style="font-size: 0.75rem;">
+                                    <strong>Reason:</strong> {{ $signature->rejection_reason }}
+                                </small>
+                                @if($signature->rejected_at)
+                                <small class="d-block text-muted" style="font-size: 0.75rem;">
+                                    on {{ $signature->rejected_at->format('d M Y H:i') }}
+                                    @if($signature->rejector)
+                                        by {{ $signature->rejector->name }}
+                                    @endif
+                                </small>
+                                @endif
+                                <hr class="my-2">
+                                <small class="d-block" style="font-size: 0.7rem;">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Please submit a new request with the necessary corrections.
+                                </small>
+                            </div>
+                        </div>
+                        @endif
+
                         <!-- Verification Status -->
                         @if($signature->verified_at)
                         <div class="mb-3">
@@ -247,17 +284,36 @@
 
                         <!-- Actions -->
                         <div class="d-flex gap-2">
-                            <a href="{{ route('user.signature.my.signatures.show', $signature->id) }}"
-                               class="btn btn-sm btn-outline-primary flex-fill">
-                                <i class="fas fa-eye"></i> Details
-                            </a>
-                            @if($signature->approvalRequest->signed_document_path || $signature->final_pdf_path)
+                            {{-- REJECTED: Show submit new request button --}}
+                            @if($signature->signature_status === 'rejected')
+                                <a href="{{ route('user.signature.approval.request') }}"
+                                   class="btn btn-sm btn-danger flex-fill">
+                                    <i class="fas fa-redo"></i> Submit New Request
+                                </a>
+                                <a href="{{ route('user.signature.my.signatures.show', $signature->id) }}"
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye"></i> Details
+                                </a>
+                            @else
+                                <a href="{{ route('user.signature.my.signatures.show', $signature->id) }}"
+                                   class="btn btn-sm btn-outline-primary flex-fill">
+                                    <i class="fas fa-eye"></i> Details
+                                </a>
+                                {{-- if pending user can self signing  --}}
+                                @if($signature->signature_status === 'pending')
+                                    <a href="{{ route('user.signature.sign.document', $signature->id) }}"
+                                       class="btn btn-sm btn-primary flex-fill">
+                                        <i class="fas fa-signature"></i> Sign Now
+                                    </a>
+                                @endif
+                            @endif
+                            @if(($signature->approvalRequest->signed_document_path || $signature->final_pdf_path) && $signature->signature_status !== 'rejected')
                                 <a href="{{ route('user.signature.my.signatures.download', $signature->id) }}"
                                    class="btn btn-sm btn-success flex-fill">
                                     <i class="fas fa-download"></i> Download
                                 </a>
                             @endif
-                            @if($signature->qr_code_path)
+                            @if($signature->qr_code_path && $signature->signature_status !== 'rejected')
                                 <a href="{{ route('user.signature.my.signatures.qr', $signature->id) }}"
                                    class="btn btn-sm btn-outline-secondary">
                                     <i class="fas fa-qrcode"></i>

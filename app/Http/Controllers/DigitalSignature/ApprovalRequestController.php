@@ -349,31 +349,33 @@ class ApprovalRequestController extends Controller
                 'user',
                 'documentSignature.digitalSignature',
                 'documentSignature.signer',
-                'approver'
+                'documentSignature.rejector',
+                'approver',
+                'rejector'
             ])->findOrFail($id);
 
             // Get workflow history/timeline
             $timeline = $this->buildWorkflowTimeline($approvalRequest);
 
             // Get verification result if document is signed
-            // $verificationResult = null;
-            // if ($approvalRequest->documentSignature) {
-            //     try {
-            //         $verificationResult = $this->verificationService->verifyById(
-            //             $approvalRequest->documentSignature->id
-            //         );
-            //     } catch (\Exception $e) {
-            //         Log::warning('Verification failed for approval request detail', [
-            //             'approval_request_id' => $id,
-            //             'error' => $e->getMessage()
-            //         ]);
-            //     }
-            // }
+            $verificationResult = null;
+            if ($approvalRequest->documentSignature && $approvalRequest->documentSignature->signature_status !== DocumentSignature::STATUS_PENDING) {
+                try {
+                    $verificationResult = $this->verificationService->verifyById(
+                        $approvalRequest->documentSignature->id
+                    );
+                } catch (\Exception $e) {
+                    Log::warning('Verification failed for approval request detail', [
+                        'approval_request_id' => $id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
 
             return view('digital-signature.admin.approval-requests.show', compact(
                 'approvalRequest',
                 'timeline',
-                // 'verificationResult'
+                'verificationResult'
             ));
 
         } catch (QueryException $qe) {
@@ -443,7 +445,22 @@ class ApprovalRequestController extends Controller
             ];
         }
 
-        // Rejected
+        // Document Signature Rejected (if signature was rejected)
+        if ($approvalRequest->documentSignature &&
+            $approvalRequest->documentSignature->signature_status === DocumentSignature::STATUS_REJECTED &&
+            $approvalRequest->documentSignature->rejected_at) {
+            $timeline[] = [
+                'title' => 'Document Signature Rejected',
+                'description' => $approvalRequest->documentSignature->rejection_reason ?? 'Signature was rejected due to quality or placement issues',
+                'user' => $approvalRequest->documentSignature->rejector->name ?? 'Kaprodi',
+                'timestamp' => $approvalRequest->documentSignature->rejected_at,
+                'icon' => 'fa-ban',
+                'color' => 'danger',
+                'status' => 'completed'
+            ];
+        }
+
+        // Approval Request Rejected
         if ($approvalRequest->status === ApprovalRequest::STATUS_REJECTED && $approvalRequest->rejected_at) {
             $timeline[] = [
                 'title' => 'Request Rejected',

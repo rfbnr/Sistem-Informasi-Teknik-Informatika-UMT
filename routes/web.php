@@ -125,6 +125,8 @@ Route::middleware(['auth:kaprodi'])->prefix('admin/signature')->name('admin.sign
             ->name('quick.preview');
         Route::post('{id}/verify', [DocumentSignatureController::class, 'verify'])
             ->name('verify');
+        Route::post('{id}/reject', [DocumentSignatureController::class, 'reject'])
+            ->name('reject');
         Route::post('{id}/invalidate', [DocumentSignatureController::class, 'invalidate'])
             ->name('invalidate');
         Route::post('batch-verify', [DocumentSignatureController::class, 'batchVerify'])

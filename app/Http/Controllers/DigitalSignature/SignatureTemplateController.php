@@ -128,6 +128,9 @@ class SignatureTemplateController extends Controller
                 $template->setAsDefault();
             }
 
+            // return route('digital-signature.admin.templates.index')
+                // ->with('success', 'Template created successfully');
+
             return response()->json([
                 'success' => true,
                 'message' => 'Template created successfully',
@@ -161,7 +164,7 @@ class SignatureTemplateController extends Controller
                 abort(403, 'Unauthorized to edit this template');
             }
 
-            return view('admin.signature-templates.edit', compact('template'));
+            return view('digital-signature.admin.templates.edit', compact('template'));
 
         } catch (\Exception $e) {
             Log::error('Template edit form failed: ' . $e->getMessage());
@@ -528,6 +531,8 @@ class SignatureTemplateController extends Controller
                     'message' => 'Unauthorized to view this template'
                 ], 403);
             }
+
+            // return view('digital-signature.admin.templates.edit', compact('template'));
 
             return response()->json([
                 'success' => true,

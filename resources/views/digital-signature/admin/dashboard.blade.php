@@ -1,321 +1,3 @@
-{{-- @extends('layouts.app')
-
-@section('title', 'Digital Signature Dashboard')
-
-@section('content')
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="h3 mb-0 text-gray-800">Digital Signature Dashboard</h1>
-                <nav aria-label="breadcrumb">
-                    <ol class="breadcrumb">
-                        <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Admin</a></li>
-                        <li class="breadcrumb-item active">Digital Signature</li>
-                    </ol>
-                </nav>
-            </div>
-        </div>
-    </div>
-
-    <!-- Statistics Cards -->
-    <div class="row mb-4">
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-primary shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                Total Signatures</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($stats['total_signatures']) }}</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-certificate fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-success shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                                Active Signatures</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($stats['active_signatures']) }}</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-check-circle fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-info shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
-                                Documents Signed</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($stats['total_documents_signed']) }}</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-file-signature fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-warning shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                                Pending Verification</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($stats['pending_signatures']) }}</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-clock fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Main Content Row -->
-    <div class="row">
-        <!-- Recent Signatures -->
-        <div class="col-lg-8 mb-4">
-            <div class="card shadow">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">Recent Digital Signatures</h6>
-                    <a href="{{ route('admin.signature.key-management') }}" class="btn btn-primary btn-sm">
-                        <i class="fas fa-cog"></i> Manage Keys
-                    </a>
-                </div>
-                <div class="card-body">
-                    @if($recentSignatures->count() > 0)
-                        <div class="table-responsive">
-                            <table class="table table-bordered" id="recentSignaturesTable">
-                                <thead>
-                                    <tr>
-                                        <th>Signature ID</th>
-                                        <th>Algorithm</th>
-                                        <th>Status</th>
-                                        <th>Created By</th>
-                                        <th>Valid Until</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($recentSignatures as $signature)
-                                    <tr>
-                                        <td>
-                                            <span class="font-weight-bold">{{ $signature->signature_id }}</span>
-                                        </td>
-                                        <td>
-                                            <span class="badge badge-info">{{ $signature->algorithm }}</span>
-                                        </td>
-                                        <td>
-                                            @if($signature->status === 'active')
-                                                <span class="badge badge-success">Active</span>
-                                            @elseif($signature->status === 'expired')
-                                                <span class="badge badge-warning">Expired</span>
-                                            @else
-                                                <span class="badge badge-danger">Revoked</span>
-                                            @endif
-                                        </td>
-                                        <td>{{ $signature->creator->name ?? 'System' }}</td>
-                                        <td>
-                                            <span class="@if($signature->isExpiringSoon()) text-warning @endif">
-                                                {{ $signature->valid_until->format('d M Y') }}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <a href="{{ route('admin.signature.view', $signature->id) }}"
-                                               class="btn btn-sm btn-outline-primary">
-                                                <i class="fas fa-eye"></i> View
-                                            </a>
-                                        </td>
-                                    </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
-                    @else
-                        <div class="text-center py-4">
-                            <i class="fas fa-certificate fa-3x text-gray-300 mb-3"></i>
-                            <p class="text-muted">No digital signatures found</p>
-                            <a href="{{ route('admin.signature.create') }}" class="btn btn-primary">
-                                <i class="fas fa-plus"></i> Create First Signature
-                            </a>
-                        </div>
-                    @endif
-                </div>
-            </div>
-        </div>
-
-        <!-- Alerts & Notifications -->
-        <div class="col-lg-4 mb-4">
-            <!-- Expiring Signatures Alert -->
-            <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-warning">
-                        <i class="fas fa-exclamation-triangle"></i> Expiring Soon
-                    </h6>
-                </div>
-                <div class="card-body">
-                    @if($expiringSignatures->count() > 0)
-                        @foreach($expiringSignatures as $signature)
-                        <div class="d-flex align-items-center py-2 border-bottom">
-                            <div class="mr-3">
-                                <i class="fas fa-certificate text-warning"></i>
-                            </div>
-                            <div class="flex-grow-1">
-                                <div class="small font-weight-bold">{{ $signature->signature_id }}</div>
-                                <div class="small text-muted">
-                                    Expires: {{ $signature->valid_until->format('d M Y') }}
-                                    ({{ $signature->valid_until->diffForHumans() }})
-                                </div>
-                            </div>
-                        </div>
-                        @endforeach
-                        <div class="text-center mt-3">
-                            <a href="{{ route('admin.signature.key-management', ['filter' => 'expiring']) }}"
-                               class="btn btn-warning btn-sm">
-                                View All Expiring
-                            </a>
-                        </div>
-                    @else
-                        <div class="text-center text-muted">
-                            <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
-                            <p class="mb-0">No signatures expiring soon</p>
-                        </div>
-                    @endif
-                </div>
-            </div>
-
-            <!-- Quick Actions -->
-            <div class="card shadow">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Quick Actions</h6>
-                </div>
-                <div class="card-body">
-                    <div class="d-grid gap-2">
-                        <a href="{{ route('admin.signature.create') }}" class="btn btn-success btn-block">
-                            <i class="fas fa-plus"></i> Create New Signature Key
-                        </a>
-                        <a href="{{ route('admin.signature.verification-tools') }}" class="btn btn-info btn-block">
-                            <i class="fas fa-search"></i> Verification Tools
-                        </a>
-                        <a href="{{ route('admin.signature.templates') }}" class="btn btn-primary btn-block">
-                            <i class="fas fa-palette"></i> Manage Templates
-                        </a>
-                        <a href="{{ route('admin.signature.export') }}" class="btn btn-secondary btn-block">
-                            <i class="fas fa-download"></i> Export Statistics
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Verification Statistics -->
-    <div class="row">
-        <div class="col-12">
-            <div class="card shadow">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Verification Statistics</h6>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-3 text-center">
-                            <div class="h4 font-weight-bold text-primary">
-                                {{ $verificationStats['total_signatures'] }}
-                            </div>
-                            <div class="text-muted">Total Signatures</div>
-                        </div>
-                        <div class="col-md-3 text-center">
-                            <div class="h4 font-weight-bold text-success">
-                                {{ $verificationStats['verified_signatures'] }}
-                            </div>
-                            <div class="text-muted">Verified</div>
-                        </div>
-                        <div class="col-md-3 text-center">
-                            <div class="h4 font-weight-bold text-info">
-                                {{ $verificationStats['verification_rate'] }}%
-                            </div>
-                            <div class="text-muted">Verification Rate</div>
-                        </div>
-                        <div class="col-md-3 text-center">
-                            <div class="h4 font-weight-bold text-warning">
-                                {{ $verificationStats['period_days'] }}
-                            </div>
-                            <div class="text-muted">Days Period</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-@endsection
-
-@push('styles')
-<style>
-.border-left-primary {
-    border-left: 0.25rem solid #4e73df !important;
-}
-.border-left-success {
-    border-left: 0.25rem solid #1cc88a !important;
-}
-.border-left-info {
-    border-left: 0.25rem solid #36b9cc !important;
-}
-.border-left-warning {
-    border-left: 0.25rem solid #f6c23e !important;
-}
-.card {
-    border: 0;
-    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15) !important;
-}
-.table th {
-    border-top: none;
-    font-weight: 600;
-    font-size: 0.875rem;
-    color: #5a5c69;
-}
-</style>
-@endpush
-
-@push('scripts')
-<script>
-$(document).ready(function() {
-    // Initialize DataTable
-    $('#recentSignaturesTable').DataTable({
-        pageLength: 10,
-        order: [[4, 'desc']], // Order by created date
-        columnDefs: [
-            { orderable: false, targets: [5] } // Disable ordering for Actions column
-        ]
-    });
-
-    // Auto-refresh statistics every 5 minutes
-    setInterval(function() {
-        location.reload();
-    }, 300000);
-});
-</script>
-@endpush --}}
-
 {{-- resources/views/digital-signature/admin/dashboard.blade.php --}}
 @extends('digital-signature.layouts.app')
 
@@ -324,6 +6,20 @@ $(document).ready(function() {
 @section('sidebar')
     @include('digital-signature.admin.partials.sidebar')
 @endsection
+
+@push('styles')
+<style>
+.stats-card.clickable {
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.stats-card.clickable:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+}
+</style>
+@endpush
 
 @section('content')
 <div class="main-content">
@@ -342,9 +38,9 @@ $(document).ready(function() {
                     <button class="btn btn-light" onclick="refreshDashboard()">
                         <i class="fas fa-sync-alt me-1"></i> Refresh
                     </button>
-                    {{-- <a href="{{ route('admin.signature.create') }}" class="btn btn-warning">
+                    <a href="{{ route('admin.signature.keys.create') }}" class="btn btn-warning">
                         <i class="fas fa-plus me-1"></i> New Signature
-                    </a> --}}
+                    </a>
                 </div>
             </div>
         </div>
@@ -352,50 +48,74 @@ $(document).ready(function() {
 
     <!-- Statistics Cards -->
     <div class="row mb-4">
-        <div class="col-lg-3 col-md-6 mb-3">
+        <div class="col-lg-2 col-md-4 mb-3">
             <div class="stats-card">
                 <div class="stats-number text-primary">{{ $stats['total_signatures'] ?? 0 }}</div>
-                <div class="text-muted">Total Signatures</div>
+                <div class="text-muted small">Total Signatures</div>
                 <div class="mt-2">
                     <small class="text-success">
-                        <i class="fas fa-arrow-up"></i>
+                        <i class="fas fa-check-circle"></i>
                         {{ $stats['active_signatures'] ?? 0 }} Active
                     </small>
                 </div>
             </div>
         </div>
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="stats-card">
-                <div class="stats-number text-info">{{ $stats['total_documents_signed'] ?? 0 }}</div>
-                <div class="text-muted">Documents Signed</div>
+        <div class="col-lg-2 col-md-4 mb-3">
+            <div class="stats-card clickable" onclick="window.location='{{ route('admin.signature.approval.index') }}'">
+                <div class="stats-number text-warning">{{ $stats['pending_approvals'] ?? 0 }}</div>
+                <div class="text-muted small">Pending Approvals</div>
                 <div class="mt-2">
-                    <small class="text-warning">
-                        <i class="fas fa-clock"></i>
-                        {{ $stats['pending_signatures'] ?? 0 }} Pending
+                    <small class="text-primary">
+                        <i class="fas fa-hand-pointer"></i>
+                        Need Action
                     </small>
                 </div>
             </div>
         </div>
-        <div class="col-lg-3 col-md-6 mb-3">
+        <div class="col-lg-2 col-md-4 mb-3">
+            <div class="stats-card clickable" onclick="window.location='{{ route('admin.signature.documents.index', ['status' => 'signed']) }}'">
+                <div class="stats-number text-info">{{ $stats['need_verification'] ?? 0 }}</div>
+                <div class="text-muted small">Need Verification</div>
+                <div class="mt-2">
+                    <small class="text-warning">
+                        <i class="fas fa-clipboard-check"></i>
+                        To Verify
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-2 col-md-4 mb-3">
             <div class="stats-card">
                 <div class="stats-number text-success">{{ $stats['verified_signatures'] ?? 0 }}</div>
-                <div class="text-muted">Verified Signatures</div>
+                <div class="text-muted small">Verified</div>
                 <div class="mt-2">
                     <small class="text-info">
                         <i class="fas fa-shield-alt"></i>
-                        {{ $verificationStats['verification_rate'] ?? 0 }}% Rate
+                        {{ $verificationStats['verification_rate'] ?? 0 }}%
                     </small>
                 </div>
             </div>
         </div>
-        <div class="col-lg-3 col-md-6 mb-3">
+        <div class="col-lg-2 col-md-4 mb-3">
             <div class="stats-card">
-                <div class="stats-number text-warning">{{ $stats['expired_signatures'] ?? 0 }}</div>
-                <div class="text-muted">Expired Signatures</div>
+                <div class="stats-number text-danger">{{ $stats['rejected_signatures'] ?? 0 }}</div>
+                <div class="text-muted small">Rejected</div>
+                <div class="mt-2">
+                    <small class="text-muted">
+                        <i class="fas fa-times-circle"></i>
+                        Signatures
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-2 col-md-4 mb-3">
+            <div class="stats-card">
+                <div class="stats-number text-secondary">{{ $stats['expired_signatures'] ?? 0 }}</div>
+                <div class="text-muted small">Expired Keys</div>
                 <div class="mt-2">
                     <small class="text-danger">
                         <i class="fas fa-exclamation-triangle"></i>
-                        Need Renewal
+                        Renew
                     </small>
                 </div>
             </div>
@@ -403,66 +123,186 @@ $(document).ready(function() {
     </div>
 
     <div class="row">
-        <!-- Recent Signatures -->
+        <!-- Pending Approvals - Quick Approve -->
+        <div class="col-lg-6 mb-4">
+            <div class="card border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-clipboard-check me-2"></i>
+                            Pending Approvals
+                        </h5>
+                        <span class="badge bg-dark">{{ $stats['pending_approvals'] ?? 0 }}</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    @if($pendingApprovals && $pendingApprovals->count() > 0)
+                        <div class="list-group list-group-flush">
+                            @foreach($pendingApprovals as $approval)
+                            <div class="list-group-item px-0">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1">
+                                            <i class="fas fa-file-alt me-1 text-primary"></i>
+                                            {{ Str::limit($approval->document_name, 40) }}
+                                        </h6>
+                                        <small class="text-muted d-block">
+                                            <i class="fas fa-file-signature me-1"></i>
+                                            Type: {{ ucfirst(str_replace('_', ' ', $approval->document_type)) }}
+                                        </small>
+                                        <small class="text-muted d-block">
+                                            <i class="fas fa-user me-1"></i>
+                                            {{ $approval->user->name ?? 'Unknown' }} ({{ $approval->user->NIM ?? 'N/A' }})
+                                        </small>
+                                        <small class="text-muted d-block">
+                                            <i class="fas fa-clock me-1"></i>
+                                            {{ $approval->created_at->diffForHumans() }}
+                                        </small>
+                                    </div>
+                                    <div class="ms-3">
+                                        <button class="btn btn-sm btn-success mb-1 w-100"
+                                                onclick="showApproveModal({{ $approval->id }}, '{{ $approval->document_name }}', '{{ $approval->document_type }}')">
+                                            <i class="fas fa-check me-1"></i> Approve
+                                        </button>
+                                        <button class="btn btn-sm btn-info mb-1 w-100"
+                                        onclick="viewDocument({{ $approval->id }}, '{{ asset('storage/' . $approval->document_path) }}')">
+                                            <i class="fas fa-file-alt me-1"></i> View
+                                        </button>
+                                        <a href="{{ route('admin.signature.approval.show', $approval->id) }}"
+                                           class="btn btn-sm btn-outline-primary w-100">
+                                            <i class="fas fa-eye me-1"></i> Details
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            @endforeach
+                        </div>
+                        <div class="text-center mt-3">
+                            <a href="{{ route('admin.signature.approval.index') }}" class="btn btn-warning">
+                                <i class="fas fa-list me-1"></i> View All Pending ({{ $stats['pending_approvals'] }})
+                            </a>
+                        </div>
+                    @else
+                        <div class="text-center py-5">
+                            <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                            <h5 class="text-muted">All Caught Up!</h5>
+                            <p class="text-muted">No pending approval requests at the moment</p>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+
+        <!-- Need Verification - Quick Verify -->
+        <div class="col-lg-6 mb-4">
+            <div class="card border-info">
+                <div class="card-header bg-info text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-shield-alt me-2"></i>
+                            Need Verification
+                        </h5>
+                        <span class="badge bg-dark">{{ $stats['need_verification'] ?? 0 }}</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    @if($needVerification && $needVerification->count() > 0)
+                        <div class="list-group list-group-flush">
+                            @foreach($needVerification as $docSig)
+                            <div class="list-group-item px-0">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1">
+                                            <i class="fas fa-file-signature me-1 text-info"></i>
+                                            {{ Str::limit($docSig->approvalRequest->document_name ?? 'N/A', 40) }}
+                                        </h6>
+                                        <small class="text-muted d-block">
+                                            <i class="fas fa-user me-1"></i>
+                                            {{ $docSig->approvalRequest->user->name ?? 'Unknown' }} ({{ $docSig->approvalRequest->user->NIM }})
+                                        </small>
+                                        <small class="text-muted d-block">
+                                            <i class="fas fa-pen-fancy me-1"></i>
+                                            Signed by: {{ $docSig->signer->name ?? 'N/A' }}
+                                        </small>
+                                        <small class="text-muted d-block">
+                                            <i class="fas fa-clock me-1"></i>
+                                            {{ $docSig->signed_at ? $docSig->signed_at->diffForHumans() : 'Unknown' }}
+                                        </small>
+                                    </div>
+                                    <div class="ms-3">
+                                        <button class="btn btn-sm btn-primary mb-1 w-100"
+                                                {{-- onclick="quickVerify({{ $docSig->id }}, '{{ $docSig->approvalRequest->document_name }}')"> --}}
+                                                onclick="quickPreviewDocument({{ $docSig->id }})"
+                                                    title="Quick Preview & Verify">
+                                            <i class="fas fa-check-double me-1"></i> Preview & Verify
+                                        </button>
+                                        <a href="{{ route('admin.signature.documents.show', $docSig->id) }}"
+                                           class="btn btn-sm btn-outline-info w-100">
+                                            <i class="fas fa-eye me-1"></i> Details
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            @endforeach
+                        </div>
+                        <div class="text-center mt-3">
+                            <a href="{{ route('admin.signature.documents.index', ['status' => 'signed']) }}" class="btn btn-info">
+                                <i class="fas fa-list me-1"></i> View All Signed ({{ $stats['need_verification'] }})
+                            </a>
+                        </div>
+                    @else
+                        <div class="text-center py-5">
+                            <i class="fas fa-check-double fa-3x text-success mb-3"></i>
+                            <h5 class="text-muted">All Verified!</h5>
+                            <p class="text-muted">No signed documents needing verification</p>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Second Row: Recent Signatures & Quick Actions -->
+    <div class="row">
         <div class="col-lg-8 mb-4">
             <div class="card">
                 <div class="card-header bg-primary text-white">
                     <h5 class="mb-0">
                         <i class="fas fa-key me-2"></i>
-                        Recent Digital Signatures
+                        Recent Digital Signature Keys
                     </h5>
                 </div>
                 <div class="card-body">
                     @if($recentSignatures && $recentSignatures->count() > 0)
                         <div class="table-responsive">
-                            <table class="table table-hover">
+                            <table class="table table-hover table-sm">
                                 <thead>
                                     <tr>
                                         <th>Signature ID</th>
                                         <th>Algorithm</th>
-                                        <th>Created By</th>
                                         <th>Status</th>
                                         <th>Valid Until</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach($recentSignatures as $signature)
+                                    @foreach($recentSignatures->take(5) as $signature)
                                     <tr>
-                                        <td>
-                                            <code>{{ Str::limit($signature->signature_id, 20) }}</code>
-                                        </td>
-                                        <td>
-                                            <span class="badge bg-info">{{ $signature->algorithm }}</span>
-                                        </td>
-                                        <td>{{ $signature->creator->name ?? 'System' }}</td>
+                                        <td><code class="small">{{ Str::limit($signature->signature_id, 20) }}</code></td>
+                                        <td><span class="badge bg-info">{{ $signature->algorithm }}</span></td>
                                         <td>
                                             <span class="status-badge status-{{ strtolower($signature->status) }}">
                                                 {{ ucfirst($signature->status) }}
                                             </span>
                                         </td>
                                         <td>
-                                            <small class="text-muted">
-                                                {{ $signature->valid_until->format('d M Y') }}
-                                                @if($signature->valid_until->isPast())
-                                                    <i class="fas fa-exclamation-triangle text-danger ms-1"></i>
-                                                @endif
-                                            </small>
+                                            <small>{{ $signature->valid_until->format('d M Y') }}</small>
                                         </td>
                                         <td>
-                                            {{-- Test --}}
-                                            <div class="btn-group btn-group-sm">
-                                                <a href="{{ route('admin.signature.keys.index', $signature->id) }}"
-                                                   class="btn btn-outline-primary">
-                                                    <i class="fas fa-eye"></i>
-                                                </a>
-                                                @if($signature->status === 'active')
-                                                    <button class="btn btn-outline-warning"
-                                                            onclick="revokeSignature({{ $signature->id }})">
-                                                        <i class="fas fa-ban"></i>
-                                                    </button>
-                                                @endif
-                                            </div>
+                                            <a href="{{ route('admin.signature.keys.view', $signature->id) }}"
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
                                         </td>
                                     </tr>
                                     @endforeach
@@ -470,29 +310,29 @@ $(document).ready(function() {
                             </table>
                         </div>
                         <div class="text-center mt-3">
-                            {{-- <a href="{{ route('admin.signature.key-management') }}" class="btn btn-primary">
-                                <i class="fas fa-key me-1"></i> Manage All Signatures
-                            </a> --}}
+                            <a href="{{ route('admin.signature.keys.index') }}" class="btn btn-primary">
+                                <i class="fas fa-key me-1"></i> Manage All Signature Keys
+                            </a>
                         </div>
                     @else
                         <div class="text-center py-4">
                             <i class="fas fa-key fa-3x text-muted mb-3"></i>
                             <h5 class="text-muted">No Digital Signatures</h5>
                             <p class="text-muted">Create your first digital signature to get started</p>
-                            {{-- <a href="{{ route('admin.signature.create') }}" class="btn btn-primary">
+                            <a href="{{ route('admin.signature.keys.create') }}" class="btn btn-primary">
                                 <i class="fas fa-plus me-1"></i> Create Signature
-                            </a> --}}
+                            </a>
                         </div>
                     @endif
                 </div>
             </div>
         </div>
 
-        <!-- Quick Actions & Alerts -->
+        <!-- Quick Actions & System Status -->
         <div class="col-lg-4">
             <!-- Quick Actions -->
             <div class="card mb-4">
-                <div class="card-header bg-success text-white">
+                <div class="card-header bg-dark text-white">
                     <h5 class="mb-0">
                         <i class="fas fa-bolt me-2"></i>
                         Quick Actions
@@ -500,17 +340,17 @@ $(document).ready(function() {
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
-                        {{-- <a href="{{ route('admin.signature.create') }}" class="btn btn-outline-primary">
+                        <a href="{{ route('admin.signature.keys.create') }}" class="btn btn-outline-primary">
                             <i class="fas fa-plus me-2"></i> Create New Signature
-                        </a> --}}
+                        </a>
                         <a href="{{ route('admin.signature.documents.index') }}" class="btn btn-outline-info">
                             <i class="fas fa-file-signature me-2"></i> View Documents
                         </a>
-                        {{-- <a href="{{ route('admin.signature.verification-tools') }}" class="btn btn-outline-warning">
-                            <i class="fas fa-shield-alt me-2"></i> Verification Tools
-                        </a> --}}
+                        <a href="{{ route('admin.signature.reports.index') }}" class="btn btn-outline-success">
+                            <i class="fas fa-chart-bar me-2"></i> Reports & Analytics
+                        </a>
                         <a href="{{ route('admin.signature.templates.index') }}" class="btn btn-outline-secondary">
-                            <i class="fas fa-template me-2"></i> Manage Templates
+                            <i class="fas fa-palette me-2"></i> Manage Templates
                         </a>
                     </div>
                 </div>
@@ -618,61 +458,348 @@ $(document).ready(function() {
     </div>
 </div>
 
-<!-- Revoke Signature Modal -->
-<div class="modal fade" id="revokeModal" tabindex="-1">
+<!-- Quick Approve Modal -->
+{{-- <div class="modal fade" id="quickApproveModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Revoke Digital Signature</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-check-circle me-2"></i>
+                    Quick Approve Request
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <form id="revokeForm" method="POST">
+            <form id="quickApproveForm">
                 @csrf
                 <div class="modal-body">
-                    <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        <strong>Warning:</strong> Revoking this signature will invalidate all documents signed with it.
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        You are about to approve this document request.
                     </div>
                     <div class="mb-3">
-                        <label for="reason" class="form-label">Reason for revocation:</label>
-                        <textarea class="form-control" id="reason" name="reason" rows="3" required
-                                  placeholder="Enter the reason for revoking this signature..."></textarea>
+                        <strong>Document:</strong>
+                        <div id="approveDocumentName" class="text-muted"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="approve_notes" class="form-label">Approval Notes (Optional)</label>
+                        <textarea class="form-control" id="approve_notes" name="notes" rows="3"
+                                  placeholder="Add any notes for this approval..."></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-danger">
-                        <i class="fas fa-ban me-1"></i> Revoke Signature
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-check me-1"></i> Approve Request
                     </button>
                 </div>
             </form>
         </div>
     </div>
-</div>
+</div> --}}
+
+<!-- Quick Verify Modal -->
+{{-- <div class="modal fade" id="quickVerifyModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-shield-alt me-2"></i>
+                    Quick Verify Signature
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Verifying the document signature will run all 7 security checks.
+                </div>
+                <div class="mb-3">
+                    <strong>Document:</strong>
+                    <div id="verifyDocumentName" class="text-muted"></div>
+                </div>
+                <div id="verifyProgressDiv" class="d-none">
+                    <div class="progress mb-3">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"
+                             style="width: 100%">Verifying...</div>
+                    </div>
+                </div>
+                <div id="verifyResultDiv" class="d-none"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" id="verifyBtn" class="btn btn-primary" onclick="executeVerify()">
+                    <i class="fas fa-check-double me-1"></i> Verify Now
+                </button>
+            </div>
+        </div>
+    </div>
+</div> --}}
+
+<!-- Include Modals -->
+@include('digital-signature.admin.partials.quick-preview-signed-modal')
+@include('digital-signature.admin.partials.reject-signed-modal')
+
+@include('digital-signature.admin.approval-requests.partials.view-document-modal')
+@include('digital-signature.admin.approval-requests.partials.approve-modal')
+{{-- @include('digital-signature.admin.approval-requests.partials.reject-modal') --}}
+{{-- @include('digital-signature.admin.approval-requests.partials.approve-signature-modal') --}}
+
 @endsection
 
 @push('scripts')
 <script>
+let currentApprovalId = null;
+let currentVerifyId = null;
+
 function refreshDashboard() {
     location.reload();
 }
 
-function revokeSignature(signatureId) {
-    const modal = new bootstrap.Modal(document.getElementById('revokeModal'));
-    const form = document.getElementById('revokeForm');
-    form.action = `/admin/signature/keys/${signatureId}/revoke`;
+// QUICK APPROVE
+// function quickApprove(approvalId, documentName) {
+//     currentApprovalId = approvalId;
+//     document.getElementById('approveDocumentName').textContent = documentName;
+//     document.getElementById('approve_notes').value = '';
+
+//     const modal = new bootstrap.Modal(document.getElementById('quickApproveModal'));
+//     modal.show();
+// }
+
+// document.getElementById('quickApproveForm').addEventListener('submit', function(e) {
+//     e.preventDefault();
+
+//     const notes = document.getElementById('approve_notes').value;
+//     const submitBtn = this.querySelector('button[type="submit"]');
+//     const originalBtnHtml = submitBtn.innerHTML;
+
+//     submitBtn.disabled = true;
+//     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Approving...';
+
+//     fetch(`/admin/signature/approval-requests/${currentApprovalId}/approve`, {
+//         method: 'POST',
+//         headers: {
+//             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+//             'Content-Type': 'application/json',
+//             'Accept': 'application/json'
+//         },
+//         body: JSON.stringify({ notes: notes })
+//     })
+//     .then(response => response.json())
+//     .then(data => {
+//         if (data.success) {
+//             alert('✅ Approval request approved successfully!');
+//             bootstrap.Modal.getInstance(document.getElementById('quickApproveModal')).hide();
+//             refreshDashboard();
+//         } else {
+//             alert('❌ Failed to approve: ' + (data.message || data.error || 'Unknown error'));
+//             submitBtn.disabled = false;
+//             submitBtn.innerHTML = originalBtnHtml;
+//         }
+//     })
+//     .catch(error => {
+//         console.error('Approval error:', error);
+//         alert('❌ Network error: Failed to approve request. Please try again.');
+//         submitBtn.disabled = false;
+//         submitBtn.innerHTML = originalBtnHtml;
+//     });
+// });
+
+// Show Approve Modal
+function showApproveModal(id, documentName, documentType) {
+    const modal = new bootstrap.Modal(document.getElementById('approveModal'));
+    document.getElementById('approveRequestId').value = id;
+    document.getElementById('approveDocumentName').textContent = documentName;
+    document.getElementById('approveDocumentType').textContent = documentType;
     modal.show();
 }
 
-// Auto-refresh dashboard every 5 minutes
+// View Document in Modal
+function viewDocument(id, documentUrl) {
+    const modal = new bootstrap.Modal(document.getElementById('viewDocumentModal'));
+    const iframe = document.getElementById('documentIframe');
+    const downloadBtn = document.getElementById('downloadDocumentBtn');
+
+    iframe.src = documentUrl;
+    downloadBtn.href = documentUrl;
+
+    modal.show();
+}
+
+// Perform Approve
+function performApprove() {
+    const requestId = document.getElementById('approveRequestId').value;
+    const notes = document.getElementById('approval_notes').value;
+
+    console.log('Approving request ID:', requestId, 'with notes:', notes);
+
+    fetch(`/admin/signature/approval-requests/${requestId}/approve`, {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ notes: notes })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log(data);
+        if (data.success || !data.error) {
+            showAlert('success', 'Request approved successfully!');
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showAlert('danger', data.message || 'Failed to approve request');
+        }
+        bootstrap.Modal.getInstance(document.getElementById('approveModal')).hide();
+    })
+    .catch(error => {
+        showAlert('danger', 'An error occurred while approving the request');
+        console.error('Error:', error);
+    });
+}
+
+// Perform Reject
+// function performReject() {
+//     const requestId = document.getElementById('rejectRequestId').value;
+//     const reason = document.getElementById('rejection_reason').value;
+
+//     if (!reason || reason.trim() === '') {
+//         showAlert('warning', 'Please provide a rejection reason');
+//         return;
+//     }
+
+//     if (reason.length > 500) {
+//         showAlert('warning', 'Rejection reason cannot exceed 500 characters');
+//         return;
+//     }
+
+//     fetch(`/admin/signature/approval-requests/${requestId}/reject`, {
+//         method: 'POST',
+//         headers: {
+//             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+//             'Content-Type': 'application/json'
+//         },
+//         body: JSON.stringify({ rejection_reason: reason })
+//     })
+//     .then(response => response.json())
+//     .then(data => {
+//         if (data.success || !data.error) {
+//             showAlert('success', 'Request rejected successfully!');
+//             setTimeout(() => location.reload(), 1500);
+//         } else {
+//             showAlert('danger', data.message || 'Failed to reject request');
+//         }
+//         bootstrap.Modal.getInstance(document.getElementById('rejectModal')).hide();
+//     })
+//     .catch(error => {
+//         showAlert('danger', 'An error occurred while rejecting the request');
+//         console.error('Error:', error);
+//     });
+// }
+
+// QUICK VERIFY
+function quickVerify(docSigId, documentName) {
+    currentVerifyId = docSigId;
+    document.getElementById('verifyDocumentName').textContent = documentName;
+    document.getElementById('verifyProgressDiv').classList.add('d-none');
+    document.getElementById('verifyResultDiv').classList.add('d-none');
+    document.getElementById('verifyResultDiv').innerHTML = '';
+    document.getElementById('verifyBtn').disabled = false;
+
+    const modal = new bootstrap.Modal(document.getElementById('quickVerifyModal'));
+    modal.show();
+}
+
+function executeVerify() {
+    const progressDiv = document.getElementById('verifyProgressDiv');
+    const resultDiv = document.getElementById('verifyResultDiv');
+    const verifyBtn = document.getElementById('verifyBtn');
+
+    progressDiv.classList.remove('d-none');
+    resultDiv.classList.add('d-none');
+    verifyBtn.disabled = true;
+
+    fetch(`/admin/signature/documents/${currentVerifyId}/verify`, {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        progressDiv.classList.add('d-none');
+        resultDiv.classList.remove('d-none');
+
+        if (data.success) {
+            resultDiv.innerHTML = `
+                <div class="alert alert-success">
+                    <h6><i class="fas fa-check-circle me-2"></i>Verification Successful!</h6>
+                    <p class="mb-0 small">The document signature has been verified and approved.</p>
+                </div>
+            `;
+            setTimeout(() => {
+                bootstrap.Modal.getInstance(document.getElementById('quickVerifyModal')).hide();
+                refreshDashboard();
+            }, 2000);
+        } else {
+            resultDiv.innerHTML = `
+                <div class="alert alert-danger">
+                    <h6><i class="fas fa-times-circle me-2"></i>Verification Failed</h6>
+                    <p class="mb-0 small">${data.message || data.error || 'Unknown error occurred'}</p>
+                </div>
+            `;
+            verifyBtn.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Verify error:', error);
+        progressDiv.classList.add('d-none');
+        resultDiv.classList.remove('d-none');
+        resultDiv.innerHTML = `
+            <div class="alert alert-danger">
+                <h6><i class="fas fa-exclamation-triangle me-2"></i>Network Error</h6>
+                <p class="mb-0 small">Failed to verify signature. Please try again.</p>
+            </div>
+        `;
+        verifyBtn.disabled = false;
+    });
+}
+
+function showAlert(type, message) {
+    const alertHtml = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-circle' : 'info-circle'} me-2"></i>
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+
+    const container = document.querySelector('.main-content');
+    const firstChild = container.firstElementChild;
+    firstChild.insertAdjacentHTML('afterend', alertHtml);
+
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+        const alerts = document.querySelectorAll('.alert');
+        alerts.forEach(alert => {
+            if (alert.classList.contains('show')) {
+                alert.classList.remove('show');
+                setTimeout(() => alert.remove(), 150);
+            }
+        });
+    }, 5000);
+}
+
+// Auto-refresh dashboard every 3 minutes
 setInterval(function() {
     const lastRefresh = localStorage.getItem('dashboardLastRefresh');
     const now = Date.now();
 
-    if (!lastRefresh || (now - lastRefresh) > 300000) { // 5 minutes
+    if (!lastRefresh || (now - lastRefresh) > 180000) { // 3 minutes
         refreshDashboard();
         localStorage.setItem('dashboardLastRefresh', now);
     }
-}, 300000);
+}, 180000);
 </script>
 @endpush

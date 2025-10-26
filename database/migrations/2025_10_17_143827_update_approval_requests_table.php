@@ -54,6 +54,7 @@ return new class extends Migration
 
             // Foreign key constraints
             $table->foreign('approved_by')->references('id')->on('kaprodis')->onDelete('set null');
+            $table->foreign('rejected_by')->references('id')->on('kaprodis')->onDelete('set null');
             $table->foreign('sign_approved_by')->references('id')->on('kaprodis')->onDelete('set null');
 
             // Indexes untuk performa

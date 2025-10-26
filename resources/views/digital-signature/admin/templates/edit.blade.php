@@ -229,4 +229,117 @@
                         </h5>
                     </div>
                     <div class="card-body p-0">
-                        <div
+                        <div id="templatePreview"
+                             style="width: 100%; height: auto; border: 1px solid #ddd; background-color: {{ $template->background_color }}; position: relative; overflow: hidden;">
+                            <img id="previewSignatureImage" src="{{ $template->signature_image_path ? Storage::url($template->signature_image_path) : '' }}"
+                                 alt="Signature Preview" style="position: absolute; bottom: 20px; left: 20px; max-width: 150px; display: {{ $template->signature_image_path ? 'block' : 'none' }};">
+                            <img id="previewLogoImage" src="{{ $template->logo_path ? Storage::url($template->logo_path) : '' }}"
+                                 alt="Logo Preview" style="position: absolute; top: 20px; right: 20px; max-width: 100px; display: {{ $template->logo_path ? 'block' : 'none' }};">
+                            <div style="position: absolute; bottom: 20px; right: 20px; text-align: right; color: #000;">
+                                <div id="previewKaprodiName" style="font-weight: bold;">{{ $textConfig['kaprodi_name']['text'] ?? '' }}</div>
+                                <div id="previewNIDN">NIDN : {{ str_replace('NIDN : ', '', $textConfig['nidn']['text'] ?? '') }}</div>
+                                <div id="previewTitle">{{ $textConfig['title']['text'] ?? '' }}</div>
+                                <div id="previewInstitution">{{ $textConfig['institution']['text'] ?? '' }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="text-end mb-4">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save me-1"></i> Save Changes
+            </button>
+        </div>
+    </form>
+</div>
+@endsection
+@section('scripts')
+<script>
+    // Image Preview Function
+    function previewImage(input, previewId) {
+        const preview = document.getElementById(previewId);
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+            };
+            reader.readAsDataURL(input.files[0]);
+        } else {
+            preview.src = '';
+            preview.style.display = 'none';
+        }
+    }
+    document.getElementById('signature_image').addEventListener('change', function() {
+        previewImage(this, 'signature_preview');
+        const previewSignature = document.getElementById('previewSignatureImage');
+        if (this.files && this.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                previewSignature.src = e.target.result;
+                previewSignature.style.display = 'block';
+            };
+            reader.readAsDataURL(this.files[0]);
+        } else {
+            previewSignature.src = '';
+            previewSignature.style.display = 'none';
+        }
+    });
+    document.getElementById('logo_image').addEventListener('change', function() {
+        previewImage(this, 'logo_preview');
+        const previewLogo = document.getElementById('previewLogoImage');
+        if (this.files && this.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                previewLogo.src = e.target.result;
+                previewLogo.style.display = 'block';
+            };
+            reader.readAsDataURL(this.files[0]);
+        } else {
+            previewLogo.src = '';
+            previewLogo.style.display = 'none';
+        }
+    });
+    // Background Color Sync
+    document.getElementById('background_color').addEventListener('input', function() {
+        document.getElementById('bg_color_hex').value = this.value;
+        document.getElementById('templatePreview').style.backgroundColor = this.value;
+    });
+    document.getElementById('bg_color_hex').addEventListener('input', function() {
+        document.getElementById('background_color').value = this.value;
+        document.getElementById('templatePreview').style.backgroundColor = this.value;
+    });
+    // Text Inputs Sync
+    document.getElementById('kaprodi_name').addEventListener('input', function() {
+        document.getElementById('previewKaprodiName').textContent = this.value;
+    });
+    document.getElementById('kaprodi_nidn').addEventListener('input', function() {
+        document.getElementById('previewNIDN').textContent = 'NIDN : ' + this.value;
+    });
+    document.getElementById('kaprodi_title').addEventListener('input', function() {
+        document.getElementById('previewTitle').textContent = this.value;
+    });
+    document.getElementById('institution_name').addEventListener('input', function() {
+        document.getElementById('previewInstitution').textContent = this.value;
+    });
+
+    // Template Preview
+    function updateTemplatePreview() {
+        const preview = document.getElementById('templatePreview');
+        const width = document.getElementById('canvas_width').value;
+        const height = document.getElementById('canvas_height').value;
+        preview.style.width = width + 'px';
+        preview.style.height = height + 'px';
+    }
+    document.getElementById('canvas_width').addEventListener('input', updateTemplatePreview);
+    document.getElementById('canvas_height').addEventListener('input', updateTemplatePreview);
+    // Initialize preview size
+    updateTemplatePreview();
+
+    // show template preview on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        updateTemplatePreview();
+    });
+</script>
+@endsection

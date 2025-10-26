@@ -139,7 +139,7 @@
 
     <!-- Performance Metrics -->
     <div class="row mb-4">
-        <div class="col-lg-2 col-md-4 mb-3">
+        <div class="col-lg-3 col-md-4 mb-3">
             <div class="card">
                 <div class="card-body text-center">
                     <div class="h2 text-success mb-2">{{ $statistics['completion_rate'] }}%</div>
@@ -154,11 +154,26 @@
         <div class="col-lg-2 col-md-4 mb-3">
             <div class="card">
                 <div class="card-body text-center">
-                    <div class="h2 text-danger mb-2">{{ $statistics['rejection_rate'] }}%</div>
-                    <div class="text-muted">Rejection Rate</div>
+                    <div class="h2 text-danger mb-2">{{ $statistics['approval_rejection_rate'] }}%</div>
+                    <div class="text-muted small">Approval Rejection</div>
                     <div class="progress mt-3" style="height: 6px;">
-                        <div class="progress-bar bg-danger" style="width: {{ $statistics['rejection_rate'] }}%"></div>
+                        <div class="progress-bar bg-danger" style="width: {{ $statistics['approval_rejection_rate'] }}%"></div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-4 mb-3">
+            <div class="card border-danger">
+                <div class="card-body text-center">
+                    <div class="h2 text-danger mb-2">{{ $statistics['signature_rejection_rate'] }}%</div>
+                    <div class="text-muted small">Signature Rejection</div>
+                    <div class="progress mt-3" style="height: 6px;">
+                        <div class="progress-bar bg-danger" style="width: {{ $statistics['signature_rejection_rate'] }}%"></div>
+                    </div>
+                    <small class="text-muted d-block mt-2">
+                        {{ $statistics['documents_rejected'] }} rejected
+                    </small>
                 </div>
             </div>
         </div>
@@ -184,7 +199,7 @@
             </div>
         </div>
 
-        <div class="col-lg-4 col-md-4 mb-3">
+        {{-- <div class="col-lg-4 col-md-4 mb-3">
             <div class="card border-primary">
                 <div class="card-body text-center">
                     <i class="fas fa-tachometer-alt fa-3x text-primary mb-3"></i>
@@ -196,12 +211,12 @@
                     </a>
                 </div>
             </div>
-        </div>
+        </div> --}}
     </div>
 
     <div class="row">
         <!-- Top Users -->
-        <div class="col-lg-6 mb-4">
+        <div class="col-lg-4 mb-4">
             <div class="card">
                 <div class="card-header bg-dark text-white">
                     <h5 class="mb-0">
@@ -212,17 +227,17 @@
                 <div class="card-body">
                     @if($topUsers->count() > 0)
                         <div class="table-responsive">
-                            <table class="table table-hover">
+                            <table class="table table-hover table-sm">
                                 <thead>
                                     <tr>
                                         <th>#</th>
                                         <th>Name</th>
                                         <th>NIM</th>
-                                        <th class="text-center">Submissions</th>
+                                        <th class="text-center">Count</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach($topUsers as $index => $userStat)
+                                    @foreach($topUsers->take(7) as $index => $userStat)
                                     <tr>
                                         <td>
                                             @if($index < 3)
@@ -231,7 +246,7 @@
                                                 {{ $index + 1 }}
                                             @endif
                                         </td>
-                                        <td>{{ $userStat->user->name ?? 'Unknown' }}</td>
+                                        <td class="small">{{ Str::limit($userStat->user->name ?? 'Unknown', 15) }}</td>
                                         <td>
                                             <small class="text-muted">{{ $userStat->user->NIM ?? 'N/A' }}</small>
                                         </td>
@@ -253,89 +268,58 @@
             </div>
         </div>
 
-        <!-- QR Code Analytics -->
-        <div class="col-lg-6 mb-4">
-            <div class="card">
-                <div class="card-header bg-secondary text-white">
-                    <h5 class="mb-0">
-                        <i class="fas fa-qrcode me-2"></i>
-                        QR Code Analytics
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="row mb-3">
-                        <div class="col-6 text-center border-end">
-                            <div class="h3 text-info">{{ $qrAnalytics['total_codes'] }}</div>
-                            <small class="text-muted">Total QR Codes</small>
-                        </div>
-                        <div class="col-6 text-center">
-                            <div class="h3 text-success">{{ $qrAnalytics['total_scans'] }}</div>
-                            <small class="text-muted">Total Scans</small>
-                        </div>
-                    </div>
-                    <hr>
-                    <div class="row mb-3">
-                        <div class="col-6 text-center border-end">
-                            <div class="h4 text-primary">{{ $qrAnalytics['active_codes'] }}</div>
-                            <small class="text-muted">Active Codes</small>
-                        </div>
-                        <div class="col-6 text-center">
-                            <div class="h4 text-danger">{{ $qrAnalytics['expired_codes'] }}</div>
-                            <small class="text-muted">Expired Codes</small>
-                        </div>
-                    </div>
-                    <hr>
-                    <div class="text-center">
-                        <div class="h4 text-warning">{{ $qrAnalytics['never_scanned'] }}</div>
-                        <small class="text-muted">Never Scanned</small>
-                    </div>
-                    <div class="mt-3 text-center">
-                        <a href="{{ route('admin.signature.reports.qr-codes') }}" class="btn btn-sm btn-outline-secondary">
-                            <i class="fas fa-eye me-1"></i> View Detailed QR Report
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row">
-        <!-- Timeline Chart -->
-        <div class="col-lg-8 mb-4">
-            <div class="card">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">
-                        <i class="fas fa-chart-line me-2"></i>
-                        Activity Timeline
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <canvas id="timelineChart" height="100"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <!-- Status Distribution -->
+        <!-- Top Rejection Reasons -->
         <div class="col-lg-4 mb-4">
-            <div class="card">
-                <div class="card-header bg-success text-white">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
                     <h5 class="mb-0">
-                        <i class="fas fa-chart-pie me-2"></i>
-                        Approval Status
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Top Rejection Reasons
                     </h5>
                 </div>
                 <div class="card-body">
-                    <canvas id="statusChart" height="200"></canvas>
+                    @if($topRejectionReasons->count() > 0)
+                        <div class="table-responsive">
+                            <table class="table table-hover table-sm">
+                                <thead>
+                                    <tr>
+                                        <th width="40">#</th>
+                                        <th>Reason</th>
+                                        <th width="80" class="text-center">Count</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($topRejectionReasons->take(7) as $index => $rejection)
+                                    <tr>
+                                        <td>{{ $index + 1 }}</td>
+                                        <td>
+                                            <div class="small" title="{{ $rejection->rejection_reason }}">
+                                                {{ Str::limit($rejection->rejection_reason, 30) }}
+                                            </div>
+                                            <span class="badge bg-secondary" style="font-size: 0.65rem;">
+                                                {{ $rejection->category }}
+                                            </span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-danger">{{ $rejection->count }}</span>
+                                        </td>
+                                    </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @else
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-check-circle fa-3x mb-3 text-success"></i>
+                            <p class="small">No rejections yet</p>
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>
-    </div>
 
-
-
-    <div class="row">
         <!-- Document Type Distribution -->
-        <div class="col-lg-6 mb-4">
+        <div class="col-lg-4 mb-4">
             <div class="card">
                 <div class="card-header bg-info text-white">
                     <h5 class="mb-0">
@@ -386,79 +370,26 @@
                 </div>
             </div>
         </div>
-
-        <!-- Priority Distribution -->
-        <div class="col-lg-6 mb-4">
-            <div class="card">
-                <div class="card-header bg-warning text-dark">
-                    <h5 class="mb-0">
-                        <i class="fas fa-exclamation-circle me-2"></i>
-                        Priority Distribution
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <canvas id="priorityChart" height="250"></canvas>
-                </div>
-            </div>
-        </div>
     </div>
 
-    {{-- <div class="row">
-        <!-- Top Users -->
-        <div class="col-lg-6 mb-4">
+    <div class="row">
+        <!-- Timeline Chart -->
+        <div class="col-lg-8 mb-4">
             <div class="card">
-                <div class="card-header bg-dark text-white">
+                <div class="card-header bg-primary text-white">
                     <h5 class="mb-0">
-                        <i class="fas fa-users me-2"></i>
-                        Top Users by Submissions
+                        <i class="fas fa-chart-line me-2"></i>
+                        Activity Timeline
                     </h5>
                 </div>
                 <div class="card-body">
-                    @if($topUsers->count() > 0)
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>#</th>
-                                        <th>Name</th>
-                                        <th>NIM</th>
-                                        <th class="text-center">Submissions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($topUsers as $index => $userStat)
-                                    <tr>
-                                        <td>
-                                            @if($index < 3)
-                                                <span class="badge bg-warning">{{ $index + 1 }}</span>
-                                            @else
-                                                {{ $index + 1 }}
-                                            @endif
-                                        </td>
-                                        <td>{{ $userStat->user->name ?? 'Unknown' }}</td>
-                                        <td>
-                                            <small class="text-muted">{{ $userStat->user->NIM ?? 'N/A' }}</small>
-                                        </td>
-                                        <td class="text-center">
-                                            <span class="badge bg-primary">{{ $userStat->submission_count }}</span>
-                                        </td>
-                                    </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
-                    @else
-                        <div class="text-center text-muted py-4">
-                            <i class="fas fa-users fa-3x mb-3"></i>
-                            <p>No user data available</p>
-                        </div>
-                    @endif
+                    <canvas id="timelineChart" height="100"></canvas>
                 </div>
             </div>
         </div>
 
         <!-- QR Code Analytics -->
-        <div class="col-lg-6 mb-4">
+        <div class="col-lg-4 mb-4">
             <div class="card">
                 <div class="card-header bg-secondary text-white">
                     <h5 class="mb-0">
@@ -501,11 +432,27 @@
                 </div>
             </div>
         </div>
-    </div> --}}
+    </div>
 
-    <!-- Recent Activity -->
+
+
     <div class="row">
-        <div class="col-12 mb-4">
+        <!-- Status Distribution -->
+        <div class="col-lg-4 mb-4">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>
+                        Approval Status
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="statusChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8 mb-4">
             <div class="card">
                 <div class="card-header bg-primary text-white">
                     <h5 class="mb-0">
@@ -543,6 +490,21 @@
                 </div>
             </div>
         </div>
+
+        <!-- Priority Distribution -->
+        {{-- <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        Priority Distribution
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="priorityChart" height="250"></canvas>
+                </div>
+            </div>
+        </div> --}}
     </div>
 
     <!-- Expiring Signatures Alert -->

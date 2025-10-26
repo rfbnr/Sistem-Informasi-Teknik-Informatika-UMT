@@ -23,7 +23,7 @@ return new class extends Migration
             $table->text('cms_signature')->nullable(); // CMS signature format
             $table->timestamp('signed_at')->nullable(); // Waktu penandatanganan
             $table->foreignId('signed_by')->nullable(); // Kaprodi yang menandatangani
-            $table->enum('signature_status', ['pending', 'signed', 'verified', 'invalid'])->default('pending');
+            $table->enum('signature_status', ['pending', 'signed', 'verified', 'invalid', 'rejected'])->default('pending');
             $table->string('canvas_data_path')->nullable(); // Path canvas data untuk signature
             $table->json('positioning_data')->nullable(); // Data posisi barcode dan signature
             $table->string('final_pdf_path')->nullable(); // Path PDF final yang sudah ditandatangani

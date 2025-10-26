@@ -55,9 +55,13 @@ class ReportAnalyticsController extends Controller
                 ->whereBetween('created_at', [$start, $end])->count(),
 
             // Document Signature Status
+            'documents_pending' => DocumentSignature::where('signature_status', 'pending')
+                ->whereBetween('created_at', [$start, $end])->count(),
             'documents_signed' => DocumentSignature::where('signature_status', 'signed')
                 ->whereBetween('created_at', [$start, $end])->count(),
             'documents_verified' => DocumentSignature::where('signature_status', 'verified')
+                ->whereBetween('created_at', [$start, $end])->count(),
+            'documents_rejected' => DocumentSignature::where('signature_status', 'rejected')
                 ->whereBetween('created_at', [$start, $end])->count(),
             'documents_invalid' => DocumentSignature::where('signature_status', 'invalid')
                 ->whereBetween('created_at', [$start, $end])->count(),
@@ -78,9 +82,15 @@ class ReportAnalyticsController extends Controller
             ? round(($completedRequests / $totalRequests) * 100, 2)
             : 0;
 
-        // Rejection Rate
-        $statistics['rejection_rate'] = $totalRequests > 0
+        // Approval Rejection Rate
+        $statistics['approval_rejection_rate'] = $totalRequests > 0
             ? round(($statistics['approval_rejected'] / $totalRequests) * 100, 2)
+            : 0;
+
+        // Document Signature Rejection Rate
+        $totalDocSignatures = $statistics['total_document_signatures'];
+        $statistics['signature_rejection_rate'] = $totalDocSignatures > 0
+            ? round(($statistics['documents_rejected'] / $totalDocSignatures) * 100, 2)
             : 0;
 
         // Average Processing Time
@@ -97,6 +107,9 @@ class ReportAnalyticsController extends Controller
 
         // Top Users Statistics
         $topUsers = $this->getTopUsers($start, $end);
+
+        // Top Rejection Reasons
+        $topRejectionReasons = $this->getTopRejectionReasons($start, $end);
 
         // Recent Activity
         $recentActivity = $this->getRecentActivity(10);
@@ -118,6 +131,7 @@ class ReportAnalyticsController extends Controller
             'documentTypeDistribution',
             'priorityDistribution',
             'topUsers',
+            'topRejectionReasons',
             'recentActivity',
             'qrAnalytics',
             'expiringSoon',
@@ -227,6 +241,73 @@ class ReportAnalyticsController extends Controller
     }
 
     /**
+     * Get top rejection reasons analytics
+     */
+    private function getTopRejectionReasons($start, $end)
+    {
+        // Get rejection reasons from both ApprovalRequest and DocumentSignature
+        $approvalRejections = ApprovalRequest::select('rejection_reason', DB::raw('count(*) as count'))
+            ->where('status', ApprovalRequest::STATUS_REJECTED)
+            ->whereBetween('created_at', [$start, $end])
+            ->whereNotNull('rejection_reason')
+            ->groupBy('rejection_reason')
+            ->get();
+
+        $signatureRejections = DocumentSignature::select('rejection_reason', DB::raw('count(*) as count'))
+            ->where('signature_status', DocumentSignature::STATUS_REJECTED)
+            ->whereBetween('created_at', [$start, $end])
+            ->whereNotNull('rejection_reason')
+            ->groupBy('rejection_reason')
+            ->get();
+
+        // Merge and aggregate
+        $merged = $approvalRejections->concat($signatureRejections);
+
+        // Group by similar reasons and sum counts
+        $grouped = [];
+        foreach ($merged as $item) {
+            $reason = $item->rejection_reason;
+            if (!isset($grouped[$reason])) {
+                $grouped[$reason] = 0;
+            }
+            $grouped[$reason] += $item->count;
+        }
+
+        // Convert to collection and sort
+        $result = collect($grouped)->map(function($count, $reason) {
+            return (object)[
+                'rejection_reason' => $reason,
+                'count' => $count,
+                'category' => $this->categorizeRejectionReason($reason)
+            ];
+        })->sortByDesc('count')->take(10)->values();
+
+        return $result;
+    }
+
+    /**
+     * Categorize rejection reason for better analytics
+     */
+    private function categorizeRejectionReason($reason)
+    {
+        $reason = strtolower($reason);
+
+        if (str_contains($reason, 'placement') || str_contains($reason, 'position')) {
+            return 'Signature Placement';
+        } elseif (str_contains($reason, 'size') || str_contains($reason, 'large') || str_contains($reason, 'small')) {
+            return 'Signature Size';
+        } elseif (str_contains($reason, 'quality') || str_contains($reason, 'distorted') || str_contains($reason, 'pixelated')) {
+            return 'Signature Quality';
+        } elseif (str_contains($reason, 'designated') || str_contains($reason, 'area')) {
+            return 'Wrong Area';
+        } elseif (str_contains($reason, 'document') || str_contains($reason, 'content')) {
+            return 'Document Issue';
+        } else {
+            return 'Other';
+        }
+    }
+
+    /**
      * Get recent activity log
      */
     private function getRecentActivity($limit = 10)
@@ -251,6 +332,7 @@ class ReportAnalyticsController extends Controller
 
         // Recent Document Signatures
         $recentSignatures = DocumentSignature::with('signer:id,name')
+            ->whereNotNull('signed_at')
             ->latest('signed_at')
             ->limit($limit)
             ->get()
@@ -265,8 +347,36 @@ class ReportAnalyticsController extends Controller
                 ];
             });
 
+        // Recent Rejections
+        $recentRejections = DocumentSignature::with('rejector:id,name', 'approvalRequest:id,document_name')
+            ->where('signature_status', DocumentSignature::STATUS_REJECTED)
+            ->whereNotNull('rejected_at')
+            ->latest('rejected_at')
+            ->limit($limit)
+            ->get()
+            ->map(function ($item) {
+                $description = $item->rejector
+                    ? "{$item->rejector->name} rejected signature"
+                    : "Signature rejected";
+
+                if ($item->approvalRequest) {
+                    $description .= " for {$item->approvalRequest->document_name}";
+                }
+
+                return [
+                    'type' => 'signature_rejection',
+                    'icon' => 'fa-times-circle',
+                    'color' => 'danger',
+                    'title' => 'Signature Rejected',
+                    'description' => $description,
+                    'timestamp' => $item->rejected_at,
+                ];
+            });
+
         // Merge and sort by timestamp
-        $activities = $recentApprovals->merge($recentSignatures)
+        $activities = $recentApprovals
+            ->merge($recentSignatures)
+            ->merge($recentRejections)
             ->sortByDesc('timestamp')
             ->take($limit);
 
@@ -308,7 +418,12 @@ class ReportAnalyticsController extends Controller
         $end = Carbon::parse($endDate)->endOfDay();
 
         // Get all data with relationships
-        $approvalRequests = ApprovalRequest::with(['user', 'approver', 'documentSignature.digitalSignature'])
+        $approvalRequests = ApprovalRequest::with([
+                'user',
+                'approver',
+                'documentSignature.digitalSignature',
+                'documentSignature.rejector'
+            ])
             ->whereBetween('created_at', [$start, $end])
             ->orderBy('created_at', 'desc')
             ->get();
@@ -383,6 +498,9 @@ class ReportAnalyticsController extends Controller
                 'Approver',
                 'Digital Signature ID',
                 'Signature Status',
+                'Rejected At',
+                'Rejected By',
+                'Rejection Reason',
                 'Notes'
             ]);
 
@@ -392,6 +510,18 @@ class ReportAnalyticsController extends Controller
                 $processingTime = $item->created_at && $item->sign_approved_at
                     ? $item->created_at->diffInHours($item->sign_approved_at)
                     : 'N/A';
+
+                $rejectedAt = 'N/A';
+                $rejectedBy = 'N/A';
+                $rejectionReason = 'N/A';
+
+                if ($item->documentSignature && $item->documentSignature->signature_status === 'rejected') {
+                    $rejectedAt = $item->documentSignature->rejected_at
+                        ? $item->documentSignature->rejected_at->format('Y-m-d H:i:s')
+                        : 'N/A';
+                    $rejectedBy = $item->documentSignature->rejector->name ?? 'N/A';
+                    $rejectionReason = $item->documentSignature->rejection_reason ?? 'N/A';
+                }
 
                 fputcsv($file, [
                     $no++,
@@ -409,6 +539,9 @@ class ReportAnalyticsController extends Controller
                     $item->approver->name ?? 'N/A',
                     $item->documentSignature->digitalSignature->signature_id ?? 'N/A',
                     $item->documentSignature->signature_status ?? 'N/A',
+                    $rejectedAt,
+                    $rejectedBy,
+                    $rejectionReason,
                     $item->notes ?? 'No notes'
                 ]);
             }

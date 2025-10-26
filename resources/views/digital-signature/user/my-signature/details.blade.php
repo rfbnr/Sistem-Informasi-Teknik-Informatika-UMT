@@ -30,15 +30,65 @@
 
     <!-- Status Alert -->
     @if($documentSignature->signature_status === 'verified')
-        <div class="alert alert-success">
+        <div class="alert alert-success alert-dismissible fade show">
             <i class="fas fa-check-circle me-2"></i>
             <strong>Verified!</strong> Your document signature has been verified and is ready for download.
         </div>
     @elseif($documentSignature->signature_status === 'signed')
-        <div class="alert alert-info">
+        <div class="alert alert-info alert-dismissible fade show">
             <i class="fas fa-clock me-2"></i>
             <strong>Pending Verification:</strong> Your signature is awaiting final verification by Kaprodi.
         </div>
+    {{-- @elseif($documentSignature->signature_status === 'rejected')
+        <div class="alert alert-danger alert-dismissible fade show">
+            <div class="d-flex align-items-start">
+                <i class="fas fa-exclamation-triangle fa-3x me-3 mt-1"></i>
+                <div class="flex-grow-1">
+                    <h5 class="alert-heading mb-2">
+                        <i class="fas fa-times-circle me-1"></i> Signature Rejected
+                    </h5>
+                    <p class="mb-2">
+                        <strong>Rejection Reason:</strong><br>
+                        {{ $documentSignature->rejection_reason }}
+                    </p>
+                    @if($documentSignature->rejected_at)
+                    <p class="mb-2 small">
+                        <strong>Rejected On:</strong> {{ $documentSignature->rejected_at->format('d F Y, H:i') }}
+                        ({{ $documentSignature->rejected_at->diffForHumans() }})
+                    </p>
+                    @endif
+                    @if($documentSignature->rejector)
+                    <p class="mb-2 small">
+                        <strong>Rejected By:</strong> {{ $documentSignature->rejector->name }} ({{ $documentSignature->rejector->email }})
+                    </p>
+                    @endif
+                    <hr class="my-2">
+                    <div class="mb-2">
+                        <strong><i class="fas fa-lightbulb me-1"></i> Common Issues:</strong>
+                        <ul class="mb-2 mt-1">
+                            <li class="small">Signature placement is too far left or right</li>
+                            <li class="small">Signature size is too large and overlaps content</li>
+                            <li class="small">Signature quality is poor or distorted</li>
+                            <li class="small">Signature is not in the designated area</li>
+                        </ul>
+                    </div>
+                    <hr class="my-2">
+                    <p class="mb-0">
+                        <i class="fas fa-info-circle me-1"></i>
+                        <strong>Next Steps:</strong> Please submit a new document request with the necessary corrections.
+                        Make sure to carefully place your signature in the correct position and ensure good quality.
+                    </p>
+                    <div class="mt-3">
+                        <a href="{{ route('user.signature.approval.request') }}" class="btn btn-danger">
+                            <i class="fas fa-redo me-1"></i> Submit New Request
+                        </a>
+                        <a href="{{ route('user.signature.my.signatures.index') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-list me-1"></i> Back to My Signatures
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div> --}}
     @elseif($documentSignature->signature_status === 'invalid')
         <div class="alert alert-danger">
             <i class="fas fa-times-circle me-2"></i>
@@ -405,6 +455,27 @@
                             </div>
                         </div>
                         @endif
+
+                        <!-- Rejected -->
+                        @if($documentSignature->rejected_at)
+                        <div class="timeline-item">
+                            <div class="timeline-dot rejected"></div>
+                            <div>
+                                <strong class="text-danger">Signature Rejected</strong>
+                                <div class="small text-danger">
+                                    {{ $documentSignature->rejected_at->format('d M Y, H:i') }}
+                                </div>
+                                @if($documentSignature->rejector)
+                                <div class="small text-muted">
+                                    By: {{ $documentSignature->rejector->name }}
+                                </div>
+                                @endif
+                                <div class="small mt-2 p-2 bg-danger bg-opacity-10 rounded">
+                                    <strong>Reason:</strong> {{ $documentSignature->rejection_reason }}
+                                </div>
+                            </div>
+                        </div>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -475,7 +546,7 @@
         <div class="col-lg-4">
             <!-- Quick Actions -->
             <div class="card mb-4">
-                <div class="card-header bg-primary text-white">
+                <div class="card-header {{ $documentSignature->signature_status === 'rejected' ? 'bg-danger' : 'bg-primary' }} text-white">
                     <h5 class="mb-0">
                         <i class="fas fa-bolt me-2"></i>
                         Quick Actions
@@ -483,35 +554,93 @@
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
-                        @if($documentSignature->approvalRequest->signed_document_path || $documentSignature->final_pdf_path)
-                            <a href="{{ route('user.signature.my.signatures.download', $documentSignature->id) }}"
-                               class="btn btn-success">
-                                <i class="fas fa-download me-2"></i> Download Signed Document
+                        @if($documentSignature->signature_status === 'rejected')
+                            {{-- REJECTED: Show resubmit options --}}
+                            <a href="{{ route('user.signature.approval.request') }}" class="btn btn-danger">
+                                <i class="fas fa-redo me-2"></i> Submit New Request
                             </a>
-                        @endif
-
-                        @if($documentSignature->qr_code_path)
-                            <a href="{{ route('user.signature.my.signatures.qr', $documentSignature->id) }}"
-                               class="btn btn-outline-secondary">
-                                <i class="fas fa-qrcode me-2"></i> Download QR Code
+                            <a href="{{ route('user.signature.my.signatures.index') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-list me-2"></i> Back to List
                             </a>
-                        @endif
-
-                        @if($documentSignature->verification_url)
-                            <button class="btn btn-outline-info" onclick="copyVerificationLink()">
-                                <i class="fas fa-link me-2"></i> Copy Verification Link
+                            <button class="btn btn-outline-info" onclick="showRejectionHelp()">
+                                <i class="fas fa-question-circle me-2"></i> Need Help?
                             </button>
-                        @endif
+                        @else
+                            {{-- NORMAL: Show download and verification options --}}
+                            @if($documentSignature->approvalRequest->signed_document_path || $documentSignature->final_pdf_path)
+                                <a href="{{ route('user.signature.my.signatures.download', $documentSignature->id) }}"
+                                   class="btn btn-success">
+                                    <i class="fas fa-download me-2"></i> Download Signed Document
+                                </a>
+                            @endif
 
-                        <a href="{{ route('signature.verify.page') }}" class="btn btn-outline-warning" target="_blank">
-                            <i class="fas fa-shield-alt me-2"></i> Verify Document
-                        </a>
+                            @if($documentSignature->qr_code_path)
+                                <a href="{{ route('user.signature.my.signatures.qr', $documentSignature->id) }}"
+                                   class="btn btn-outline-secondary">
+                                    <i class="fas fa-qrcode me-2"></i> Download QR Code
+                                </a>
+                            @endif
+
+                            @if($documentSignature->verification_url)
+                                <button class="btn btn-outline-info" onclick="copyVerificationLink()">
+                                    <i class="fas fa-link me-2"></i> Copy Verification Link
+                                </button>
+                            @endif
+
+                            <a href="{{ route('signature.verify.page') }}" class="btn btn-outline-warning" target="_blank">
+                                <i class="fas fa-shield-alt me-2"></i> Verify Document
+                            </a>
+                        @endif
                     </div>
                 </div>
             </div>
 
-            <!-- QR Code Display -->
-            @if($documentSignature->qr_code_path)
+            <!-- Rejection Details Card -->
+            @if($documentSignature->signature_status === 'rejected')
+            <div class="card mb-4 border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Rejection Details
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong class="d-block mb-2">Rejection Reason:</strong>
+                        <div class="alert alert-danger mb-0 py-2">
+                            {{ $documentSignature->rejection_reason }}
+                        </div>
+                    </div>
+                    @if($documentSignature->rejected_at)
+                    <div class="mb-3">
+                        <strong>Rejected On:</strong><br>
+                        <small>{{ $documentSignature->rejected_at->format('d F Y, H:i') }}</small><br>
+                        <small class="text-muted">{{ $documentSignature->rejected_at->diffForHumans() }}</small>
+                    </div>
+                    @endif
+                    @if($documentSignature->rejector)
+                    <div class="mb-3">
+                        <strong>Rejected By:</strong><br>
+                        <small>{{ $documentSignature->rejector->name }}</small><br>
+                        <small class="text-muted">{{ $documentSignature->rejector->email }}</small>
+                    </div>
+                    @endif
+                    <hr>
+                    <div class="small">
+                        <strong><i class="fas fa-info-circle me-1"></i> What to do:</strong>
+                        <ol class="mb-0 ps-3 mt-2">
+                            <li>Review the rejection reason carefully</li>
+                            <li>Prepare a corrected document</li>
+                            <li>Submit a new approval request</li>
+                            <li>Ensure proper signature placement and quality</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+            @endif
+
+            <!-- QR Code Display (Hidden for Rejected) -->
+            @if($documentSignature->qr_code_path && $documentSignature->signature_status !== 'rejected')
             <div class="card mb-4">
                 <div class="card-header bg-secondary text-white">
                     <h5 class="mb-0">
@@ -529,8 +658,8 @@
             </div>
             @endif
 
-            <!-- Verification URL -->
-            @if($documentSignature->verification_url)
+            <!-- Verification URL (Hidden for Rejected) -->
+            @if($documentSignature->verification_url && $documentSignature->signature_status !== 'rejected')
             <div class="card mb-4">
                 <div class="card-header bg-dark text-white">
                     <h5 class="mb-0">
@@ -745,6 +874,34 @@ function copyVerificationLink() {
         alert('Failed to copy. Please copy manually.');
     }
 }
+
+function showRejectionHelp() {
+    const helpText = `
+📋 Why was my signature rejected?
+
+Common reasons for rejection:
+• Signature placement is incorrect (too far left/right)
+• Signature size is too large and overlaps document content
+• Signature quality is poor or distorted
+• Signature is not in the designated signature area
+
+💡 How to fix this:
+
+1. Read the rejection reason carefully
+2. Prepare a new corrected document
+3. When signing:
+   - Place your signature in the center of the signature box
+   - Don't zoom in too much (keep signature at normal size)
+   - Draw clearly with smooth strokes
+   - Ensure signature is within the designated area
+
+4. Submit a new approval request
+
+Need more help? Contact your Kaprodi directly.
+    `;
+
+    alert(helpText);
+}
 </script>
 @endpush
 
@@ -794,10 +951,21 @@ function copyVerificationLink() {
     background: #6c757d;
 }
 
+.timeline-dot.rejected {
+    background: #dc3545;
+    animation: pulse-red 2s infinite;
+}
+
 @keyframes pulse {
     0% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.7); }
     70% { box-shadow: 0 0 0 10px rgba(0, 123, 255, 0); }
     100% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0); }
+}
+
+@keyframes pulse-red {
+    0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
 }
 
 .priority-badge {
@@ -822,6 +990,7 @@ function copyVerificationLink() {
 .status-pending { background-color: #fff3cd; color: #664d03; }
 .status-signed { background-color: #cfe2ff; color: #084298; }
 .status-verified { background-color: #d1e7dd; color: #0f5132; }
+.status-rejected { background-color: #f8d7da; color: #842029; }
 .status-invalid { background-color: #f8d7da; color: #842029; }
 
 .status-approval-pending { background-color: #fff3cd; color: #664d03; }
