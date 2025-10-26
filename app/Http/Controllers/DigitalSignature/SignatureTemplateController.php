@@ -17,7 +17,7 @@ class SignatureTemplateController extends Controller
     /**
      * Display list template yang tersedia
      */
-    public function index()
+    public function index(Request $request)
     {
         try {
             // $user = Auth::user();
@@ -32,7 +32,50 @@ class SignatureTemplateController extends Controller
                 $query->where('kaprodi_id', $user->id);
             }
 
-            $templates = $query->latest()->paginate(10);
+            // Search filter
+            if ($request->filled('search')) {
+                $search = $request->search;
+                $query->where(function($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                      ->orWhere('description', 'like', "%{$search}%");
+                });
+            }
+
+            // Status filter
+            if ($request->filled('status')) {
+                $query->where('status', $request->status);
+            }
+
+            // Default filter
+            if ($request->filled('is_default')) {
+                $query->where('is_default', $request->is_default == '1');
+            }
+
+            // Sorting
+            $sortBy = $request->get('sort_by', 'created_at_desc');
+            switch ($sortBy) {
+                case 'created_at_asc':
+                    $query->oldest();
+                    break;
+                case 'name_asc':
+                    $query->orderBy('name', 'asc');
+                    break;
+                case 'name_desc':
+                    $query->orderBy('name', 'desc');
+                    break;
+                case 'usage_desc':
+                    $query->orderBy('usage_count', 'desc');
+                    break;
+                case 'usage_asc':
+                    $query->orderBy('usage_count', 'asc');
+                    break;
+                case 'created_at_desc':
+                default:
+                    $query->latest();
+                    break;
+            }
+
+            $templates = $query->paginate(10);
 
             $statistics = [
                 'total_templates' => SignatureTemplate::count(),
@@ -73,22 +116,13 @@ class SignatureTemplateController extends Controller
                 'description' => 'nullable|string|max:1000',
                 'signature_image' => 'required|image|mimes:jpeg,png,jpg|max:2048',
                 'logo_image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-                'canvas_width' => 'required|integer|min:400|max:2000',
-                'canvas_height' => 'required|integer|min:300|max:1500',
-                // 'background_color' => 'required|string|regex:/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/',
-                'background_color' => ['required', 'string', 'regex:/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/'],
-                'kaprodi_name' => 'required|string|max:255',
-                'kaprodi_nidn' => 'required|string|max:50',
-                'kaprodi_title' => 'required|string|max:255',
-                'institution_name' => 'required|string|max:255',
                 'is_default' => 'boolean'
             ]);
 
             if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'errors' => $validator->errors()
-                ], 422);
+                return redirect()->back()
+                    ->withErrors($validator)
+                    ->withInput();
             }
 
             // Upload signature image
@@ -100,54 +134,53 @@ class SignatureTemplateController extends Controller
                 $logoImagePath = $request->file('logo_image')->store('signature_templates/logos', 'public');
             }
 
-            // Build text config dari form input
-            $textConfig = SignatureTemplate::getDefaultTextConfig();
-            $textConfig['kaprodi_name']['text'] = $request->kaprodi_name;
-            $textConfig['nidn']['text'] = 'NIDN : ' . $request->kaprodi_nidn;
-            $textConfig['title']['text'] = $request->kaprodi_title;
-            $textConfig['institution']['text'] = $request->institution_name;
-
-            // Create template
+            // Create template - sederhana
             $template = SignatureTemplate::create([
                 'name' => $request->name,
                 'description' => $request->description,
                 'signature_image_path' => $signatureImagePath,
                 'logo_path' => $logoImagePath,
                 'layout_config' => SignatureTemplate::getDefaultLayoutConfig(),
-                'text_config' => $textConfig,
                 'kaprodi_id' => Auth::id(),
-                'canvas_width' => $request->canvas_width,
-                'canvas_height' => $request->canvas_height,
-                'background_color' => $request->background_color,
-                'style_config' => SignatureTemplate::getDefaultStyleConfig(),
+                'canvas_width' => 800, // Default value
+                'canvas_height' => 600, // Default value
+                'background_color' => '#ffffff', // Default value
                 'is_default' => $request->has('is_default')
             ]);
+
+            // Validate template configuration
+            $validationErrors = $template->validateConfiguration();
+            if (!empty($validationErrors)) {
+                // Delete uploaded files if validation fails
+                if ($signatureImagePath) {
+                    Storage::disk('public')->delete($signatureImagePath);
+                }
+                if ($logoImagePath) {
+                    Storage::disk('public')->delete($logoImagePath);
+                }
+
+                // Delete the template
+                $template->delete();
+
+                return redirect()->back()
+                    ->with('error', 'Template configuration validation failed')
+                    ->withInput();
+            }
 
             // Set sebagai default jika diminta
             if ($request->has('is_default')) {
                 $template->setAsDefault();
             }
 
-            // return route('digital-signature.admin.templates.index')
-                // ->with('success', 'Template created successfully');
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Template created successfully',
-                'data' => [
-                    'template_id' => $template->id,
-                    'name' => $template->name,
-                    'is_default' => $template->is_default
-                ]
-            ]);
+            return redirect()->route('admin.signature.templates.index')
+                ->with('success', 'Template created successfully');
 
         } catch (\Exception $e) {
             Log::error('Template creation failed: ' . $e->getMessage());
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to create template: ' . $e->getMessage()
-            ], 500);
+            return redirect()->back()
+                ->with('error', 'Failed to create template: ' . $e->getMessage())
+                ->withInput();
         }
     }
 
@@ -182,73 +215,62 @@ class SignatureTemplateController extends Controller
 
             // Check permission
             if ($template->kaprodi_id !== Auth::id() && Auth::user()->role !== 'admin') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized to update this template'
-                ], 403);
+                return redirect()->back()->with('error', 'Unauthorized to update this template');
             }
 
+            // Simplified validation - only essential fields
             $validator = Validator::make($request->all(), [
                 'name' => 'required|string|max:255',
                 'description' => 'nullable|string|max:1000',
                 'signature_image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
                 'logo_image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-                'canvas_width' => 'required|integer|min:400|max:2000',
-                'canvas_height' => 'required|integer|min:300|max:1500',
-                'background_color' => 'required|string|regex:/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/',
-                'kaprodi_name' => 'required|string|max:255',
-                'kaprodi_nidn' => 'required|string|max:50',
-                'kaprodi_title' => 'required|string|max:255',
-                'institution_name' => 'required|string|max:255',
                 'is_default' => 'boolean',
                 'status' => 'required|in:active,inactive'
             ]);
 
             if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'errors' => $validator->errors()
-                ], 422);
+                return redirect()->back()
+                    ->withErrors($validator)
+                    ->withInput();
             }
 
+            // Basic update data
             $updateData = [
                 'name' => $request->name,
                 'description' => $request->description,
-                'canvas_width' => $request->canvas_width,
-                'canvas_height' => $request->canvas_height,
-                'background_color' => $request->background_color,
                 'status' => $request->status
             ];
 
-            // Upload new signature image jika ada
+            // Upload new signature image if provided
             if ($request->hasFile('signature_image')) {
                 // Delete old image
                 if ($template->signature_image_path) {
                     Storage::disk('public')->delete($template->signature_image_path);
                 }
-                $updateData['signature_image_path'] = $request->file('signature_image')->store('signature_templates/signatures', 'public');
+                $updateData['signature_image_path'] = $request->file('signature_image')
+                    ->store('signature_templates/signatures', 'public');
             }
 
-            // Upload new logo image jika ada
+            // Upload new logo image if provided
             if ($request->hasFile('logo_image')) {
                 // Delete old logo
                 if ($template->logo_path) {
                     Storage::disk('public')->delete($template->logo_path);
                 }
-                $updateData['logo_path'] = $request->file('logo_image')->store('signature_templates/logos', 'public');
+                $updateData['logo_path'] = $request->file('logo_image')
+                    ->store('signature_templates/logos', 'public');
             }
 
-            // Update text config
-            $textConfig = $template->text_config;
-            $textConfig['kaprodi_name']['text'] = $request->kaprodi_name;
-            $textConfig['nidn']['text'] = 'NIDN : ' . $request->kaprodi_nidn;
-            $textConfig['title']['text'] = $request->kaprodi_title;
-            $textConfig['institution']['text'] = $request->institution_name;
-            $updateData['text_config'] = $textConfig;
-
+            // Update template
             $template->update($updateData);
 
-            // Set sebagai default jika diminta
+            // Validate template configuration after update
+            $validationErrors = $template->fresh()->validateConfiguration();
+            if (!empty($validationErrors)) {
+                return redirect()->back()->with('error', 'Template validation failed: ' . implode(', ', $validationErrors));
+            }
+
+            // Set as default if requested
             if ($request->has('is_default') && !$template->is_default) {
                 $template->setAsDefault();
             }
@@ -267,24 +289,13 @@ class SignatureTemplateController extends Controller
                 'performed_at' => now()
             ]);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Template updated successfully',
-                'data' => [
-                    'template_id' => $template->id,
-                    'name' => $template->name,
-                    'is_default' => $template->is_default,
-                    'status' => $template->status
-                ]
-            ]);
+            return redirect()->route('admin.signature.templates.show', $template->id)
+                ->with('success', 'Template updated successfully');
 
         } catch (\Exception $e) {
             Log::error('Template update failed: ' . $e->getMessage());
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to update template: ' . $e->getMessage()
-            ], 500);
+            return redirect()->back()->with('error', 'Failed to update template: ' . $e->getMessage());
         }
     }
 
@@ -482,12 +493,18 @@ class SignatureTemplateController extends Controller
                 ], 422);
             }
 
-            // Check permission - only admin can clone templates
-            if (Auth::user()->role !== 'admin') {
+            // Check permission - admin can clone any template, kaprodi can clone their own
+            $user = Auth::user();
+            if ($user->role !== 'admin' && $template->kaprodi_id !== Auth::id()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Only administrators can clone templates'
+                    'message' => 'You can only clone your own templates'
                 ], 403);
+            }
+
+            // If not admin, force kaprodi_id to be current user
+            if ($user->role !== 'admin') {
+                $request->merge(['kaprodi_id' => Auth::id()]);
             }
 
             $clonedTemplate = $template->cloneForKaprodi(
@@ -526,47 +543,14 @@ class SignatureTemplateController extends Controller
 
             // Check permission
             if ($template->kaprodi_id !== Auth::id() && Auth::user()->role !== 'admin') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized to view this template'
-                ], 403);
+                abort(403, 'Unauthorized to view this template');
             }
 
-            // return view('digital-signature.admin.templates.edit', compact('template'));
-
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    'id' => $template->id,
-                    'name' => $template->name,
-                    'description' => $template->description,
-                    'status' => $template->status,
-                    'is_default' => $template->is_default,
-                    'canvas_width' => $template->canvas_width,
-                    'canvas_height' => $template->canvas_height,
-                    'background_color' => $template->background_color,
-                    'signature_image_url' => $template->signature_image_path ? Storage::url($template->signature_image_path) : null,
-                    'logo_url' => $template->logo_path ? Storage::url($template->logo_path) : null,
-                    'layout_config' => $template->layout_config,
-                    'text_config' => $template->text_config,
-                    'style_config' => $template->style_config,
-                    'kaprodi' => [
-                        'name' => $template->kaprodi->name,
-                        'email' => $template->kaprodi->email
-                    ],
-                    'statistics' => $template->getStatistics(),
-                    'created_at' => $template->created_at->toISOString(),
-                    'updated_at' => $template->updated_at->toISOString()
-                ]
-            ]);
+            return view('digital-signature.admin.templates.show', compact('template'));
 
         } catch (\Exception $e) {
             Log::error('Template details retrieval failed: ' . $e->getMessage());
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to retrieve template details: ' . $e->getMessage()
-            ], 500);
+            return back()->with('error', 'Failed to load template details');
         }
     }
 

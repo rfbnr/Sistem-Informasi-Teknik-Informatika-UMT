@@ -55,11 +55,95 @@
         </div>
     </div>
 
+    <!-- Search & Filter Bar -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form action="{{ route('admin.signature.templates.index') }}" method="GET" id="filterForm">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-4">
+                        <label for="search" class="form-label">
+                            <i class="fas fa-search me-1"></i> Search Templates
+                        </label>
+                        <input type="text"
+                               class="form-control"
+                               id="search"
+                               name="search"
+                               value="{{ request('search') }}"
+                               placeholder="Search by name or description...">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="status" class="form-label">
+                            <i class="fas fa-toggle-on me-1"></i> Status
+                        </label>
+                        <select class="form-select" id="status" name="status">
+                            <option value="">All Status</option>
+                            <option value="active" {{ request('status') === 'active' ? 'selected' : '' }}>Active</option>
+                            <option value="inactive" {{ request('status') === 'inactive' ? 'selected' : '' }}>Inactive</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="is_default" class="form-label">
+                            <i class="fas fa-star me-1"></i> Default
+                        </label>
+                        <select class="form-select" id="is_default" name="is_default">
+                            <option value="">All Templates</option>
+                            <option value="1" {{ request('is_default') === '1' ? 'selected' : '' }}>Default Only</option>
+                            <option value="0" {{ request('is_default') === '0' ? 'selected' : '' }}>Non-Default</option>
+                        </select>
+                    </div>
+                    {{-- <div class="col-md-2">
+                        <label for="sort_by" class="form-label">
+                            <i class="fas fa-sort me-1"></i> Sort By
+                        </label>
+                        <select class="form-select" id="sort_by" name="sort_by">
+                            <option value="created_at_desc" {{ request('sort_by', 'created_at_desc') === 'created_at_desc' ? 'selected' : '' }}>Newest First</option>
+                            <option value="created_at_asc" {{ request('sort_by') === 'created_at_asc' ? 'selected' : '' }}>Oldest First</option>
+                            <option value="name_asc" {{ request('sort_by') === 'name_asc' ? 'selected' : '' }}>Name (A-Z)</option>
+                            <option value="name_desc" {{ request('sort_by') === 'name_desc' ? 'selected' : '' }}>Name (Z-A)</option>
+                            <option value="usage_desc" {{ request('sort_by') === 'usage_desc' ? 'selected' : '' }}>Most Used</option>
+                            <option value="usage_asc" {{ request('sort_by') === 'usage_asc' ? 'selected' : '' }}>Least Used</option>
+                        </select>
+                    </div> --}}
+                    <div class="col-md-2">
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-filter me-1"></i> Apply
+                            </button>
+                            <a href="{{ route('admin.signature.templates.index') }}" class="btn btn-outline-secondary btn-sm">
+                                <i class="fas fa-redo me-1"></i> Reset
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Results Info -->
+    @if(request()->hasAny(['search', 'status', 'is_default', 'sort_by']))
+    <div class="alert alert-info mb-3">
+        <i class="fas fa-info-circle me-2"></i>
+        <strong>Showing {{ $templates->total() }} result(s)</strong>
+        @if(request('search'))
+            for search: <strong>"{{ request('search') }}"</strong>
+        @endif
+        @if(request('status'))
+            | Status: <strong>{{ ucfirst(request('status')) }}</strong>
+        @endif
+        @if(request('is_default') !== null)
+            | {{ request('is_default') === '1' ? 'Default Only' : 'Non-Default Only' }}
+        @endif
+    </div>
+    @endif
+
     <!-- Templates Grid -->
     <div class="row">
         @forelse($templates as $template)
         <div class="col-lg-4 col-md-6 mb-4">
-            <div class="card h-100 {{ $template->is_default ? 'border-primary' : '' }}">
+            <div class="card h-100 {{ $template->is_default ? 'border-primary' : '' }}"
+                 data-template-id="{{ $template->id }}"
+                 data-template-name="{{ $template->name }}"
+                 data-template-usage="{{ $template->usage_count }}">
                 @if($template->is_default)
                     <div class="ribbon ribbon-top-right">
                         <span class="bg-primary">Default</span>
@@ -77,26 +161,33 @@
 
                 <div class="card-body">
                     <!-- Template Preview -->
-                    <div class="template-preview mb-3 p-3 border rounded" style="background: {{ $template->background_color }}; height: 200px; position: relative;">
+                    <div class="template-preview mb-3 p-3 bg-light border rounded text-center" style="height: 200px; display: flex; align-items: center; justify-content: center; gap: 20px;">
                         @if($template->signature_image_path)
-                            <img src="{{ Storage::url($template->signature_image_path) }}"
-                                 alt="Signature"
-                                 style="max-width: 150px; max-height: 80px; position: absolute; top: 20px; left: 20px;">
+                            <div class="text-center">
+                                <img src="{{ Storage::url($template->signature_image_path) }}"
+                                     alt="Signature"
+                                     class="img-fluid rounded shadow-sm bg-white"
+                                     style="max-width: 180px; max-height: 140px;">
+                                <div class="mt-1"><small class="text-muted">Signature</small></div>
+                            </div>
                         @endif
 
-                        @if($template->logo_path)
-                            <img src="{{ Storage::url($template->logo_path) }}"
-                                 alt="Logo"
-                                 style="max-width: 80px; max-height: 80px; position: absolute; top: 20px; right: 20px;">
-                        @endif
+                        {{-- @if($template->logo_path)
+                            <div class="text-center">
+                                <img src="{{ Storage::url($template->logo_path) }}"
+                                     alt="Logo"
+                                     class="img-fluid rounded shadow-sm"
+                                     style="max-width: 80px; max-height: 80px;">
+                                <div class="mt-1"><small class="text-muted">Logo</small></div>
+                            </div>
+                        @endif --}}
 
-                        <div style="position: absolute; bottom: 20px; left: 20px;">
-                            <small style="font-size: 0.75rem;">
-                                <strong>{{ $template->text_config['kaprodi_name']['text'] ?? 'Kaprodi Name' }}</strong><br>
-                                {{ $template->text_config['nidn']['text'] ?? 'NIDN' }}<br>
-                                {{ $template->text_config['institution']['text'] ?? 'Institution' }}
-                            </small>
-                        </div>
+                        @if(!$template->signature_image_path && !$template->logo_path)
+                            <div class="text-muted">
+                                <i class="fas fa-image fa-2x mb-2"></i>
+                                <p class="mb-0 small">No images</p>
+                            </div>
+                        @endif
                     </div>
 
                     @if($template->description)
@@ -186,23 +277,51 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title">Delete Template</h5>
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Delete Template
+                </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <form id="deleteForm" method="POST">
+            <form id="deleteForm" method="POST" onsubmit="return confirmDelete(event)">
                 @csrf
                 @method('DELETE')
                 <div class="modal-body">
-                    <p>Are you sure you want to delete this template?</p>
-                    <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        This action cannot be undone.
+                    <div class="alert alert-danger mb-3">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        <strong>Warning!</strong> This action cannot be undone.
+                    </div>
+
+                    <p class="mb-3">You are about to delete:</p>
+                    <div class="card bg-light mb-3">
+                        <div class="card-body">
+                            <h6 class="mb-1" id="deleteTemplateName"></h6>
+                            <small class="text-muted">
+                                <i class="fas fa-chart-line me-1"></i>
+                                Used <span id="deleteTemplateUsage"></span> times
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="confirmTemplateName" class="form-label">
+                            <strong>Type the template name to confirm:</strong>
+                        </label>
+                        <input type="text"
+                               class="form-control"
+                               id="confirmTemplateName"
+                               placeholder="Enter template name"
+                               autocomplete="off"
+                               required>
+                        <small class="text-muted">This helps prevent accidental deletion</small>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-danger">
-                        <i class="fas fa-trash me-1"></i> Delete
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i> Cancel
+                    </button>
+                    <button type="submit" class="btn btn-danger" id="confirmDeleteBtn" disabled>
+                        <i class="fas fa-trash me-1"></i> Yes, Delete Template
                     </button>
                 </div>
             </form>
@@ -298,10 +417,73 @@ function cloneTemplate(templateId) {
     }
 }
 
+let currentTemplateName = '';
+let currentTemplateData = {};
+
 function deleteTemplate(templateId) {
+    // Find template data from the page
+    const templateCard = document.querySelector(`[data-template-id="${templateId}"]`);
+    if (templateCard) {
+        currentTemplateData = {
+            id: templateId,
+            name: templateCard.dataset.templateName || '',
+            usage: templateCard.dataset.templateUsage || '0'
+        };
+    } else {
+        // Fallback: extract from card element
+        currentTemplateData = {
+            id: templateId,
+            name: 'Unknown Template',
+            usage: '0'
+        };
+    }
+
+    currentTemplateName = currentTemplateData.name;
+
+    // Update modal content
+    document.getElementById('deleteTemplateName').textContent = currentTemplateData.name;
+    document.getElementById('deleteTemplateUsage').textContent = currentTemplateData.usage;
+
+    // Reset form
+    document.getElementById('confirmTemplateName').value = '';
+    document.getElementById('confirmDeleteBtn').disabled = true;
+
+    // Set form action
     const form = document.getElementById('deleteForm');
     form.action = `/admin/signature/templates/${templateId}`;
+
+    // Show modal
     new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+
+// Enable delete button only when template name matches
+document.addEventListener('DOMContentLoaded', function() {
+    const confirmInput = document.getElementById('confirmTemplateName');
+    const confirmBtn = document.getElementById('confirmDeleteBtn');
+
+    if (confirmInput) {
+        confirmInput.addEventListener('input', function() {
+            if (this.value.trim() === currentTemplateName.trim()) {
+                confirmBtn.disabled = false;
+                confirmBtn.classList.remove('btn-danger');
+                confirmBtn.classList.add('btn-success');
+            } else {
+                confirmBtn.disabled = true;
+                confirmBtn.classList.remove('btn-success');
+                confirmBtn.classList.add('btn-danger');
+            }
+        });
+    }
+});
+
+function confirmDelete(event) {
+    const confirmInput = document.getElementById('confirmTemplateName');
+    if (confirmInput.value.trim() !== currentTemplateName.trim()) {
+        event.preventDefault();
+        alert('Template name does not match. Please type the exact template name.');
+        return false;
+    }
+    return true;
 }
 </script>
 @endpush

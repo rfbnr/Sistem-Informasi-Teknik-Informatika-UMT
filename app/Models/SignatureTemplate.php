@@ -20,22 +20,18 @@ class SignatureTemplate extends Model
         'signature_image_path',
         'logo_path',
         'layout_config',
-        'text_config',
         'kaprodi_id',
         'status',
         'is_default',
         'canvas_width',
         'canvas_height',
         'background_color',
-        'style_config',
         'usage_count',
         'last_used_at'
     ];
 
     protected $casts = [
         'layout_config' => 'array',
-        'text_config' => 'array',
-        'style_config' => 'array',
         'is_default' => 'boolean',
         'last_used_at' => 'datetime',
     ];
@@ -55,14 +51,14 @@ class SignatureTemplate extends Model
             }
 
             // Set default text config jika kosong
-            if (empty($model->text_config)) {
-                $model->text_config = self::getDefaultTextConfig();
-            }
+            // if (empty($model->text_config)) {
+            //     $model->text_config = self::getDefaultTextConfig();
+            // }
 
             // Set default style config
-            if (empty($model->style_config)) {
-                $model->style_config = self::getDefaultStyleConfig();
-            }
+            // if (empty($model->style_config)) {
+            //     $model->style_config = self::getDefaultStyleConfig();
+            // }
         });
 
         static::created(function ($model) {
@@ -131,124 +127,6 @@ class SignatureTemplate extends Model
         ];
     }
 
-    /**
-     * Get default text configuration
-     */
-    public static function getDefaultTextConfig()
-    {
-        return [
-            'kaprodi_name' => [
-                'text' => 'Yani Sugiyani, MM., M.Kom',
-                'font_size' => 14,
-                'font_weight' => 'bold',
-                'color' => '#000000',
-                'font_family' => 'Arial, sans-serif'
-            ],
-            'nidn' => [
-                'text' => 'NIDN : 0419038004',
-                'font_size' => 12,
-                'font_weight' => 'normal',
-                'color' => '#000000',
-                'font_family' => 'Arial, sans-serif'
-            ],
-            'title' => [
-                'text' => 'Prodi Teknik Informatika',
-                'font_size' => 12,
-                'font_weight' => 'normal',
-                'color' => '#000000',
-                'font_family' => 'Arial, sans-serif'
-            ],
-            'institution' => [
-                'text' => 'Fakultas Teknik - Universitas Muhammadiyah Tangerang',
-                'font_size' => 11,
-                'font_weight' => 'normal',
-                'color' => '#666666',
-                'font_family' => 'Arial, sans-serif'
-            ],
-            'location_date' => [
-                'text' => 'Tangerang, {date}',
-                'font_size' => 12,
-                'font_weight' => 'normal',
-                'color' => '#000000',
-                'font_family' => 'Arial, sans-serif'
-            ],
-            'document_info' => [
-                'show_document_name' => true,
-                'show_document_number' => true,
-                'show_user_name' => true,
-                'show_user_nim' => true,
-                'font_size' => 11,
-                'color' => '#333333',
-                'font_family' => 'Arial, sans-serif'
-            ]
-        ];
-    }
-
-    /**
-     * Get default style configuration
-     */
-    public static function getDefaultStyleConfig()
-    {
-        return [
-            'border' => [
-                'show' => true,
-                'color' => '#cccccc',
-                'width' => 1,
-                'style' => 'solid'
-            ],
-            'background' => [
-                'color' => '#ffffff',
-                'opacity' => 1
-            ],
-            'shadow' => [
-                'show' => false,
-                'color' => '#000000',
-                'blur' => 5,
-                'offset_x' => 2,
-                'offset_y' => 2,
-                'opacity' => 0.3
-            ],
-            'watermark' => [
-                'show' => false,
-                'text' => 'VERIFIED',
-                'color' => '#f0f0f0',
-                'font_size' => 48,
-                'opacity' => 0.1,
-                'rotation' => -45
-            ]
-        ];
-    }
-
-    /**
-     * Get processed text config dengan dynamic values
-     */
-    public function getProcessedTextConfig($documentSignature = null)
-    {
-        $config = $this->text_config;
-
-        // Replace dynamic placeholders
-        if (isset($config['location_date']['text'])) {
-            $config['location_date']['text'] = str_replace(
-                '{date}',
-                now()->locale('id')->translatedFormat('d F Y'),
-                $config['location_date']['text']
-            );
-        }
-
-        // Add document-specific info jika ada
-        if ($documentSignature && isset($config['document_info'])) {
-            $approvalRequest = $documentSignature->approvalRequest;
-            $config['document_info']['data'] = [
-                'document_name' => $approvalRequest->document_name,
-                'document_number' => $approvalRequest->full_document_number,
-                'user_name' => $approvalRequest->user->name,
-                'user_nim' => $approvalRequest->user->NIM ?? 'N/A',
-                'submission_date' => $approvalRequest->created_at->format('d F Y')
-            ];
-        }
-
-        return $config;
-    }
 
     /**
      * Scope untuk template aktif
@@ -333,8 +211,8 @@ class SignatureTemplate extends Model
             ],
             'background_color' => $this->background_color,
             'layout_config' => $this->layout_config,
-            'text_config' => $this->getProcessedTextConfig($documentSignature),
-            'style_config' => $this->style_config,
+            // 'text_config' => $this->getProcessedTextConfig($documentSignature),
+            // 'style_config' => $this->style_config,
             'assets' => [
                 'signature_image_url' => $this->signature_image_path ?
                     Storage::url($this->signature_image_path) : null,

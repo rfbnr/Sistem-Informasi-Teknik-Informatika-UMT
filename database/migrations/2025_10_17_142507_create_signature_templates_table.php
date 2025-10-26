@@ -18,14 +18,12 @@ return new class extends Migration
             $table->string('signature_image_path'); // Path gambar tanda tangan kaprodi
             $table->string('logo_path')->nullable(); // Path logo institusi
             $table->json('layout_config'); // Konfigurasi layout (posisi barcode, ttd, dll)
-            $table->json('text_config'); // Konfigurasi teks (nama, NIDN, dll)
             $table->foreignId('kaprodi_id'); // FK ke users (kaprodi)
             $table->enum('status', ['active', 'inactive'])->default('active');
             $table->boolean('is_default')->default(false); // Apakah template default
             $table->string('canvas_width')->default('800'); // Lebar canvas
             $table->string('canvas_height')->default('600'); // Tinggi canvas
             $table->string('background_color')->default('#ffffff'); // Warna background
-            $table->json('style_config')->nullable(); // Konfigurasi style tambahan
             $table->integer('usage_count')->default(0); // Jumlah penggunaan template
             $table->timestamp('last_used_at')->nullable(); // Terakhir digunakan
             $table->timestamps();
