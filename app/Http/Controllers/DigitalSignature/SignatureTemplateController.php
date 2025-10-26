@@ -277,7 +277,7 @@ class SignatureTemplateController extends Controller
 
             // Log audit
             SignatureAuditLog::create([
-                'user_id' => Auth::id(),
+                'kaprodi_id' => Auth::id(),
                 'action' => SignatureAuditLog::ACTION_TEMPLATE_UPDATED,
                 'description' => "Template '{$template->name}' has been updated",
                 'metadata' => [
@@ -344,7 +344,7 @@ class SignatureTemplateController extends Controller
 
             // Log audit
             SignatureAuditLog::create([
-                'user_id' => Auth::id(),
+                'kaprodi_id' => Auth::id(),
                 'action' => 'template_deleted',
                 'description' => "Template '{$templateName}' has been deleted",
                 'metadata' => [

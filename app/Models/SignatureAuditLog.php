@@ -13,6 +13,7 @@ class SignatureAuditLog extends Model
         'document_signature_id',
         'approval_request_id',
         'user_id',
+        'kaprodi_id',
         'action',
         'status_from',
         'status_to',
@@ -39,6 +40,10 @@ class SignatureAuditLog extends Model
     const ACTION_TEMPLATE_SET_DEFAULT = 'template_set_default';
     const ACTION_SIGNATURE_KEY_GENERATED = 'signature_key_generated';
     const ACTION_SIGNATURE_KEY_REVOKED = 'signature_key_revoked';
+    const ACTION_TEMPLATE_CLONED = 'template_cloned';
+    const ACTION_TEMPLATE_ACTIVATED = 'template_activated';
+    const ACTION_TEMPLATE_DEACTIVATED = 'template_deactivated';
+    const ACTION_SIGNING_FAILED = 'signing_failed';
 
     /**
      * Relasi ke DocumentSignature

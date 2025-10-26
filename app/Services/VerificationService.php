@@ -4,11 +4,15 @@ namespace App\Services;
 
 use Carbon\Carbon;
 use App\Models\ApprovalRequest;
+use App\Services\QRCodeService;
 use App\Models\DigitalSignature;
 use App\Models\DocumentSignature;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
+use App\Models\SignatureVerificationLog;
+use App\Services\DigitalSignatureService;
 
 class VerificationService
 {
@@ -67,7 +71,7 @@ class VerificationService
             $verificationResult = $this->performComprehensiveVerification($documentSignature);
 
             // Log verification attempt
-            // $this->logVerificationAttempt($documentSignature, $verificationResult);
+            $this->logVerificationAttempt($documentSignature, $verificationResult, $documentSignature->verification_token);
 
             return $verificationResult;
 
@@ -482,19 +486,26 @@ class VerificationService
             $logData = [
                 'document_signature_id' => $documentSignature->id,
                 'approval_request_id' => $documentSignature->approval_request_id,
-                'verification_result' => $verificationResult['is_valid'],
-                'verification_id' => $verificationResult['verification_id'],
+                'user_id' => Auth::id(),
+                'verification_method' => $token ? 'token' : 'id',
+                'verification_token_hash' => $token ? hash('sha256', $token) : null,
+                'is_valid' => $verificationResult['is_valid'],
+                'result_status' => $verificationResult['is_valid'] ? 'success' : 'failed',
                 'ip_address' => request()->ip(),
                 'user_agent' => request()->userAgent(),
-                'token_used' => !empty($token),
-                'timestamp' => now()
+                'referrer' => request()->headers->get('referer'),
+                'metadata' => [
+                    'verification_id' => $verificationResult['verification_id'],
+                    'message' => $verificationResult['message']
+                ],
+                'verified_at' => now()
             ];
 
             // Log to application log
             Log::info('Document signature verification attempt', $logData);
 
             // Could also save to verification_logs table if needed
-            // SignatureVerificationLog::create($logData);
+            SignatureVerificationLog::create($logData);
 
         } catch (\Exception $e) {
             Log::error('Failed to log verification attempt: ' . $e->getMessage());

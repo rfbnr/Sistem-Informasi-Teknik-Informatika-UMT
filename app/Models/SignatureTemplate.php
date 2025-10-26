@@ -2,12 +2,12 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\User;
+use App\Models\SignatureAuditLog;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
-use App\Models\SignatureAuditLog;
-use App\Models\User;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 
 class SignatureTemplate extends Model
@@ -64,7 +64,7 @@ class SignatureTemplate extends Model
         static::created(function ($model) {
             // Log audit untuk template creation
             SignatureAuditLog::create([
-                'user_id' => Auth::id() ?? $model->kaprodi_id,
+                'kaprodi_id' => Auth::id() ?? $model->kaprodi_id,
                 'action' => 'template_created',
                 'description' => "Signature template '{$model->name}' has been created",
                 'metadata' => [
@@ -175,7 +175,7 @@ class SignatureTemplate extends Model
 
         // Log audit
         SignatureAuditLog::create([
-            'user_id' => Auth::id() ?? $this->kaprodi_id,
+            'kaprodi_id' => Auth::id() ?? $this->kaprodi_id,
             'action' => 'template_set_default',
             'description' => "Template '{$this->name}' has been set as default",
             'metadata' => [
@@ -284,6 +284,20 @@ class SignatureTemplate extends Model
         $clonedTemplate->usage_count = 0;
         $clonedTemplate->last_used_at = null;
         $clonedTemplate->save();
+
+        SignatureAuditLog::create([
+            'kaprodi_id' => Auth::id() ?? $newKaprodiId,
+            'action' => 'template_cloned',
+            'description' => "Template '{$this->name}' cloned as '{$clonedTemplate->name}'",
+            'metadata' => [
+                'original_template_id' => $this->id,
+                'new_template_id' => $clonedTemplate->id,
+                'new_kaprodi_id' => $newKaprodiId
+            ],
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
+            'performed_at' => now()
+        ]);
 
         // Copy signature image jika ada
         if ($this->signature_image_path) {

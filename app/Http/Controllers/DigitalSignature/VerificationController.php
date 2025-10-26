@@ -7,7 +7,9 @@ use App\Services\QRCodeService;
 use App\Models\DocumentSignature;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 use App\Services\VerificationService;
+use App\Models\SignatureVerificationLog;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\RateLimiter;
 
@@ -57,6 +59,20 @@ class VerificationController extends Controller
                 'user_agent' => request()->userAgent(),
                 'result' => $verificationResult['is_valid'],
                 'timestamp' => now()
+            ]);
+
+            SignatureVerificationLog::create([
+                'document_signature_id' => $documentSignature->id ?? null,
+                'approval_request_id' => $documentSignature->approval_request_id ?? null,
+                'user_id' => Auth::id(),
+                'verification_method' => SignatureVerificationLog::METHOD_TOKEN,
+                'verification_token_hash' => hash('sha256', $token),
+                'is_valid' => $verificationResult['is_valid'],
+                'result_status' => $verificationResult['is_valid'] ? SignatureVerificationLog::STATUS_SUCCESS : SignatureVerificationLog::STATUS_INVALID,
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+                'referrer' => request()->header('Referer'),
+                'verified_at' => now()
             ]);
 
             return view('digital-signature.verification.result', compact('verificationResult'));
@@ -158,6 +174,23 @@ class VerificationController extends Controller
                 'ip_address' => request()->ip()
             ]);
 
+            SignatureVerificationLog::create([
+                'document_signature_id' => $verificationResult['document_signature_id'] ?? null,
+                'approval_request_id' => $verificationResult['approval_request_id'] ?? null,
+                'user_id' => Auth::id(), // Null if not logged in
+                'verification_method' => $type,
+                'verification_token_hash' => hash('sha256', $input),
+                'is_valid' => $verificationResult['is_valid'],
+                'result_status' => $verificationResult['is_valid'] ?SignatureVerificationLog::STATUS_SUCCESS : SignatureVerificationLog::STATUS_FAILED,
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+                'referrer' => request()->header('Referer'),
+                'metadata' => [
+                    'message' => $verificationResult['message']
+                ],
+                'verified_at' => now()
+            ]);
+
             return view('digital-signature.verification.result', compact('verificationResult'));
 
         } catch (\Exception $e) {
@@ -188,6 +221,23 @@ class VerificationController extends Controller
 
         try {
             $verificationResult = $this->verificationService->verifyByToken($token);
+
+            SignatureVerificationLog::create([
+                'document_signature_id' => $verificationResult['document_signature_id'] ?? null,
+                'approval_request_id' => $verificationResult['approval_request_id'] ?? null,
+                'user_id' => null, // API calls usually anonymous
+                'verification_method' => SignatureVerificationLog::METHOD_TOKEN,
+                'verification_token_hash' => hash('sha256', $token),
+                'is_valid' => $verificationResult['is_valid'],
+                'result_status' => SignatureVerificationLog::STATUS_SUCCESS,
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+                'referrer' => request()->header('Referer'),
+                'metadata' => [
+                    'api_access' => true
+                ],
+                'verified_at' => now()
+            ]);
 
             // Return formatted response
             return response()->json([

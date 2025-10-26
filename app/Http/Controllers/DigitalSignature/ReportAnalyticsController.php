@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\DigitalSignature;
 
 use Carbon\Carbon;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use App\Models\ApprovalRequest;
+use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\DigitalSignature;
-use Illuminate\Support\Facades\DB;
 use App\Models\DocumentSignature;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Models\VerificationCodeMapping;
 

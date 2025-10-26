@@ -319,7 +319,7 @@
                 <div class="card-body">
                     @if($approvalRequest->status === 'pending')
                         <button class="btn btn-success w-100 mb-2"
-                                onclick="showApproveModal({{ $approvalRequest->id }}, '{{ $approvalRequest->document_name }}')">
+                                onclick="showApproveModal({{ $approvalRequest->id }}, '{{ $approvalRequest->document_name }}', '{{ $approvalRequest->document_type }}')">
                             <i class="fas fa-check me-2"></i> Approve Request
                         </button>
                         <button class="btn btn-danger w-100 mb-2"
@@ -536,10 +536,11 @@ iframe {
 @push('scripts')
 <script>
 // Import modal functions from index page
-function showApproveModal(id, documentName) {
+function showApproveModal(id, documentName, documentType) {
     const modal = new bootstrap.Modal(document.getElementById('approveModal'));
     document.getElementById('approveRequestId').value = id;
     document.getElementById('approveDocumentName').textContent = documentName;
+    document.getElementById('approveDocumentType').textContent = documentType;
     modal.show();
 }
 
@@ -561,7 +562,7 @@ function showApproveSignatureModal(id, documentName) {
 // Perform actions (same as index page)
 function performApprove() {
     const requestId = document.getElementById('approveRequestId').value;
-    const notes = document.getElementById('approve_notes').value;
+    const notes = document.getElementById('approval_notes').value;
 
     fetch(`/admin/signature/approval-requests/${requestId}/approve`, {
         method: 'POST',

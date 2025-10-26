@@ -340,6 +340,9 @@ class ApprovalRequest extends Model
         // dd($digitalSignature);
 
         if (!$digitalSignature) {
+            $this->logStatusChange('signature_creation_failed', null, null,
+                'Failed to create document signature: No valid digital signature available');
+
             throw new \Exception('No valid digital signature available for signing process');
         }
 
@@ -512,7 +515,8 @@ class ApprovalRequest extends Model
     {
         SignatureAuditLog::create([
             'approval_request_id' => $this->id,
-            'user_id' => Auth::id() ?? $this->user_id,
+            'user_id' => $this->user_id,
+            'kaprodi_id' => $this->approved_by,
             'action' => $action,
             'status_from' => $statusFrom,
             'status_to' => $statusTo,

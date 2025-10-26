@@ -78,7 +78,9 @@ class DocumentSignature extends Model
             SignatureAuditLog::create([
                 'document_signature_id' => $model->id,
                 'approval_request_id' => $model->approval_request_id,
-                'user_id' => Auth::id() ?? $model->signed_by,
+                // 'user_id' => $model->signed_by,
+                // 'kaprodi_id' => $model->verified_by ?? $model->rejected_by,
+                'kaprodi_id' => Auth::id(),
                 'action' => 'signature_initiated',
                 'status_to' => $model->signature_status,
                 'description' => 'Document signature process initiated',
@@ -141,10 +143,10 @@ class DocumentSignature extends Model
     /**
      * Relasi ke SignatureVerificationLog
      */
-    // public function verificationLogs()
-    // {
-    //     return $this->hasMany(SignatureVerificationLog::class);
-    // }
+    public function verificationLogs()
+    {
+        return $this->hasMany(SignatureVerificationLog::class);
+    }
 
     /**
      * Generate document hash dari file path
@@ -170,6 +172,9 @@ class DocumentSignature extends Model
             // Create signature dengan RSA-SHA256
             $signature = '';
             if (!openssl_sign($documentHash, $signature, $privateKey, OPENSSL_ALGO_SHA256)) {
+                $this->logAudit('signature_creation_failed', null, null,
+                    'Failed to create CMS signature: OpenSSL signing error');
+
                 throw new \Exception('Failed to create digital signature: ' . openssl_error_string());
             }
 
@@ -188,6 +193,8 @@ class DocumentSignature extends Model
             return $this->cms_signature;
 
         } catch (\Exception $e) {
+            $this->logAudit('signature_creation_failed', null, null,
+                'Failed to create CMS signature: ' . $e->getMessage());
             Log::error('CMS Signature Creation Failed: ' . $e->getMessage());
             throw $e;
         }
@@ -214,17 +221,20 @@ class DocumentSignature extends Model
 
             $isValid = $result === 1;
 
-            // Log verification attempt
-            // SignatureVerificationLog::create([
-            //     'document_signature_id' => $this->id,
-            //     'verification_token' => $this->verification_token,
-            //     'ip_address' => request()->ip(),
-            //     'user_agent' => request()->userAgent(),
-            //     'verification_result' => $isValid,
-            //     'verification_details' => $isValid ? 'Signature verification successful' : 'Signature verification failed',
-            //     'verification_method' => 'cms_verify',
-            //     'verified_at' => now()
-            // ]);
+            SignatureVerificationLog::create([
+                'document_signature_id' => $this->id,
+                'approval_request_id' => $this->approval_request_id,
+                'user_id' => Auth::id(),
+                'verification_method' => 'cms_verify',
+                'verification_token_hash' => hash('sha256', $this->verification_token),
+                'is_valid' => $isValid,
+                'result_status' => $isValid ? 'success' : 'failed',
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+                'referrer' => request()->headers->get('referer'),
+                'metadata' => null,
+                'verified_at' => now()
+            ]);
 
             if ($isValid && $this->signature_status !== self::STATUS_VERIFIED) {
                 $this->signature_status = self::STATUS_VERIFIED;
@@ -240,6 +250,21 @@ class DocumentSignature extends Model
 
         } catch (\Exception $e) {
             Log::error('CMS Signature Verification Failed: ' . $e->getMessage());
+
+            SignatureVerificationLog::create([
+                'document_signature_id' => $this->id,
+                'approval_request_id' => $this->approval_request_id,
+                'user_id' => Auth::id(),
+                'verification_method' => 'cms_verify',
+                'verification_token_hash' => hash('sha256', $this->verification_token),
+                'is_valid' => false,
+                'result_status' => 'failed',
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+                'referrer' => request()->headers->get('referer'),
+                'metadata' => ['error' => $e->getMessage()],
+                'verified_at' => now()
+            ]);
 
             // Log failed verification
             // SignatureVerificationLog::create([
@@ -428,6 +453,8 @@ class DocumentSignature extends Model
             return $finalPdfPath;
 
         } catch (\Exception $e) {
+            $this->logAudit('final_pdf_generation_failed', null, null,
+                'Failed to generate final PDF with signature: ' . $e->getMessage());
             Log::error('Failed to generate final PDF: ' . $e->getMessage());
             throw $e;
         }
@@ -441,7 +468,8 @@ class DocumentSignature extends Model
         SignatureAuditLog::create([
             'document_signature_id' => $this->id,
             'approval_request_id' => $this->approval_request_id,
-            'user_id' => Auth::id() ?? $this->signed_by,
+            'user_id' => $this->signed_by,
+            'kaprodi_id' => $this->verified_by ?? $this->rejected_by,
             'action' => $action,
             'status_from' => $statusFrom,
             'status_to' => $statusTo,

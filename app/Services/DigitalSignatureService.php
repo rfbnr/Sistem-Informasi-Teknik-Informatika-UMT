@@ -6,6 +6,7 @@ use Illuminate\Support\Str;
 use App\Models\ApprovalRequest;
 use App\Models\DigitalSignature;
 use App\Models\DocumentSignature;
+use App\Models\SignatureAuditLog;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -94,6 +95,19 @@ class DigitalSignatureService
             Log::info('Digital signature created successfully', [
                 'signature_id' => $signature->signature_id,
                 'created_by' => $createdBy
+            ]);
+
+            SignatureAuditLog::create([
+                'kaprodi_id' => $createdBy ?? Auth::id(),
+                'action' => 'create_digital_signature',
+                'status_to' => $signature->status,
+                'description' => 'Digital signature created',
+                'metadata' => [
+                    'signature_id' => $signature->signature_id,
+                ],
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+                'performed_at' => now()
             ]);
 
             return $signature;
@@ -426,6 +440,14 @@ class DigitalSignatureService
             Log::info('Digital signature revoked', [
                 'signature_id' => $digitalSignature->signature_id,
                 'reason' => $reason
+            ]);
+
+            SignatureAuditLog::create([
+                'kaprodi_id' => Auth::id(),
+                'action' => 'revoke_digital_signature',
+                'status_to' => $digitalSignature->status,
+                'description' => 'Digital signature revoked: ' . ($reason ?? 'No reason provided'),
+                'performed_at' => now()
             ]);
 
             return true;

@@ -7,6 +7,7 @@ use App\Models\ApprovalRequest;
 use App\Services\QRCodeService;
 use App\Models\DigitalSignature;
 use App\Models\DocumentSignature;
+use App\Models\SignatureAuditLog;
 use App\Models\SignatureTemplate;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
@@ -497,6 +498,22 @@ class DigitalSignatureController extends Controller
                 'user_id' => Auth::id()
             ]);
 
+            SignatureAuditLog::create([
+                'document_signature_id' => $documentSignature->id,'approval_request_id' => $approvalRequestId,
+                'user_id' => Auth::id(),
+                'action' => 'document_signed',
+                'status_to' => DocumentSignature::STATUS_SIGNED,
+                'description' => "Document '{$approvalRequest->document_name}' signed successfully",
+                'metadata' => [
+                    'template_id' => $request->template_id ?? null,
+                    'signature_id' => $digitalSignature->signature_id,
+                    'pdf_merged' => $signedPdfPath !== null
+                ],
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+                'performed_at' => now()
+            ]);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Document signed successfully',
@@ -515,6 +532,22 @@ class DigitalSignatureController extends Controller
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
                 'approval_request_id' => $approvalRequestId
+            ]);
+
+            SignatureAuditLog::create([
+                'document_signature_id' => $documentSignature->id ?? null,
+                'approval_request_id' => $approvalRequestId,
+                'user_id' => Auth::id(),
+                'action' => 'signing_failed',
+                'description' => "Document signing failed: {$e->getMessage()}",
+                'metadata' => [
+                    'error_message' => $e->getMessage(),
+                    'error_file' => $e->getFile(),
+                    'error_line' => $e->getLine()
+                ],
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+                'performed_at' => now()
             ]);
 
             return response()->json([
