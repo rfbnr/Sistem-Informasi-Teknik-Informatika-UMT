@@ -270,6 +270,8 @@ class DigitalSignatureController extends Controller
      */
     public function processDocumentSigning(Request $request, $approvalRequestId)
     {
+        $startTime = microtime(true); // Track signing duration
+
         // TODO #3: Support both old (canvas_data) and new (template_id) format
         $validator = Validator::make($request->all(), [
             'template_id' => 'sometimes|required|exists:signature_templates,id',
@@ -498,17 +500,30 @@ class DigitalSignatureController extends Controller
                 'user_id' => Auth::id()
             ]);
 
+            // Calculate signing duration
+            $durationMs = (int) ((microtime(true) - $startTime) * 1000);
+
+            // Create audit log with standardized metadata
+            $metadata = SignatureAuditLog::createMetadata([
+                'template_id' => $request->template_id ?? null,
+                'signature_id' => $digitalSignature->signature_id,
+                'pdf_merged' => $signedPdfPath !== null,
+                'duration_ms' => $durationMs,
+                'document_name' => $approvalRequest->document_name,
+                'placement_method' => $request->template_id ? 'drag_drop_template' : 'canvas_draw',
+                'signed_via' => 'web_interface',
+                'qr_generated' => isset($qrData['qr_code_path']),
+            ]);
+
             SignatureAuditLog::create([
-                'document_signature_id' => $documentSignature->id,'approval_request_id' => $approvalRequestId,
+                'document_signature_id' => $documentSignature->id,
+                'approval_request_id' => $approvalRequestId,
                 'user_id' => Auth::id(),
-                'action' => 'document_signed',
+                'action' => SignatureAuditLog::ACTION_DOCUMENT_SIGNED,
+                'status_from' => ApprovalRequest::STATUS_APPROVED,
                 'status_to' => DocumentSignature::STATUS_SIGNED,
                 'description' => "Document '{$approvalRequest->document_name}' signed successfully",
-                'metadata' => [
-                    'template_id' => $request->template_id ?? null,
-                    'signature_id' => $digitalSignature->signature_id,
-                    'pdf_merged' => $signedPdfPath !== null
-                ],
+                'metadata' => $metadata,
                 'ip_address' => request()->ip(),
                 'user_agent' => request()->userAgent(),
                 'performed_at' => now()
@@ -534,17 +549,30 @@ class DigitalSignatureController extends Controller
                 'approval_request_id' => $approvalRequestId
             ]);
 
+            // Calculate duration even on failure
+            $durationMs = (int) ((microtime(true) - $startTime) * 1000);
+
+            // Create error metadata with standardized structure
+            $metadata = SignatureAuditLog::createMetadata([
+                'error_code' => 'SIGN_FAILED',
+                'error_message' => $e->getMessage(),
+                'error_file' => $e->getFile(),
+                'error_line' => $e->getLine(),
+                'duration_ms' => $durationMs,
+                'template_id' => $request->template_id ?? null,
+                'approval_request_id' => $approvalRequestId,
+                'exception_type' => get_class($e),
+            ]);
+
             SignatureAuditLog::create([
                 'document_signature_id' => $documentSignature->id ?? null,
                 'approval_request_id' => $approvalRequestId,
                 'user_id' => Auth::id(),
-                'action' => 'signing_failed',
+                'action' => SignatureAuditLog::ACTION_SIGNING_FAILED,
+                'status_from' => ApprovalRequest::STATUS_APPROVED,
+                'status_to' => null, // Failed, no status change
                 'description' => "Document signing failed: {$e->getMessage()}",
-                'metadata' => [
-                    'error_message' => $e->getMessage(),
-                    'error_file' => $e->getFile(),
-                    'error_line' => $e->getLine()
-                ],
+                'metadata' => $metadata,
                 'ip_address' => request()->ip(),
                 'user_agent' => request()->userAgent(),
                 'performed_at' => now()

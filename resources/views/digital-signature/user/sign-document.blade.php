@@ -871,10 +871,10 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Edit Signature</button>
-                <button type="button" class="btn btn-success" onclick="confirmSigning()">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                {{-- <button type="button" class="btn btn-success" onclick="confirmSigning()">
                     <i class="fas fa-signature me-1"></i> Confirm & Sign
-                </button>
+                </button> --}}
             </div>
         </div>
     </div>

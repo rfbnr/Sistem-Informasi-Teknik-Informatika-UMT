@@ -62,15 +62,19 @@ class SignatureTemplate extends Model
         });
 
         static::created(function ($model) {
-            // Log audit untuk template creation
+            // Log audit untuk template creation with standardized metadata
+            $metadata = SignatureAuditLog::createMetadata([
+                'template_id' => $model->id,
+                'template_name' => $model->name,
+                'kaprodi_id' => $model->kaprodi_id,
+                'is_default' => $model->is_default,
+            ]);
+
             SignatureAuditLog::create([
                 'kaprodi_id' => Auth::id() ?? $model->kaprodi_id,
-                'action' => 'template_created',
+                'action' => SignatureAuditLog::ACTION_TEMPLATE_CREATED,
                 'description' => "Signature template '{$model->name}' has been created",
-                'metadata' => [
-                    'template_id' => $model->id,
-                    'template_name' => $model->name
-                ],
+                'metadata' => $metadata,
                 'ip_address' => request()->ip(),
                 'user_agent' => request()->userAgent(),
                 'performed_at' => now()
@@ -173,15 +177,19 @@ class SignatureTemplate extends Model
         // Set template ini sebagai default
         $this->update(['is_default' => true]);
 
-        // Log audit
+        // Log audit with standardized metadata
+        $metadata = SignatureAuditLog::createMetadata([
+            'template_id' => $this->id,
+            'template_name' => $this->name,
+            'kaprodi_id' => $this->kaprodi_id,
+            'previous_default_template' => self::where('is_default', true)->where('id', '!=', $this->id)->first()?->name,
+        ]);
+
         SignatureAuditLog::create([
             'kaprodi_id' => Auth::id() ?? $this->kaprodi_id,
-            'action' => 'template_set_default',
+            'action' => SignatureAuditLog::ACTION_TEMPLATE_SET_DEFAULT,
             'description' => "Template '{$this->name}' has been set as default",
-            'metadata' => [
-                'template_id' => $this->id,
-                'kaprodi_id' => $this->kaprodi_id
-            ],
+            'metadata' => $metadata,
             'ip_address' => request()->ip(),
             'user_agent' => request()->userAgent(),
             'performed_at' => now()
@@ -285,15 +293,21 @@ class SignatureTemplate extends Model
         $clonedTemplate->last_used_at = null;
         $clonedTemplate->save();
 
+        // Log audit with standardized metadata
+        $metadata = SignatureAuditLog::createMetadata([
+            'original_template_id' => $this->id,
+            'original_template_name' => $this->name,
+            'new_template_id' => $clonedTemplate->id,
+            'new_template_name' => $clonedTemplate->name,
+            'new_kaprodi_id' => $newKaprodiId,
+            'cloned_by' => Auth::user()->name ?? 'System',
+        ]);
+
         SignatureAuditLog::create([
             'kaprodi_id' => Auth::id() ?? $newKaprodiId,
-            'action' => 'template_cloned',
+            'action' => SignatureAuditLog::ACTION_TEMPLATE_CLONED,
             'description' => "Template '{$this->name}' cloned as '{$clonedTemplate->name}'",
-            'metadata' => [
-                'original_template_id' => $this->id,
-                'new_template_id' => $clonedTemplate->id,
-                'new_kaprodi_id' => $newKaprodiId
-            ],
+            'metadata' => $metadata,
             'ip_address' => request()->ip(),
             'user_agent' => request()->userAgent(),
             'performed_at' => now()

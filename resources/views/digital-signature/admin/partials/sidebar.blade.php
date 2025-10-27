@@ -86,6 +86,21 @@
         </a>
     </li>
 
+    <!-- Activity Logs -->
+    <li class="nav-item">
+        <a class="nav-link {{ request()->routeIs('admin.signature.logs.*') ? 'active' : '' }}"
+           href="{{ route('admin.signature.logs.audit') }}">
+            <i class="fas fa-history me-2"></i>
+            Activity Logs
+            @php
+                $failureCount = \App\Http\Controllers\DigitalSignature\LogsController::getRecentFailuresCount();
+            @endphp
+            @if($failureCount > 0)
+                <span class="badge bg-danger rounded-pill ms-auto">{{ $failureCount }}</span>
+            @endif
+        </a>
+    </li>
+
     <!-- Export Data -->
     {{-- <li class="nav-item">
         <a class="nav-link" href="{{ route('admin.signature.export') }}?format=csv">

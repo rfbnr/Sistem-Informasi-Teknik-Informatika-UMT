@@ -91,18 +91,22 @@ class ApprovalRequest extends Model
         });
 
         static::created(function ($model) {
-            // Log audit trail untuk request creation
+            // Log audit trail untuk request creation with standardized metadata
+            $metadata = SignatureAuditLog::createMetadata([
+                'document_name' => $model->document_name,
+                'nomor' => $model->nomor,
+                'priority' => $model->priority,
+                'requester' => $model->user->name ?? 'Unknown',
+                'document_type' => $model->document_type ?? 'general',
+            ]);
+
             SignatureAuditLog::create([
                 'approval_request_id' => $model->id,
                 'user_id' => $model->user_id,
-                'action' => 'approval_request_created',
+                'action' => SignatureAuditLog::ACTION_SIGNATURE_INITIATED,
                 'status_to' => $model->status,
                 'description' => "Approval request '{$model->document_name}' has been created",
-                'metadata' => [
-                    'document_name' => $model->document_name,
-                    'nomor' => $model->nomor,
-                    'priority' => $model->priority
-                ],
+                'metadata' => $metadata,
                 'ip_address' => request()->ip(),
                 'user_agent' => request()->userAgent(),
                 'performed_at' => now()
@@ -509,10 +513,19 @@ class ApprovalRequest extends Model
     }
 
     /**
-     * Log status change untuk audit trail
+     * Log status change untuk audit trail with standardized metadata
      */
     private function logStatusChange($action, $statusFrom = null, $statusTo = null, $description = '', $metadata = [])
     {
+        // Merge with standardized metadata
+        $enhancedMetadata = SignatureAuditLog::createMetadata(array_merge($metadata, [
+            'document_name' => $this->document_name,
+            'nomor' => $this->nomor,
+            'approval_request_id' => $this->id,
+            'status_transition' => $statusFrom ? "{$statusFrom} → {$statusTo}" : $statusTo,
+            'changed_by' => Auth::user()->name ?? 'System',
+        ]));
+
         SignatureAuditLog::create([
             'approval_request_id' => $this->id,
             'user_id' => $this->user_id,
@@ -521,10 +534,7 @@ class ApprovalRequest extends Model
             'status_from' => $statusFrom,
             'status_to' => $statusTo,
             'description' => $description,
-            'metadata' => array_merge($metadata, [
-                'document_name' => $this->document_name,
-                'nomor' => $this->nomor
-            ]),
+            'metadata' => $enhancedMetadata,
             'ip_address' => request()->ip(),
             'user_agent' => request()->userAgent(),
             'performed_at' => now()

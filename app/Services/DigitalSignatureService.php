@@ -97,14 +97,21 @@ class DigitalSignatureService
                 'created_by' => $createdBy
             ]);
 
+            // Create audit log with standardized metadata
+            $metadata = SignatureAuditLog::createMetadata([
+                'signature_id' => $signature->signature_id,
+                'key_length' => $signature->key_length,
+                'algorithm' => $signature->algorithm,
+                'purpose' => $purpose,
+                'validity_years' => $validityYears,
+            ]);
+
             SignatureAuditLog::create([
                 'kaprodi_id' => $createdBy ?? Auth::id(),
-                'action' => 'create_digital_signature',
+                'action' => SignatureAuditLog::ACTION_SIGNATURE_KEY_GENERATED,
                 'status_to' => $signature->status,
-                'description' => 'Digital signature created',
-                'metadata' => [
-                    'signature_id' => $signature->signature_id,
-                ],
+                'description' => 'Digital signature key pair generated successfully',
+                'metadata' => $metadata,
                 'ip_address' => request()->ip(),
                 'user_agent' => request()->userAgent(),
                 'performed_at' => now()
@@ -442,11 +449,23 @@ class DigitalSignatureService
                 'reason' => $reason
             ]);
 
+            // Create audit log with standardized metadata
+            $metadata = SignatureAuditLog::createMetadata([
+                'signature_id' => $digitalSignature->signature_id,
+                'reason' => $reason ?? 'No reason provided',
+                'affected_documents' => $digitalSignature->documentSignatures()->count(),
+                'revoked_by' => Auth::user()->name ?? 'System',
+            ]);
+
             SignatureAuditLog::create([
                 'kaprodi_id' => Auth::id(),
-                'action' => 'revoke_digital_signature',
+                'action' => SignatureAuditLog::ACTION_SIGNATURE_KEY_REVOKED,
+                'status_from' => DigitalSignature::STATUS_ACTIVE,
                 'status_to' => $digitalSignature->status,
-                'description' => 'Digital signature revoked: ' . ($reason ?? 'No reason provided'),
+                'description' => 'Digital signature key revoked: ' . ($reason ?? 'No reason provided'),
+                'metadata' => $metadata,
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
                 'performed_at' => now()
             ]);
 

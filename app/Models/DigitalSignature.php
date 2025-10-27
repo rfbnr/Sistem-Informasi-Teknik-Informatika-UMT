@@ -113,14 +113,26 @@ class DigitalSignature extends Model
             ])
         ]);
 
-        // Log audit
+        // Log audit with standardized metadata
+        $metadata = SignatureAuditLog::createMetadata([
+            'signature_id' => $this->signature_id,
+            'reason' => $reason,
+            'revoked_by' => Auth::user()->name ?? 'System',
+            'algorithm' => $this->algorithm,
+            'key_length' => $this->key_length,
+            'affected_documents' => $this->documentSignatures()->count(),
+            'was_valid_until' => $this->valid_until?->toDateString(),
+        ]);
+
         SignatureAuditLog::create([
             'user_id' => Auth::id(),
-            'action' => 'revoke_signature',
+            'action' => SignatureAuditLog::ACTION_SIGNATURE_KEY_REVOKED,
             'status_from' => self::STATUS_ACTIVE,
             'status_to' => self::STATUS_REVOKED,
             'description' => "Digital signature {$this->signature_id} has been revoked. Reason: {$reason}",
-            'metadata' => ['signature_id' => $this->signature_id, 'reason' => $reason],
+            'metadata' => $metadata,
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
             'performed_at' => now()
         ]);
     }

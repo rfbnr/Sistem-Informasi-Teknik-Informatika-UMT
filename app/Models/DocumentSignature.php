@@ -74,20 +74,23 @@ class DocumentSignature extends Model
         });
 
         static::created(function ($model) {
-            // Log audit trail
+            // Log audit trail with standardized metadata
+            $metadata = SignatureAuditLog::createMetadata([
+                'document_hash' => $model->document_hash,
+                'verification_token' => substr($model->verification_token, 0, 20) . '...', // Partial for security
+                'approval_request_id' => $model->approval_request_id,
+                'signature_method' => $model->signature_method ?? 'digital',
+                'initiated_by' => Auth::user()->name ?? 'System',
+            ]);
+
             SignatureAuditLog::create([
                 'document_signature_id' => $model->id,
                 'approval_request_id' => $model->approval_request_id,
-                // 'user_id' => $model->signed_by,
-                // 'kaprodi_id' => $model->verified_by ?? $model->rejected_by,
                 'kaprodi_id' => Auth::id(),
-                'action' => 'signature_initiated',
+                'action' => SignatureAuditLog::ACTION_SIGNATURE_INITIATED,
                 'status_to' => $model->signature_status,
                 'description' => 'Document signature process initiated',
-                'metadata' => [
-                    'document_hash' => $model->document_hash,
-                    'verification_token' => $model->verification_token
-                ],
+                'metadata' => $metadata,
                 'ip_address' => request()->ip(),
                 'user_agent' => request()->userAgent(),
                 'performed_at' => now()
@@ -461,10 +464,20 @@ class DocumentSignature extends Model
     }
 
     /**
-     * Log audit trail
+     * Log audit trail with standardized metadata
      */
     private function logAudit($action, $statusFrom = null, $statusTo = null, $description = '', $metadata = [])
     {
+        // Merge with standardized metadata
+        $enhancedMetadata = SignatureAuditLog::createMetadata(array_merge($metadata, [
+            'signature_id' => $this->digitalSignature->signature_id ?? null,
+            'document_signature_id' => $this->id,
+            'signature_status' => $this->signature_status,
+            'status_transition' => $statusFrom ? "{$statusFrom} → {$statusTo}" : $statusTo,
+            'signed_by' => $this->signer->name ?? 'Unknown',
+            'verified_by' => $this->verifier->name ?? null,
+        ]));
+
         SignatureAuditLog::create([
             'document_signature_id' => $this->id,
             'approval_request_id' => $this->approval_request_id,
@@ -474,9 +487,7 @@ class DocumentSignature extends Model
             'status_from' => $statusFrom,
             'status_to' => $statusTo,
             'description' => $description,
-            'metadata' => array_merge($metadata, [
-                'signature_id' => $this->digitalSignature->signature_id
-            ]),
+            'metadata' => $enhancedMetadata,
             'ip_address' => request()->ip(),
             'user_agent' => request()->userAgent(),
             'performed_at' => now()

@@ -29,6 +29,13 @@ class SignatureAuditLog extends Model
         'performed_at' => 'datetime',
     ];
 
+    protected $appends = [
+        'device_type',
+        'browser_name',
+        'duration_ms',
+        'session_id',
+    ];
+
     // Action constants
     const ACTION_SIGNATURE_INITIATED = 'signature_initiated';
     const ACTION_DOCUMENT_SIGNED = 'document_signed';
@@ -189,5 +196,304 @@ class SignatureAuditLog extends Model
                                       ->toArray(),
             'recent_activity' => $query->latest('performed_at')->limit(10)->get()
         ];
+    }
+
+    // ========================================================================
+    // COMPUTED PROPERTIES (Accessor Methods)
+    // ========================================================================
+
+    /**
+     * Get device type from user agent
+     * Returns: desktop, mobile, tablet, bot, unknown
+     */
+    public function getDeviceTypeAttribute()
+    {
+        // Check metadata first
+        if (isset($this->metadata['device_type'])) {
+            return $this->metadata['device_type'];
+        }
+
+        // Parse from user_agent if not in metadata
+        return $this->parseDeviceType($this->user_agent);
+    }
+
+    /**
+     * Get browser name from user agent
+     * Returns: Chrome, Firefox, Safari, Edge, Opera, etc.
+     */
+    public function getBrowserNameAttribute()
+    {
+        // Check metadata first
+        if (isset($this->metadata['browser'])) {
+            return $this->metadata['browser'];
+        }
+
+        // Parse from user_agent if not in metadata
+        return $this->parseBrowserName($this->user_agent);
+    }
+
+    /**
+     * Get duration in milliseconds
+     * Returns: integer (ms) or null
+     */
+    public function getDurationMsAttribute()
+    {
+        return $this->metadata['duration_ms'] ?? null;
+    }
+
+    /**
+     * Get session ID
+     * Returns: string or null
+     */
+    public function getSessionIdAttribute()
+    {
+        return $this->metadata['session_id'] ?? null;
+    }
+
+    /**
+     * Get error code if action failed
+     * Returns: string or null
+     */
+    public function getErrorCodeAttribute()
+    {
+        return $this->metadata['error_code'] ?? null;
+    }
+
+    /**
+     * Get error message if action failed
+     * Returns: string or null
+     */
+    public function getErrorMessageAttribute()
+    {
+        return $this->metadata['error_message'] ?? null;
+    }
+
+    /**
+     * Check if action was successful
+     * Returns: boolean
+     */
+    public function getIsSuccessAttribute()
+    {
+        return $this->action !== self::ACTION_SIGNING_FAILED && empty($this->metadata['error_code']);
+    }
+
+    /**
+     * Get human-readable duration
+     * Returns: string like "1.5s" or null
+     */
+    public function getDurationHumanAttribute()
+    {
+        $ms = $this->duration_ms;
+        if ($ms === null) {
+            return null;
+        }
+
+        if ($ms < 1000) {
+            return $ms . 'ms';
+        } elseif ($ms < 60000) {
+            return round($ms / 1000, 1) . 's';
+        } else {
+            return round($ms / 60000, 1) . 'm';
+        }
+    }
+
+    // ========================================================================
+    // HELPER METHODS FOR PARSING
+    // ========================================================================
+
+    /**
+     * Parse device type from user agent string
+     */
+    private function parseDeviceType($userAgent)
+    {
+        if (empty($userAgent)) {
+            return 'unknown';
+        }
+
+        $userAgent = strtolower($userAgent);
+
+        // Check for bots
+        if (preg_match('/bot|crawl|spider|slurp|facebook|whatsapp/i', $userAgent)) {
+            return 'bot';
+        }
+
+        // Check for mobile devices
+        if (preg_match('/mobile|android|iphone|ipod|blackberry|windows phone/i', $userAgent)) {
+            return 'mobile';
+        }
+
+        // Check for tablets
+        if (preg_match('/tablet|ipad|playbook|silk/i', $userAgent)) {
+            return 'tablet';
+        }
+
+        return 'desktop';
+    }
+
+    /**
+     * Parse browser name from user agent string
+     */
+    private function parseBrowserName($userAgent)
+    {
+        if (empty($userAgent)) {
+            return 'Unknown';
+        }
+
+        // Check for common browsers
+        if (strpos($userAgent, 'Edg') !== false) {
+            return 'Edge';
+        } elseif (strpos($userAgent, 'Chrome') !== false) {
+            return 'Chrome';
+        } elseif (strpos($userAgent, 'Safari') !== false) {
+            return 'Safari';
+        } elseif (strpos($userAgent, 'Firefox') !== false) {
+            return 'Firefox';
+        } elseif (strpos($userAgent, 'Opera') !== false || strpos($userAgent, 'OPR') !== false) {
+            return 'Opera';
+        } elseif (strpos($userAgent, 'MSIE') !== false || strpos($userAgent, 'Trident') !== false) {
+            return 'Internet Explorer';
+        }
+
+        return 'Other';
+    }
+
+    // ========================================================================
+    // ADDITIONAL SCOPE METHODS
+    // ========================================================================
+
+    /**
+     * Scope untuk filter failed actions
+     */
+    public function scopeFailedActions($query)
+    {
+        return $query->where('action', self::ACTION_SIGNING_FAILED)
+                    ->orWhereNotNull('metadata->error_code');
+    }
+
+    /**
+     * Scope untuk filter successful actions
+     */
+    public function scopeSuccessfulActions($query)
+    {
+        return $query->where('action', '!=', self::ACTION_SIGNING_FAILED)
+                    ->whereNull('metadata->error_code');
+    }
+
+    /**
+     * Scope untuk logs N hari terakhir
+     */
+    public function scopeLastNDays($query, $days = 7)
+    {
+        return $query->where('performed_at', '>=', now()->subDays($days));
+    }
+
+    /**
+     * Scope untuk logs hari ini
+     */
+    public function scopeToday($query)
+    {
+        return $query->whereDate('performed_at', today());
+    }
+
+    /**
+     * Scope untuk filter by device type
+     */
+    public function scopeByDeviceType($query, $deviceType)
+    {
+        return $query->where('metadata->device_type', $deviceType);
+    }
+
+    /**
+     * Scope untuk filter by kaprodi
+     */
+    public function scopeByKaprodi($query, $kaprodiId)
+    {
+        return $query->where('kaprodi_id', $kaprodiId);
+    }
+
+    // ========================================================================
+    // STATIC HELPER METHODS
+    // ========================================================================
+
+    /**
+     * Create standardized metadata structure
+     *
+     * @param array $customData Additional custom data to merge
+     * @return array Standardized metadata
+     */
+    public static function createMetadata($customData = [])
+    {
+        $request = request();
+
+        $baseMetadata = [
+            'timestamp' => now()->timestamp,
+            'session_id' => session()->getId() ?? null,
+            'device_type' => self::detectDeviceType($request->userAgent()),
+            'browser' => self::detectBrowserName($request->userAgent()),
+            'platform' => self::detectPlatform($request->userAgent()),
+        ];
+
+        return array_merge($baseMetadata, $customData);
+    }
+
+    /**
+     * Detect device type from user agent
+     */
+    private static function detectDeviceType($userAgent)
+    {
+        if (empty($userAgent)) {
+            return 'unknown';
+        }
+
+        $userAgent = strtolower($userAgent);
+
+        if (preg_match('/bot|crawl|spider|slurp/i', $userAgent)) {
+            return 'bot';
+        }
+        if (preg_match('/mobile|android|iphone|ipod|blackberry|windows phone/i', $userAgent)) {
+            return 'mobile';
+        }
+        if (preg_match('/tablet|ipad|playbook|silk/i', $userAgent)) {
+            return 'tablet';
+        }
+
+        return 'desktop';
+    }
+
+    /**
+     * Detect browser name from user agent
+     */
+    private static function detectBrowserName($userAgent)
+    {
+        if (empty($userAgent)) {
+            return 'Unknown';
+        }
+
+        if (strpos($userAgent, 'Edg') !== false) return 'Edge';
+        if (strpos($userAgent, 'Chrome') !== false) return 'Chrome';
+        if (strpos($userAgent, 'Safari') !== false) return 'Safari';
+        if (strpos($userAgent, 'Firefox') !== false) return 'Firefox';
+        if (strpos($userAgent, 'Opera') !== false || strpos($userAgent, 'OPR') !== false) return 'Opera';
+        if (strpos($userAgent, 'MSIE') !== false || strpos($userAgent, 'Trident') !== false) return 'IE';
+
+        return 'Other';
+    }
+
+    /**
+     * Detect platform from user agent
+     */
+    private static function detectPlatform($userAgent)
+    {
+        if (empty($userAgent)) {
+            return 'Unknown';
+        }
+
+        if (stripos($userAgent, 'Windows') !== false) return 'Windows';
+        if (stripos($userAgent, 'Mac') !== false) return 'macOS';
+        if (stripos($userAgent, 'Linux') !== false) return 'Linux';
+        if (stripos($userAgent, 'Android') !== false) return 'Android';
+        if (stripos($userAgent, 'iOS') !== false || stripos($userAgent, 'iPhone') !== false || stripos($userAgent, 'iPad') !== false) return 'iOS';
+
+        return 'Other';
     }
 }

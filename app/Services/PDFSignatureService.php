@@ -302,7 +302,7 @@ class PDFSignatureService
     {
         try {
             // Position QR code at bottom right corner
-            $qrSize = 28; // 28mm x 28mm
+            $qrSize = 16; // 28mm x 28mm
             $margin = 10; // 10mm from edges
 
             $x = $pageSize['width'] - $qrSize - $margin;

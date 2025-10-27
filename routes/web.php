@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\DosenController;
@@ -17,12 +18,13 @@ use App\Http\Controllers\StrukturOrganisasiController;
 // ===================================================================
 // DIGITAL SIGNATURE CONTROLLERS
 // ===================================================================
+use App\Http\Controllers\DigitalSignature\LogsController;
 use App\Http\Controllers\DigitalSignature\VerificationController;
 use App\Http\Controllers\DigitalSignature\ApprovalRequestController;
+use App\Http\Controllers\DigitalSignature\ReportAnalyticsController;
 use App\Http\Controllers\DigitalSignature\DigitalSignatureController;
 use App\Http\Controllers\DigitalSignature\DocumentSignatureController;
 use App\Http\Controllers\DigitalSignature\SignatureTemplateController;
-use App\Http\Controllers\DigitalSignature\ReportAnalyticsController;
 
 // ===================================================================
 // PUBLIC ROUTES (No Authentication Required)
@@ -212,6 +214,20 @@ Route::middleware(['auth:kaprodi'])->prefix('admin/signature')->name('admin.sign
         Route::get('performance', [ReportAnalyticsController::class, 'performanceMetrics'])
             ->name('performance');
     });
+
+    // ==================== ACTIVITY LOGS ====================
+    Route::prefix('logs')->name('logs.')->group(function () {
+        Route::get('/', [LogsController::class, 'index'])
+            ->name('index');
+        Route::get('audit', [LogsController::class, 'auditLogs'])
+            ->name('audit');
+        Route::get('verification', [LogsController::class, 'verificationLogs'])
+            ->name('verification');
+        Route::get('{id}/details', [LogsController::class, 'logDetails'])
+            ->name('details');
+        Route::get('export', [LogsController::class, 'export'])
+            ->name('export');
+    });
 });
 
 // ===================================================================
@@ -367,3 +383,20 @@ Route::get('signature/error', function () {
         'message' => 'Invalid or expired verification link'
     ]);
 })->name('signature.error');
+
+Route::get('/debug-file/{id}', function($id) {
+    $doc = \App\Models\DocumentSignature::findOrFail($id);
+    $path = $doc->final_pdf_path ?? $doc->approvalRequest->document_path;
+
+    $debug = [
+        'relative_path' => $path,
+        'storage_exists' => Storage::disk('public')->exists($path),
+        'absolute_path' => Storage::disk('public')->path($path),
+        'file_exists' => file_exists(Storage::disk('public')->path($path)),
+        'is_readable' => is_readable(Storage::disk('public')->path($path)),
+        'file_size' => Storage::disk('public')->exists($path) ? Storage::disk('public')->size($path) : 'N/A',
+        'storage_disk' => config('filesystems.disks.public.root'),
+    ];
+
+    return response()->json($debug);
+})->middleware('auth');

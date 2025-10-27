@@ -275,15 +275,20 @@ class SignatureTemplateController extends Controller
                 $template->setAsDefault();
             }
 
-            // Log audit
+            // Log audit with standardized metadata
+            $metadata = SignatureAuditLog::createMetadata([
+                'template_id' => $template->id,
+                'template_name' => $template->name,
+                'changes' => array_keys($updateData),
+                'changed_fields' => $updateData,
+                'was_set_as_default' => $request->has('set_as_default') && $request->set_as_default,
+            ]);
+
             SignatureAuditLog::create([
                 'kaprodi_id' => Auth::id(),
                 'action' => SignatureAuditLog::ACTION_TEMPLATE_UPDATED,
                 'description' => "Template '{$template->name}' has been updated",
-                'metadata' => [
-                    'template_id' => $template->id,
-                    'changes' => array_keys($updateData)
-                ],
+                'metadata' => $metadata,
                 'ip_address' => request()->ip(),
                 'user_agent' => request()->userAgent(),
                 'performed_at' => now()
@@ -342,15 +347,20 @@ class SignatureTemplateController extends Controller
 
             $template->delete();
 
-            // Log audit
+            // Log audit with standardized metadata
+            $metadata = SignatureAuditLog::createMetadata([
+                'template_id' => $id,
+                'template_name' => $templateName,
+                'deleted_by' => Auth::user()->name ?? 'System',
+                'was_default' => $template->is_default,
+                'usage_count' => $template->usage_count ?? 0,
+            ]);
+
             SignatureAuditLog::create([
                 'kaprodi_id' => Auth::id(),
                 'action' => 'template_deleted',
                 'description' => "Template '{$templateName}' has been deleted",
-                'metadata' => [
-                    'template_id' => $id,
-                    'template_name' => $templateName
-                ],
+                'metadata' => $metadata,
                 'ip_address' => request()->ip(),
                 'user_agent' => request()->userAgent(),
                 'performed_at' => now()

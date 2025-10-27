@@ -30,6 +30,8 @@ class VerificationService
      */
     public function verifyByToken($encryptedToken)
     {
+        $startTime = microtime(true); // Track verification duration
+
         try {
             // dd($encryptedToken);
             // Decrypt QR code data
@@ -48,8 +50,8 @@ class VerificationService
             $verificationResult = $this->performComprehensiveVerification($documentSignature);
             // dd($verificationResult);
 
-            // Log verification attempt
-            $this->logVerificationAttempt($documentSignature, $verificationResult, $encryptedToken);
+            // Log verification attempt with duration tracking
+            $this->logVerificationAttempt($documentSignature, $verificationResult, $encryptedToken, $startTime);
 
             return $verificationResult;
 
@@ -64,14 +66,16 @@ class VerificationService
      */
     public function verifyById($documentSignatureId)
     {
+        $startTime = microtime(true); // Track verification duration
+
         try {
             $documentSignature = DocumentSignature::findOrFail($documentSignatureId);
 
             // Perform comprehensive verification
             $verificationResult = $this->performComprehensiveVerification($documentSignature);
 
-            // Log verification attempt
-            $this->logVerificationAttempt($documentSignature, $verificationResult, $documentSignature->verification_token);
+            // Log verification attempt with duration tracking
+            $this->logVerificationAttempt($documentSignature, $verificationResult, $documentSignature->verification_token, $startTime);
 
             return $verificationResult;
 
@@ -480,36 +484,95 @@ class VerificationService
     /**
      * Log verification attempt
      */
-    private function logVerificationAttempt($documentSignature, $verificationResult, $token = null)
+    private function logVerificationAttempt($documentSignature, $verificationResult, $token = null, $startTime = null)
     {
         try {
+            // Calculate verification duration if start time provided
+            $durationMs = null;
+            if ($startTime) {
+                $durationMs = (int) ((microtime(true) - $startTime) * 1000);
+            }
+
+            // Get previous verification count for this document
+            $previousCount = SignatureVerificationLog::where('document_signature_id', $documentSignature->id)
+                ->where('created_at', '<', now())
+                ->count();
+
+            // Categorize failed reason if verification failed
+            $failedReason = null;
+            if (!$verificationResult['is_valid']) {
+                $failedReason = SignatureVerificationLog::categorizeFailedReason(
+                    $verificationResult['message'] ?? 'Unknown error'
+                );
+            }
+
+            // Create standardized metadata
+            $customMetadata = [
+                'verification_id' => $verificationResult['verification_id'],
+                'message' => $verificationResult['message'],
+                'verification_duration_ms' => $durationMs,
+                'previous_verification_count' => $previousCount,
+                'failed_reason' => $failedReason,
+                // Add verification details if available
+                'checks_summary' => $verificationResult['details']['verification_summary'] ?? null,
+            ];
+
+            $metadata = SignatureVerificationLog::createMetadata($customMetadata);
+
             $logData = [
                 'document_signature_id' => $documentSignature->id,
                 'approval_request_id' => $documentSignature->approval_request_id,
                 'user_id' => Auth::id(),
-                'verification_method' => $token ? 'token' : 'id',
+                'verification_method' => $token ? SignatureVerificationLog::METHOD_TOKEN : SignatureVerificationLog::METHOD_ID,
                 'verification_token_hash' => $token ? hash('sha256', $token) : null,
                 'is_valid' => $verificationResult['is_valid'],
-                'result_status' => $verificationResult['is_valid'] ? 'success' : 'failed',
+                'result_status' => $this->determineResultStatus($verificationResult),
                 'ip_address' => request()->ip(),
                 'user_agent' => request()->userAgent(),
                 'referrer' => request()->headers->get('referer'),
-                'metadata' => [
-                    'verification_id' => $verificationResult['verification_id'],
-                    'message' => $verificationResult['message']
-                ],
+                'metadata' => $metadata,
                 'verified_at' => now()
             ];
 
             // Log to application log
-            Log::info('Document signature verification attempt', $logData);
+            Log::info('Document signature verification attempt', [
+                'document_signature_id' => $documentSignature->id,
+                'is_valid' => $verificationResult['is_valid'],
+                'duration_ms' => $durationMs,
+                'user_id' => Auth::id() ?? 'anonymous',
+            ]);
 
-            // Could also save to verification_logs table if needed
+            // Save to verification_logs table
             SignatureVerificationLog::create($logData);
 
         } catch (\Exception $e) {
             Log::error('Failed to log verification attempt: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Determine result status from verification result
+     */
+    private function determineResultStatus($verificationResult)
+    {
+        if ($verificationResult['is_valid']) {
+            return SignatureVerificationLog::STATUS_SUCCESS;
+        }
+
+        // Check message for specific error types
+        $message = strtolower($verificationResult['message'] ?? '');
+
+        if (strpos($message, 'expired') !== false || strpos($message, 'kadaluarsa') !== false) {
+            return SignatureVerificationLog::STATUS_EXPIRED;
+        }
+        if (strpos($message, 'not found') !== false || strpos($message, 'tidak ditemukan') !== false) {
+            return SignatureVerificationLog::STATUS_NOT_FOUND;
+        }
+        if (strpos($message, 'invalid') !== false || strpos($message, 'tidak valid') !== false) {
+            return SignatureVerificationLog::STATUS_INVALID;
+        }
+
+        return SignatureVerificationLog::STATUS_FAILED;
     }
 
     /**
