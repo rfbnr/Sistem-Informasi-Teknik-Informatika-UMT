@@ -117,7 +117,7 @@
                         class="btn btn-success"
                         id="confirmApproveBtn"
                         onclick="performApprove()">
-                    <i class="fas fa-check me-1"></i> Approve Request
+                    {{-- <i class="fas fa-check me-1"></i> Approve Request --}}
                 </button>
             </div>
         </div>
@@ -129,6 +129,9 @@
 document.addEventListener('DOMContentLoaded', function() {
     const checkboxes = ['confirmDocumentReviewed', 'confirmMeetsRequirements', 'confirmAuthorized'];
     const approveBtn = document.getElementById('confirmApproveBtn');
+
+    // add content to approve button
+    approveBtn.innerHTML = '<i class="fas fa-check me-1"></i> Approve Request';
 
     function updateApproveButtonState() {
         if (!approveBtn) return;
@@ -182,7 +185,54 @@ document.addEventListener('DOMContentLoaded', function() {
             updateApproveButtonState();
         });
     }
+
+
 });
+
+// Perform Approve
+function performApprove() {
+    const requestId = document.getElementById('approveRequestId').value;
+    const notes = document.getElementById('approval_notes').value;
+
+    // add loading state to button
+    const approveBtn = document.getElementById('confirmApproveBtn');
+    const originalBtnApproveHtml = approveBtn.innerHTML;
+
+    approveBtn.disabled = true;
+    approveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Approving...';
+
+    console.log('HTML Approve Button:', approveBtn.innerHTML);
+
+    console.log('Approving request ID:', requestId, 'with notes:', notes);
+
+    fetch(`/admin/signature/approval-requests/${requestId}/approve`, {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ notes: notes })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log(data);
+        if (data.success || !data.error) {
+            showAlert('success', 'Request approved successfully!');
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showAlert('danger', data.message || 'Failed to approve request');
+            approveBtn.disabled = false;
+            approveBtn.innerHTML = originalBtnApproveHtml;
+        }
+        bootstrap.Modal.getInstance(document.getElementById('approveModal')).hide();
+    })
+    .catch(error => {
+        showAlert('danger', 'An error occurred while approving the request');
+        console.error('Error:', error);
+        approveBtn.disabled = false;
+        approveBtn.innerHTML = originalBtnApproveHtml;
+    });
+}
 </script>
 
 <style>

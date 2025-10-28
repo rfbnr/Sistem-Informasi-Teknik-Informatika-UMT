@@ -8,15 +8,15 @@
     ])
 --}}
 
-<div class="qr-section" style="text-align: center; padding: 30px 20px; background-color: #f8f9fa; border-radius: 6px; margin: 20px 0;">
+<div class="section-card text-center" style="padding: 30px 20px;">
     <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
         <tr>
             <td align="center">
-                <h3 style="margin: 0 0 15px 0; color: #2c3e50; font-size: 16px; font-weight: 600;">
+                <h3 class="section-title">
                     {{ $title ?? '🔍 Verifikasi Dokumen' }}
                 </h3>
 
-                <p style="margin: 0 0 20px 0; color: #666666; font-size: 14px; line-height: 1.6;">
+                <p class="text-muted mb-20">
                     Scan QR Code di bawah ini untuk memverifikasi keaslian dokumen
                 </p>
 
@@ -29,30 +29,30 @@
 
                 {{-- Instructions --}}
                 <div style="background-color: #ffffff; border-radius: 6px; padding: 15px; margin: 20px 0; border: 1px solid #e9ecef;">
-                    <p style="margin: 0 0 10px 0; color: #2c3e50; font-size: 13px; font-weight: 600;">
+                    <p class="text-strong text-small mb-10">
                         📱 Cara Verifikasi:
                     </p>
-                    <ol style="margin: 0; padding-left: 20px; text-align: left; color: #666666; font-size: 13px; line-height: 1.6;">
-                        <li style="margin-bottom: 6px;">Buka kamera smartphone Anda</li>
-                        <li style="margin-bottom: 6px;">Arahkan ke QR Code di atas</li>
-                        <li style="margin-bottom: 6px;">Klik link yang muncul</li>
-                        <li style="margin-bottom: 0;">Lihat detail verifikasi dokumen</li>
+                    <ol class="text-muted text-small" style="margin: 0; padding-left: 20px; text-align: left; line-height: 1.6;">
+                        <li class="mb-6">Buka kamera smartphone Anda</li>
+                        <li class="mb-6">Arahkan ke QR Code di atas</li>
+                        <li class="mb-6">Klik link yang muncul</li>
+                        <li class="mb-0">Lihat detail verifikasi dokumen</li>
                     </ol>
                 </div>
 
                 {{-- Alternative Link --}}
                 @if(isset($verificationUrl))
-                <p style="margin: 15px 0 0 0; color: #999999; font-size: 12px;">
+                <p class="mt-15 mb-0 text-muted text-tiny">
                     Atau klik link berikut untuk verifikasi manual:<br>
-                    <a href="{{ $verificationUrl }}" style="color: #667eea; text-decoration: none; font-weight: 600;">
+                    <a href="{{ $verificationUrl }}" class="link-primary" style="font-weight: 600;">
                         Verifikasi Dokumen
                     </a>
                 </p>
                 @endif
 
                 {{-- Security Note --}}
-                <div style="background-color: #e3f2fd; border-left: 3px solid #2196f3; padding: 12px 15px; margin: 20px 0; border-radius: 4px; text-align: left;">
-                    <p style="margin: 0; color: #0d47a1; font-size: 12px; line-height: 1.5;">
+                <div class="info-card-blue" style="text-align: left; margin: 20px 0;">
+                    <p class="mb-0 text-tiny" style="color: #0d47a1; line-height: 1.5;">
                         <strong>🔒 Catatan Keamanan:</strong><br>
                         QR Code ini unik untuk dokumen Anda dan dapat digunakan oleh siapa saja untuk memverifikasi keaslian dokumen. Jangan bagikan informasi verifikasi sensitif lainnya.
                     </p>

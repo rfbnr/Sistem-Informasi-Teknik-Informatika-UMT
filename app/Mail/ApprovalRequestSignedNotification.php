@@ -41,8 +41,8 @@ class ApprovalRequestSignedNotification extends Mailable
         }
 
         // Prepare verification URL
-        if ($this->documentSignature && $this->documentSignature->verification_token) {
-            $this->verificationUrl = route('signature.verify', $this->documentSignature->verification_token);
+        if ($this->documentSignature && $this->documentSignature->verification_url) {
+            $this->verificationUrl = $this->documentSignature->verification_url;
         }
     }
 

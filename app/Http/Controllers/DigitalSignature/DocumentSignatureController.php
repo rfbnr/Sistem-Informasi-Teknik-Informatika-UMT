@@ -60,7 +60,7 @@ class DocumentSignatureController extends Controller
                 });
             }
 
-            $documentSignatures = $query->latest('signed_at')->paginate(15);
+            $documentSignatures = $query->latest('signed_at')->paginate(10);
 
             $statusCounts = [
                 'pending' => DocumentSignature::where('signature_status', DocumentSignature::STATUS_PENDING)->count(),
@@ -755,8 +755,8 @@ class DocumentSignatureController extends Controller
             // Order by latest first
             $query->orderBy('created_at', 'desc');
 
-            // Paginate results (12 per page for 2-column grid)
-            $signatures = $query->paginate(12);
+            // Paginate results (6 per page for 2-column grid)
+            $signatures = $query->paginate(6);
 
             // STATISTICS CALCULATION
             $baseQuery = DocumentSignature::whereHas('approvalRequest', function($q) use ($user) {

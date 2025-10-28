@@ -405,7 +405,7 @@
                         @endif
 
                         <!-- QR Code Display -->
-                        @if($request->documentSignature && $request->documentSignature->qr_code_path && in_array($request->status, ['sign_approved', 'user_signed']))
+                        @if($request->documentSignature && $request->documentSignature->qr_code_path && in_array($request->status, ['sign_approved']))
                         <div class="qr-code-display">
                             <h6>Verification QR Code</h6>
                             <img src="{{ Storage::url($request->documentSignature->qr_code_path) }}"
@@ -450,7 +450,7 @@
                                 </a>
                             @endif
 
-                            @if($request->documentSignature && $request->documentSignature->qr_code_path && in_array($request->status, ['sign_approved', 'user_signed']))
+                            @if($request->documentSignature && $request->documentSignature->qr_code_path && in_array($request->status, ['sign_approved']))
                                 <a href="{{ route('user.signature.my.signatures.qr', $request->documentSignature->id) }}"
                                    class="btn btn-outline-secondary">
                                     <i class="fas fa-qrcode me-1"></i> Download QR
@@ -458,7 +458,7 @@
                             @endif
 
                             <!-- Verification Link -->
-                            @if($request->documentSignature && $request->documentSignature->verification_url && in_array($request->status, ['sign_approved', 'user_signed']))
+                            @if($request->documentSignature && $request->documentSignature->verification_url && in_array($request->status, ['sign_approved']))
                                 <button class="btn btn-outline-primary"
                                         onclick="copyVerificationLink('{{ $request->documentSignature->verification_url }}')">
                                     <i class="fas fa-link me-1"></i> Copy Verification Link

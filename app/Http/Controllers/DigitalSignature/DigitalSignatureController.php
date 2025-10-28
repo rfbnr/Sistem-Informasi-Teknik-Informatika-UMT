@@ -343,7 +343,14 @@ class DigitalSignatureController extends Controller
             $signedPdfPath = null;
             $documentPathForSigning = $approvalRequest->document_path; // Default: original PDF
 
+            // Get Signature Template and merge if provided
+            $signatureTemplate = null;
+
             if ($request->has('template_id')) {
+                $signatureTemplate = SignatureTemplate::find($request->template_id);
+            }
+
+            if ($signatureTemplate) {
                 try {
                     Log::info('Starting PDF merging before signing', [
                         'approval_request_id' => $approvalRequestId,
@@ -417,6 +424,15 @@ class DigitalSignatureController extends Controller
                         'error' => 'Failed to prepare document for signing: ' . $e->getMessage()
                     ], 500);
                 }
+            } else {
+                Log::info('No signature template provided - using original PDF for signing', [
+                    'approval_request_id' => $approvalRequestId
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Signature template not found'
+                ], 400);
             }
 
             // ========================================================================
@@ -441,13 +457,15 @@ class DigitalSignatureController extends Controller
             // STEP 3: Update DocumentSignature with all metadata
             // ========================================================================
             $documentSignature->update([
+                'signature_template_id' => $request->template_id ?? null,
                 'qr_code_path' => $qrData['qr_code_path'] ?? null,
                 'verification_url' => $qrData['verification_url'] ?? $documentSignature->verification_url,
-                // 'verification_token' => $qrData['verification_token'] ?? $documentSignature->verification_token,
                 'final_pdf_path' => $signedPdfPath, // Set immediately
                 'positioning_data' => $positioningData,
                 'signature_metadata' => array_merge($documentSignature->signature_metadata ?? [], [
                     'template_id' => $request->template_id ?? null,
+                    'template_name' => $signatureTemplate->name ?? null,
+                    'template_created_by' => $signatureTemplate->kaprodi->name ?? null,
                     'placement_method' => $request->template_id ? 'drag_drop_template' : 'canvas_draw',
                     'signed_via' => 'web_interface',
                     'browser' => $request->userAgent(),

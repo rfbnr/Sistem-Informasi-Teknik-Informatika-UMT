@@ -559,68 +559,6 @@ function showApproveSignatureModal(id, documentName) {
     modal.show();
 }
 
-// Perform actions (same as index page)
-function performApprove() {
-    const requestId = document.getElementById('approveRequestId').value;
-    const notes = document.getElementById('approval_notes').value;
-
-    fetch(`/admin/signature/approval-requests/${requestId}/approve`, {
-        method: 'POST',
-        headers: {
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ notes: notes })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success || !data.error) {
-            alert('Request approved successfully!');
-            location.reload();
-        } else {
-            alert(data.message || 'Failed to approve request');
-        }
-        bootstrap.Modal.getInstance(document.getElementById('approveModal')).hide();
-    })
-    .catch(error => {
-        alert('An error occurred while approving the request');
-        console.error('Error:', error);
-    });
-}
-
-function performReject() {
-    const requestId = document.getElementById('rejectRequestId').value;
-    const reason = document.getElementById('rejection_reason').value;
-
-    if (!reason || reason.trim() === '') {
-        alert('Please provide a rejection reason');
-        return;
-    }
-
-    fetch(`/admin/signature/approval-requests/${requestId}/reject`, {
-        method: 'POST',
-        headers: {
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ rejection_reason: reason })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success || !data.error) {
-            alert('Request rejected successfully!');
-            location.reload();
-        } else {
-            alert(data.message || 'Failed to reject request');
-        }
-        bootstrap.Modal.getInstance(document.getElementById('rejectModal')).hide();
-    })
-    .catch(error => {
-        alert('An error occurred while rejecting the request');
-        console.error('Error:', error);
-    });
-}
-
 function performApproveSignature() {
     const requestId = document.getElementById('approveSignatureRequestId').value;
     const notes = document.getElementById('approve_signature_notes').value;
@@ -648,5 +586,38 @@ function performApproveSignature() {
         console.error('Error:', error);
     });
 }
+
+// Show Alert Helper
+function showAlert(type, message) {
+    const alertHtml = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-circle' : 'info-circle'} me-2"></i>
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+
+    const container = document.querySelector('.main-content');
+    const firstChild = container.firstElementChild;
+    firstChild.insertAdjacentHTML('afterend', alertHtml);
+
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+        const alerts = document.querySelectorAll('.alert');
+        alerts.forEach(alert => {
+            if (alert.classList.contains('show')) {
+                alert.classList.remove('show');
+                setTimeout(() => alert.remove(), 150);
+            }
+        });
+    }, 5000);
+}
+
+// Update selected count when checkboxes change
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.request-checkbox').forEach(cb => {
+        cb.addEventListener('change', updateSelectedCount);
+    });
+});
 </script>
 @endpush

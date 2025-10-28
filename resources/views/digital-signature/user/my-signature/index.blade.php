@@ -108,7 +108,7 @@
         <div class="row">
             @foreach($signatures as $signature)
             <div class="col-lg-6 mb-4">
-                <div class="card h-100">
+                <div class="card">
                     <div class="card-header {{
                         $signature->signature_status === 'verified' ? 'bg-success' :
                         ($signature->signature_status === 'signed' ? 'bg-info' :
@@ -267,7 +267,7 @@
                             <div class="alert alert-info mb-0 py-2">
                                 <i class="fas fa-info-circle me-2"></i>
                                 <strong class="small">Document Status:</strong>
-                                <span class="badge {{ $signature->approvalRequest->status_badge_class }} ms-1">
+                                <span class="badge {{ $signature->approvalRequest->status_badge_class }} ms-1 text-black">
                                     {{ $signature->approvalRequest->status_label }}
                                 </span>
                             </div>
@@ -275,7 +275,7 @@
                         @endif
 
                         <!-- QR Code Preview -->
-                        @if($signature->qr_code_path)
+                        @if($signature->qr_code_path && in_array($signature->signature_status, ['verified']))
                         <div class="text-center mb-3 p-3 bg-light rounded">
                             <img src="{{ Storage::url($signature->qr_code_path) }}" alt="QR Code" style="max-width: 120px;">
                             <div class="small text-muted mt-2">Scan to verify</div>
@@ -301,19 +301,19 @@
                                 </a>
                                 {{-- if pending user can self signing  --}}
                                 @if($signature->signature_status === 'pending')
-                                    <a href="{{ route('user.signature.sign.document', $signature->id) }}"
+                                    <a href="{{ route('user.signature.sign.document', $signature->approvalRequest->id) }}"
                                        class="btn btn-sm btn-primary flex-fill">
                                         <i class="fas fa-signature"></i> Sign Now
                                     </a>
                                 @endif
                             @endif
-                            @if(($signature->approvalRequest->signed_document_path || $signature->final_pdf_path) && $signature->signature_status !== 'rejected')
+                            @if(($signature->approvalRequest->signed_document_path || $signature->final_pdf_path) && $signature->signature_status === 'verified')
                                 <a href="{{ route('user.signature.my.signatures.download', $signature->id) }}"
                                    class="btn btn-sm btn-success flex-fill">
                                     <i class="fas fa-download"></i> Download
                                 </a>
                             @endif
-                            @if($signature->qr_code_path && $signature->signature_status !== 'rejected')
+                            @if($signature->qr_code_path && $signature->signature_status === 'verified')
                                 <a href="{{ route('user.signature.my.signatures.qr', $signature->id) }}"
                                    class="btn btn-sm btn-outline-secondary">
                                     <i class="fas fa-qrcode"></i>
@@ -327,7 +327,7 @@
                                 <i class="fas fa-clock me-1"></i>
                                 Created {{ $signature->created_at->diffForHumans() }}
                             </span>
-                            @if($signature->approvalRequest->deadline)
+                            {{-- @if($signature->approvalRequest->deadline)
                                 @if($signature->approvalRequest->isOverdue())
                                     <span class="badge bg-danger">
                                         <i class="fas fa-exclamation-triangle"></i> Overdue
@@ -337,7 +337,7 @@
                                         <i class="fas fa-clock"></i> Deadline Soon
                                     </span>
                                 @endif
-                            @endif
+                            @endif --}}
                         </div>
                     </div>
                 </div>
@@ -346,8 +346,11 @@
         </div>
 
         <!-- Pagination -->
-        <div class="mt-4">
+        {{-- <div class="mt-4">
             {{ $signatures->links() }}
+        </div> --}}
+        <div class="d-flex justify-content-center mt-4">
+            {{ $signatures->withQueryString()->links() }}
         </div>
     @else
         <!-- Empty State -->

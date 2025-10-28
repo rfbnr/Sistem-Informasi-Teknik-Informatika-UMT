@@ -110,7 +110,7 @@
                         class="btn btn-danger"
                         id="confirmRejectBtn"
                         onclick="performReject()">
-                    <i class="fas fa-times me-1"></i> Reject Request
+                    {{-- <i class="fas fa-times me-1"></i> Reject Request --}}
                 </button>
             </div>
         </div>
@@ -186,6 +186,10 @@ function validateRejectionReason() {
 document.addEventListener('DOMContentLoaded', function() {
     const textarea = document.getElementById('rejection_reason');
 
+    // btn reject
+    const rejectBtn = document.getElementById('confirmRejectBtn');
+    rejectBtn.innerHTML = `<i class="fas fa-times me-1"></i> Reject Request`;
+
     if (textarea) {
         // Update character count on input
         textarea.addEventListener('input', function() {
@@ -242,6 +246,52 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// Perform Reject
+function performReject() {
+    const requestId = document.getElementById('rejectRequestId').value;
+    const reason = document.getElementById('rejection_reason').value;
+
+    if (!reason || reason.trim() === '') {
+        showAlert('warning', 'Please provide a rejection reason');
+        return;
+    }
+
+    if (reason.length > 500) {
+        showAlert('warning', 'Rejection reason cannot exceed 500 characters');
+        return;
+    }
+
+    const confirmBtn = document.getElementById('confirmRejectBtn');
+    const originalBtnHtml = confirmBtn.innerHTML;
+    confirmBtn.disabled = true;
+    confirmBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Rejecting...`;
+
+    fetch(`/admin/signature/approval-requests/${requestId}/reject`, {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ rejection_reason: reason })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success || !data.error) {
+            showAlert('success', 'Request rejected successfully!');
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showAlert('danger', data.message || 'Failed to reject request');
+            confirmBtn.disabled = false;
+            confirmBtn.innerHTML = originalBtnHtml;
+        }
+        bootstrap.Modal.getInstance(document.getElementById('rejectModal')).hide();
+    })
+    .catch(error => {
+        showAlert('danger', 'An error occurred while rejecting the request');
+        console.error('Error:', error);
+    });
+}
 </script>
 
 <style>

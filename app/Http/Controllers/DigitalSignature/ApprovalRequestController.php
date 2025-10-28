@@ -220,6 +220,7 @@ class ApprovalRequestController extends Controller
                 'document_name' => $documentName,
                 'document_type' => $request->input('document_type'),
                 'document_path' => $documentPath,
+                'status' => ApprovalRequest::STATUS_PENDING,
                 'notes' => $request->input('notes'),
                 'priority' => $request->input('priority', ApprovalRequest::PRIORITY_NORMAL),
                 'deadline' => $request->input('deadline'),

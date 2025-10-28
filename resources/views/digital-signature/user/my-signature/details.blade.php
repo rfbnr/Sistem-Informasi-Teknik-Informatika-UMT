@@ -525,7 +525,7 @@
             </div> --}}
 
             <!-- Canvas Signature Preview -->
-            @if($documentSignature->canvas_data_path)
+            {{-- @if($documentSignature->canvas_data_path)
             <div class="card">
                 <div class="card-header bg-warning text-dark">
                     <h5 class="mb-0">
@@ -539,7 +539,7 @@
                     <p class="small text-muted mt-2 mb-0">Your digital signature canvas</p>
                 </div>
             </div>
-            @endif
+            @endif --}}
         </div>
 
         <!-- Sidebar -->
@@ -567,21 +567,21 @@
                             </button>
                         @else
                             {{-- NORMAL: Show download and verification options --}}
-                            @if($documentSignature->approvalRequest->signed_document_path || $documentSignature->final_pdf_path)
+                            @if($documentSignature->approvalRequest->signed_document_path || $documentSignature->final_pdf_path && in_array($documentSignature->signature_status, ['verified']))
                                 <a href="{{ route('user.signature.my.signatures.download', $documentSignature->id) }}"
                                    class="btn btn-success">
                                     <i class="fas fa-download me-2"></i> Download Signed Document
                                 </a>
                             @endif
 
-                            @if($documentSignature->qr_code_path)
+                            @if($documentSignature->qr_code_path && in_array($documentSignature->signature_status, ['verified']))
                                 <a href="{{ route('user.signature.my.signatures.qr', $documentSignature->id) }}"
                                    class="btn btn-outline-secondary">
                                     <i class="fas fa-qrcode me-2"></i> Download QR Code
                                 </a>
                             @endif
 
-                            @if($documentSignature->verification_url)
+                            @if($documentSignature->verification_url && in_array($documentSignature->signature_status, ['verified']))
                                 <button class="btn btn-outline-info" onclick="copyVerificationLink()">
                                     <i class="fas fa-link me-2"></i> Copy Verification Link
                                 </button>
@@ -640,7 +640,7 @@
             @endif
 
             <!-- QR Code Display (Hidden for Rejected) -->
-            @if($documentSignature->qr_code_path && $documentSignature->signature_status !== 'rejected')
+            @if($documentSignature->qr_code_path && in_array($documentSignature->signature_status, ['verified']))
             <div class="card mb-4">
                 <div class="card-header bg-secondary text-white">
                     <h5 class="mb-0">
@@ -659,7 +659,7 @@
             @endif
 
             <!-- Verification URL (Hidden for Rejected) -->
-            @if($documentSignature->verification_url && $documentSignature->signature_status !== 'rejected')
+            @if($documentSignature->verification_url && in_array($documentSignature->signature_status, ['verified']))
             <div class="card mb-4">
                 <div class="card-header bg-dark text-white">
                     <h5 class="mb-0">
@@ -712,10 +712,10 @@
                                 <span class="badge bg-danger">Invalid/Expired</span>
                             @endif
                         </li>
-                        <li class="mb-2">
+                        {{-- <li class="mb-2">
                             <strong>Revision Count:</strong><br>
                             <span class="badge bg-secondary">{{ $documentSignature->approvalRequest->revision_count ?? 0 }} Revisions</span>
-                        </li>
+                        </li> --}}
                         <li class="mb-2">
                             <strong>Progress:</strong><br>
                             <div class="progress" style="height: 20px;">
@@ -822,6 +822,12 @@ function previewDocument(type) {
 
     // Set download button
     downloadBtn.href = docPath;
+
+    if(type === 'signed' && !{{ in_array($documentSignature->signature_status, ['verified']) ? 'true' : 'false' }}) {
+        downloadBtn.style.display = 'none';
+    } else {
+        downloadBtn.style.display = 'inline-block';
+    }
 
     // Show modal
     modal.show();
