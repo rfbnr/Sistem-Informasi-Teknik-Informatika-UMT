@@ -13,11 +13,11 @@ class ApprovalRequestRejectedNotification extends Mailable
 {
     use Queueable, SerializesModels;
 
+    public $approvalRequest;
+
     /**
      * Create a new message instance.
      */
-    public $approvalRequest;
-
     public function __construct($approvalRequest)
     {
         $this->approvalRequest = $approvalRequest;
@@ -28,8 +28,15 @@ class ApprovalRequestRejectedNotification extends Mailable
      */
     public function envelope(): Envelope
     {
+        $documentName = $this->approvalRequest->document_name;
+
         return new Envelope(
-            subject: 'Approval Request Rejected Notification',
+            subject: "⚠️ Permintaan Perlu Perbaikan - {$documentName}",
+            tags: ['digital-signature', 'request-rejected'],
+            // metadata: [
+            //     'approval_request_id' => $this->approvalRequest->id,
+            //     'user_id' => $this->approvalRequest->user_id,
+            // ],
         );
     }
 

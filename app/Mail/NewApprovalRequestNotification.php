@@ -3,22 +3,20 @@
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
-use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Mail\Mailables\Envelope;
 
 class NewApprovalRequestNotification extends Mailable
 {
     use Queueable, SerializesModels;
 
+    public $approvalRequest;
+
     /**
      * Create a new message instance.
      */
-
-    public $approvalRequest;
-
     public function __construct($approvalRequest)
     {
         $this->approvalRequest = $approvalRequest;
@@ -29,8 +27,11 @@ class NewApprovalRequestNotification extends Mailable
      */
     public function envelope(): Envelope
     {
+        $studentName = $this->approvalRequest->user->name;
+        $documentName = $this->approvalRequest->document_name;
+
         return new Envelope(
-            subject: 'New Approval Request Notification',
+            subject: "🔔 Permintaan Baru: {$documentName} - {$studentName}",
         );
     }
 

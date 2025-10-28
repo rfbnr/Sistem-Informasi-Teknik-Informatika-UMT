@@ -314,6 +314,17 @@ class DocumentSignature extends Model
         $this->logAudit('signature_rejected', $oldStatus, self::STATUS_REJECTED,
             'Document signature has been rejected. Reason: ' . $reason);
 
+        // Send notification to student about signature rejection
+        if ($this->approvalRequest && $this->approvalRequest->user) {
+            \Illuminate\Support\Facades\Mail::to($this->approvalRequest->user->email)->send(
+                new \App\Mail\DocumentSignatureRejectedByKaprodiNotification(
+                    $this->approvalRequest,
+                    $this,
+                    $reason
+                )
+            );
+        }
+
         return true;
     }
 

@@ -529,6 +529,14 @@ class DigitalSignatureController extends Controller
                 'performed_at' => now()
             ]);
 
+            // Send notification to Kaprodi for verification
+            $kaprodiEmails = \App\Models\Kaprodi::pluck('email')->toArray();
+            if (!empty($kaprodiEmails)) {
+                \Illuminate\Support\Facades\Mail::to($kaprodiEmails)->send(
+                    new \App\Mail\DocumentSignedByUserNotification($approvalRequest, $documentSignature)
+                );
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Document signed successfully',

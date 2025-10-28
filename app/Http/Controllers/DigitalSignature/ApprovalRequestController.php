@@ -10,6 +10,7 @@ use App\Models\ApprovalRequest;
 use App\Services\QRCodeService;
 use Illuminate\Validation\Rule;
 use App\Models\DocumentSignature;
+use App\Models\SignatureAuditLog;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use Endroid\QrCode\Writer\PngWriter;
@@ -576,6 +577,11 @@ class ApprovalRequestController extends Controller
                 Mail::to($approvalRequest->user->email)->send(
                     new ApprovalRequestApprovedNotification($approvalRequest)
                 );
+
+                Log::info('Approval notification email sent to student', [
+                    'approval_request_id' => $id,
+                    'student_email' => $approvalRequest->user->email
+                ]);
             } catch (\Exception $mailException) {
                 // Log email failure but don't fail the entire approval
                 Log::error('Email notification failed', [
@@ -635,9 +641,9 @@ class ApprovalRequestController extends Controller
             $approvalRequest->reject($request->rejection_reason, Auth::id());
 
             // Send notification to student
-            // Mail::to($approvalRequest->user->email)->send(
-            //     new ApprovalRequestRejectedNotification($approvalRequest)
-            // );
+            Mail::to($approvalRequest->user->email)->send(
+                new ApprovalRequestRejectedNotification($approvalRequest)
+            );
 
             Log::info('Approval request rejected', [
                 'approval_request_id' => $id,
@@ -803,7 +809,10 @@ class ApprovalRequestController extends Controller
                 'file_type' => $suffix ? 'signed' : 'original'
             ]);
 
-            return response()->download($fullPath, $filename);
+            // return response()->download($fullPath, $filename);
+            return response($approvalRequest->signed_document_path ?? $approvalRequest->document_path)
+                ->header('Content-Type', mime_content_type($fullPath))
+                ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
 
         } catch (\Exception $e) {
             Log::error('Document download failed: ' . $e->getMessage());
@@ -829,7 +838,14 @@ class ApprovalRequestController extends Controller
 
             $filename = $approvalRequest->document_name . '.' . pathinfo($filePath, PATHINFO_EXTENSION);
 
-            return response()->download($filePath, $filename);
+            // return response()->download($filePath, $filename, [
+            //     'Content-Type' => mime_content_type($filePath),
+            //     'Content-Disposition' => 'attachment; filename="' . $filename . '"'
+            // ]);
+
+            return response($approvalRequest->document_path)
+                ->header('Content-Type', mime_content_type($filePath))
+                ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
 
         } catch (\Exception $e) {
             Log::error('Original document download failed: ' . $e->getMessage());

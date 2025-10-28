@@ -140,6 +140,16 @@ class DocumentSignatureController extends Controller
                     'verified_by' => Auth::id()
                 ]);
 
+                // Send success notification to student with signed PDF and QR code
+                if ($approvalRequest->user) {
+                    \Illuminate\Support\Facades\Mail::to($approvalRequest->user->email)->send(
+                        new \App\Mail\ApprovalRequestSignedNotification(
+                            $approvalRequest,
+                            $documentSignature
+                        )
+                    );
+                }
+
                 return response()->json([
                     'success' => true,
                     'message' => 'Document signature verified successfully',
@@ -309,13 +319,100 @@ class DocumentSignatureController extends Controller
     /**
      * Download signed document
      */
+    // public function downloadSignedDocument($id)
+    // {
+    //     try {
+    //         $documentSignature = DocumentSignature::findOrFail($id);
+    //         $approvalRequest = $documentSignature->approvalRequest;
+
+    //         // Check authorization - Check if user is Kaprodi or document owner
+    //         $isKaprodi = Auth::guard('kaprodi')->check();
+    //         $isOwner = Auth::check() && $approvalRequest->user_id === Auth::id();
+
+    //         if (!$isKaprodi && !$isOwner) {
+    //             Log::warning('Unauthorized download attempt', [
+    //                 'document_signature_id' => $id,
+    //                 'attempted_by' => Auth::id() ?? 'guest',
+    //                 'is_kaprodi' => $isKaprodi,
+    //                 'is_owner' => $isOwner
+    //             ]);
+    //             abort(403, 'Unauthorized to download this document');
+    //         }
+
+    //         // Allow download even if not verified yet (user might need to download for verification)
+    //         // Just log a warning if status is invalid
+    //         if ($documentSignature->signature_status === DocumentSignature::STATUS_INVALID) {
+    //             Log::warning('Downloading document with invalid signature', [
+    //                 'document_signature_id' => $id,
+    //                 'status' => $documentSignature->signature_status,
+    //                 'downloaded_by' => Auth::id()
+    //             ]);
+    //         }
+
+    //         // Determine which file to use
+    //         if ($documentSignature->final_pdf_path) {
+    //             // Use signed PDF (stored in local disk)
+    //             $filePath = $documentSignature->final_pdf_path;
+    //             $fullPath = Storage::disk('public')->path($filePath);
+    //             $fileType = 'signed';
+    //         } else {
+    //             // Fallback to original document (stored in public disk)
+    //             $filePath = $approvalRequest->document_path;
+    //             $fullPath = Storage::disk('public')->path($filePath);
+    //             $fileType = 'original';
+    //         }
+
+    //         if (!file_exists($fullPath)) {
+    //             Log::error('Document file not found', [
+    //                 'document_signature_id' => $id,
+    //                 'file_path' => $filePath,
+    //                 'full_path' => $fullPath,
+    //                 'file_type' => $fileType
+    //             ]);
+    //             return back()->with('error', 'Document file not found');
+    //         }
+
+    //         // Generate safe filename
+    //         $signedAtDate = $documentSignature->signed_at
+    //             ? $documentSignature->signed_at->format('Y-m-d')
+    //             : now()->format('Y-m-d');
+
+    //         $filename = $approvalRequest->document_name .
+    //                    ($fileType === 'signed' ? '_signed_' : '_') .
+    //                    $signedAtDate .
+    //                    '.' . pathinfo($fullPath, PATHINFO_EXTENSION);
+
+    //         Log::info('Document downloaded', [
+    //             'document_signature_id' => $id,
+    //             'downloaded_by' => Auth::id(),
+    //             'filename' => $filename,
+    //             'file_type' => $fileType
+    //         ]);
+
+    //         // return Response::download($fullPath, $filename, [
+    //         //     'Content-Type' => 'application/pdf'
+    //         // ]);
+    //         return Response::download($fullPath, $filename, [
+    //             'Content-Type' => 'application/pdf',
+    //             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+    //             'Cache-Control' => 'no-cache, no-store, must-revalidate',
+    //             'Pragma' => 'no-cache',
+    //             'Expires' => '0',
+    //         ]);
+
+    //     } catch (\Exception $e) {
+    //         Log::error('Download document error: ' . $e->getMessage());
+    //         return back()->with('error', 'Failed to download document');
+    //     }
+    // }
+
     public function downloadSignedDocument($id)
     {
         try {
             $documentSignature = DocumentSignature::findOrFail($id);
             $approvalRequest = $documentSignature->approvalRequest;
 
-            // Check authorization - Check if user is Kaprodi or document owner
+            // Check authorization
             $isKaprodi = Auth::guard('kaprodi')->check();
             $isOwner = Auth::check() && $approvalRequest->user_id === Auth::id();
 
@@ -323,80 +420,164 @@ class DocumentSignatureController extends Controller
                 Log::warning('Unauthorized download attempt', [
                     'document_signature_id' => $id,
                     'attempted_by' => Auth::id() ?? 'guest',
-                    'is_kaprodi' => $isKaprodi,
-                    'is_owner' => $isOwner
                 ]);
                 abort(403, 'Unauthorized to download this document');
             }
 
-            // Allow download even if not verified yet (user might need to download for verification)
-            // Just log a warning if status is invalid
-            if ($documentSignature->signature_status === DocumentSignature::STATUS_INVALID) {
-                Log::warning('Downloading document with invalid signature', [
-                    'document_signature_id' => $id,
-                    'status' => $documentSignature->signature_status,
-                    'downloaded_by' => Auth::id()
-                ]);
-            }
-
             // Determine which file to use
             if ($documentSignature->final_pdf_path) {
-                // Use signed PDF (stored in local disk)
                 $filePath = $documentSignature->final_pdf_path;
-                $fullPath = Storage::disk('public')->path($filePath);
                 $fileType = 'signed';
             } else {
-                // Fallback to original document (stored in public disk)
                 $filePath = $approvalRequest->document_path;
-                $fullPath = Storage::disk('public')->path($filePath);
                 $fileType = 'original';
             }
 
-            if (!file_exists($fullPath)) {
+            // ✅ PERBAIKAN UTAMA - Check file exists dengan benar
+            if (!Storage::disk('public')->exists($filePath)) {
                 Log::error('Document file not found', [
                     'document_signature_id' => $id,
                     'file_path' => $filePath,
-                    'full_path' => $fullPath,
-                    'file_type' => $fileType
+                    'disk' => 'public',
+                    'absolute_path' => Storage::disk('public')->path($filePath)
                 ]);
-                return back()->with('error', 'Document file not found');
+                return back()->with('error', 'Document file not found on storage');
+            }
+
+            // ✅ Get absolute path SETELAH memastikan file exists
+            $absolutePath = Storage::disk('public')->path($filePath);
+
+            // ✅ Double check dengan file_exists
+            if (!file_exists($absolutePath) || !is_readable($absolutePath)) {
+                Log::error('File exists check failed', [
+                    'file_path' => $filePath,
+                    'absolute_path' => $absolutePath,
+                    'file_exists' => file_exists($absolutePath),
+                    'is_readable' => is_readable($absolutePath)
+                ]);
+                return back()->with('error', 'Document file is not accessible');
             }
 
             // Generate safe filename
             $signedAtDate = $documentSignature->signed_at
-                ? $documentSignature->signed_at->format('Y-m-d')
-                : now()->format('Y-m-d');
+                ? $documentSignature->signed_at->format('Ymd')
+                : now()->format('Ymd');
 
-            $filename = $approvalRequest->document_name .
-                       ($fileType === 'signed' ? '_signed_' : '_') .
-                       $signedAtDate .
-                       '.' . pathinfo($fullPath, PATHINFO_EXTENSION);
+            $originalName = pathinfo($absolutePath, PATHINFO_FILENAME);
+            $extension = pathinfo($absolutePath, PATHINFO_EXTENSION);
 
-            Log::info('Document downloaded', [
+            $filename = preg_replace('/[^A-Za-z0-9_\-]/', '_', $originalName) .
+                    ($fileType === 'signed' ? '_signed_' : '_') .
+                    $signedAtDate .
+                    '.' . $extension;
+
+            Log::info('Starting document download', [
                 'document_signature_id' => $id,
                 'downloaded_by' => Auth::id(),
                 'filename' => $filename,
-                'file_type' => $fileType
+                'file_type' => $fileType,
+                'file_size' => filesize($absolutePath),
+                'mime_type' => mime_content_type($absolutePath)
             ]);
 
-            return Response::download($fullPath, $filename);
+            // ✅ CRITICAL FIX: Use Response::download dengan proper headers
+            return Response::download($absolutePath, $filename, [
+                'Content-Type' => 'application/pdf',
+                'Content-Description' => 'File Transfer',
+                'Content-Transfer-Encoding' => 'binary',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+                'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+                'Pragma' => 'public',
+                'Expires' => '0',
+            ])->deleteFileAfterSend(false); // ✅ IMPORTANT: Don't delete file after send
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            Log::error('Document signature not found', ['id' => $id]);
+            return back()->with('error', 'Document signature not found');
 
         } catch (\Exception $e) {
-            Log::error('Download document error: ' . $e->getMessage());
-            return back()->with('error', 'Failed to download document');
+            Log::error('Download document error', [
+                'id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return back()->with('error', 'Failed to download document: ' . $e->getMessage());
         }
     }
 
     /**
      * View/Preview signed PDF in browser
      */
+    // public function viewSignedDocument($id)
+    // {
+    //     try {
+    //         $documentSignature = DocumentSignature::findOrFail($id);
+    //         $approvalRequest = $documentSignature->approvalRequest;
+
+    //         // Check authorization - Check if user is Kaprodi or document owner
+    //         $isKaprodi = Auth::guard('kaprodi')->check();
+    //         $isOwner = Auth::check() && $approvalRequest->user_id === Auth::id();
+
+    //         if (!$isKaprodi && !$isOwner) {
+    //             Log::warning('Unauthorized view attempt', [
+    //                 'document_signature_id' => $id,
+    //                 'attempted_by' => Auth::id() ?? 'guest'
+    //             ]);
+    //             abort(403, 'Unauthorized to view this document');
+    //         }
+
+    //         // Determine which file to use
+    //         if ($documentSignature->final_pdf_path) {
+    //             // Use signed PDF (stored in local disk)
+    //             $filePath = $documentSignature->final_pdf_path;
+    //             // $fullPath = Storage::url($filePath);
+    //             $fullPath = Storage::disk('public')->path($filePath);
+    //             $fileType = 'signed';
+    //         } else {
+    //             // Fallback to original document (stored in public disk)
+    //             $filePath = $approvalRequest->document_path;
+    //             // $fullPath = Storage::url($filePath);
+    //             $fullPath = Storage::disk('public')->path($filePath);
+    //             $fileType = 'original';
+    //         }
+
+    //         if (!file_exists($fullPath)) {
+    //             Log::error('Document file not found for viewing', [
+    //                 'document_signature_id' => $id,
+    //                 'file_path' => $filePath,
+    //                 'full_path' => $fullPath,
+    //                 'file_type' => $fileType
+    //             ]);
+    //             return back()->with('error', 'Document file not found');
+    //         }
+
+    //         Log::info('Document viewed', [
+    //             'document_signature_id' => $id,
+    //             'viewed_by' => Auth::id(),
+    //             'file_type' => $fileType,
+    //             'full_path' => $fullPath
+    //         ]);
+
+    //         // Return PDF file inline (untuk preview di browser)
+    //         return Response::file($fullPath, [
+    //             'Content-Type' => 'application/pdf',
+    //             'Content-Disposition' => 'inline; filename="' . basename($fullPath) . '"',
+    //             'Cache-Control' => 'public, max-age=3600',
+    //             'X-Content-Type-Options' => 'nosniff',
+    //         ]);
+
+    //     } catch (\Exception $e) {
+    //         Log::error('View document error: ' . $e->getMessage());
+    //         return back()->with('error', 'Failed to view document');
+    //     }
+    // }
     public function viewSignedDocument($id)
     {
         try {
             $documentSignature = DocumentSignature::findOrFail($id);
             $approvalRequest = $documentSignature->approvalRequest;
 
-            // Check authorization - Check if user is Kaprodi or document owner
+            // Check authorization
             $isKaprodi = Auth::guard('kaprodi')->check();
             $isOwner = Auth::check() && $approvalRequest->user_id === Auth::id();
 
@@ -410,45 +591,49 @@ class DocumentSignatureController extends Controller
 
             // Determine which file to use
             if ($documentSignature->final_pdf_path) {
-                // Use signed PDF (stored in local disk)
                 $filePath = $documentSignature->final_pdf_path;
-                // $fullPath = Storage::url($filePath);
-                $fullPath = Storage::disk('public')->path($filePath);
                 $fileType = 'signed';
             } else {
-                // Fallback to original document (stored in public disk)
                 $filePath = $approvalRequest->document_path;
-                // $fullPath = Storage::url($filePath);
-                $fullPath = Storage::disk('public')->path($filePath);
                 $fileType = 'original';
             }
 
-            if (!file_exists($fullPath)) {
+            // ✅ Check file exists
+            if (!Storage::disk('public')->exists($filePath)) {
                 Log::error('Document file not found for viewing', [
                     'document_signature_id' => $id,
-                    'file_path' => $filePath,
-                    'full_path' => $fullPath,
-                    'file_type' => $fileType
+                    'file_path' => $filePath
                 ]);
                 return back()->with('error', 'Document file not found');
+            }
+
+            $absolutePath = Storage::disk('public')->path($filePath);
+
+            if (!file_exists($absolutePath) || !is_readable($absolutePath)) {
+                return back()->with('error', 'Document file is not accessible');
             }
 
             Log::info('Document viewed', [
                 'document_signature_id' => $id,
                 'viewed_by' => Auth::id(),
-                'file_type' => $fileType,
-                'full_path' => $fullPath
+                'file_type' => $fileType
             ]);
 
-            // Return PDF file inline (untuk preview di browser)
-            return response()->file($fullPath, [
+            // ✅ Return file with proper headers for inline viewing
+            return Response::file($absolutePath, [
                 'Content-Type' => 'application/pdf',
-                'Content-Disposition' => 'inline; filename="' . basename($fullPath) . '"'
+                'Content-Disposition' => 'inline; filename="' . basename($absolutePath) . '"',
+                'Cache-Control' => 'public, max-age=3600',
+                'Expires' => gmdate('D, d M Y H:i:s', time() + 3600) . ' GMT',
+                'X-Content-Type-Options' => 'nosniff',
             ]);
 
         } catch (\Exception $e) {
-            Log::error('View document error: ' . $e->getMessage());
-            return back()->with('error', 'Failed to view document');
+            Log::error('View document error', [
+                'id' => $id,
+                'error' => $e->getMessage()
+            ]);
+            return back()->with('error', 'Failed to view document: ' . $e->getMessage());
         }
     }
 
@@ -502,7 +687,9 @@ class DocumentSignatureController extends Controller
                 'filename' => $filename
             ]);
 
-            return Response::download($qrPath, $filename);
+            return Response::download($qrPath, $filename, [
+                'Content-Type' => 'image/png'
+            ]);
 
         } catch (\Exception $e) {
             Log::error('Download QR code error: ' . $e->getMessage());
@@ -913,7 +1100,10 @@ class DocumentSignatureController extends Controller
         $filename = 'document_signatures_' . date('Y-m-d_H-i-s') . '.json';
 
         return response()->json($data)
-            ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
+            ->header(
+                'Content-Disposition',
+                'attachment; filename="' . $filename . '"'
+            );
     }
 
     /**
