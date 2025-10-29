@@ -27,8 +27,8 @@ class DatabaseSeeder extends Seeder
 
         // Create Regular User (Mahasiswa)
         User::factory()->create([
-            'name' => 'Muhammad Rizki',
-            'email' => 'user@umt.ac.id',
+            'name' => 'Ridwan Febnur Asri Redinda',
+            'email' => 'ridwanfebnur9@gmail.com',
             'password' => Hash::make('password'),
             'roles' => 'user',
             'NIM' => '2024001001',
@@ -36,7 +36,7 @@ class DatabaseSeeder extends Seeder
 
         Kaprodi::create([
             'name' => 'Dr. Budi Santoso, M.Kom',
-            'email' => 'kaprodi.informatika@umt.ac.id',
+            'email' => 'ridwanfebnur@umt.ac.id',
             'password' => 'password', // akan di-hash otomatis oleh mutator
             'NIDN' => '0123456789',
         ]);
