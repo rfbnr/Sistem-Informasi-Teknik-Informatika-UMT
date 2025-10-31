@@ -104,18 +104,18 @@ Route::middleware(['auth:kaprodi'])->prefix('admin/signature')->name('admin.sign
         ->name('dashboard');
 
     // ==================== DIGITAL SIGNATURE KEY MANAGEMENT ====================
-    Route::prefix('keys')->name('keys.')->group(function () {
-        Route::get('/', [DigitalSignatureController::class, 'keyManagement'])
-            ->name('index');
-        Route::get('create', [DigitalSignatureController::class, 'createKeyForm'])
-            ->name('create');
-        Route::post('store', [DigitalSignatureController::class, 'createSignatureKey'])
-            ->name('store');
-        Route::get('{id}', [DigitalSignatureController::class, 'viewSignatureKey'])
-            ->name('view');
-        Route::post('{id}/revoke', [DigitalSignatureController::class, 'revokeSignatureKey'])
-            ->name('revoke');
-    });
+    // Route::prefix('keys')->name('keys.')->group(function () {
+    //     Route::get('/', [DigitalSignatureController::class, 'keyManagement'])
+    //         ->name('index');
+    //     Route::get('create', [DigitalSignatureController::class, 'createKeyForm'])
+    //         ->name('create');
+    //     Route::post('store', [DigitalSignatureController::class, 'createSignatureKey'])
+    //         ->name('store');
+    //     Route::get('{id}', [DigitalSignatureController::class, 'viewSignatureKey'])
+    //         ->name('view');
+    //     Route::post('{id}/revoke', [DigitalSignatureController::class, 'revokeSignatureKey'])
+    //         ->name('revoke');
+    // });
 
     // ==================== DOCUMENT SIGNATURES MANAGEMENT ====================
     Route::prefix('documents')->name('documents.')->group(function () {
@@ -146,30 +146,30 @@ Route::middleware(['auth:kaprodi'])->prefix('admin/signature')->name('admin.sign
     });
 
     // ==================== SIGNATURE TEMPLATE MANAGEMENT ====================
-    Route::prefix('templates')->name('templates.')->group(function () {
-        Route::get('/', [SignatureTemplateController::class, 'index'])
-            ->name('index');
-        Route::get('create', [SignatureTemplateController::class, 'create'])
-            ->name('create');
-        Route::post('store', [SignatureTemplateController::class, 'store'])
-            ->name('store');
-        Route::get('{id}', [SignatureTemplateController::class, 'show'])
-            ->name('show');
-        Route::get('{id}/edit', [SignatureTemplateController::class, 'edit'])
-            ->name('edit');
-        Route::put('{id}', [SignatureTemplateController::class, 'update'])
-            ->name('update');
-        Route::delete('{id}', [SignatureTemplateController::class, 'destroy'])
-            ->name('destroy');
-        Route::post('{id}/set-default', [SignatureTemplateController::class, 'setDefault'])
-            ->name('set.default');
-        Route::post('{id}/upload-signature', [SignatureTemplateController::class, 'uploadSignatureImage'])
-            ->name('upload.signature');
-        Route::post('{id}/clone', [SignatureTemplateController::class, 'clone'])
-            ->name('clone');
-        Route::get('active/list', [SignatureTemplateController::class, 'getActiveTemplates'])
-            ->name('active');
-    });
+    // Route::prefix('templates')->name('templates.')->group(function () {
+    //     Route::get('/', [SignatureTemplateController::class, 'index'])
+    //         ->name('index');
+    //     Route::get('create', [SignatureTemplateController::class, 'create'])
+    //         ->name('create');
+    //     Route::post('store', [SignatureTemplateController::class, 'store'])
+    //         ->name('store');
+    //     Route::get('{id}', [SignatureTemplateController::class, 'show'])
+    //         ->name('show');
+    //     Route::get('{id}/edit', [SignatureTemplateController::class, 'edit'])
+    //         ->name('edit');
+    //     Route::put('{id}', [SignatureTemplateController::class, 'update'])
+    //         ->name('update');
+    //     Route::delete('{id}', [SignatureTemplateController::class, 'destroy'])
+    //         ->name('destroy');
+    //     Route::post('{id}/set-default', [SignatureTemplateController::class, 'setDefault'])
+    //         ->name('set.default');
+    //     Route::post('{id}/upload-signature', [SignatureTemplateController::class, 'uploadSignatureImage'])
+    //         ->name('upload.signature');
+    //     Route::post('{id}/clone', [SignatureTemplateController::class, 'clone'])
+    //         ->name('clone');
+    //     Route::get('active/list', [SignatureTemplateController::class, 'getActiveTemplates'])
+    //         ->name('active');
+    // });
 
     // ==================== APPROVAL REQUEST MANAGEMENT ====================
     Route::prefix('approval-requests')->name('approval.')->group(function () {
@@ -245,14 +245,13 @@ Route::middleware(['auth:web'])->prefix('user/signature')->name('user.signature.
             ->name('status');
     });
 
-    // ==================== DOCUMENT SIGNING ====================
+    // ==================== DOCUMENT SIGNING (QR DRAG & DROP) ====================
     Route::prefix('sign')->name('sign.')->group(function () {
         Route::get('{approvalRequestId}', [DigitalSignatureController::class, 'signDocument'])
             ->name('document');
-        Route::get('{approvalRequestId}/templates', [DigitalSignatureController::class, 'getTemplatesForSigning'])
-            ->name('templates');
-        Route::get('{approvalRequestId}/canvas', [DigitalSignatureController::class, 'signatureCanvas'])
-            ->name('canvas');
+        // DEPRECATED: Signature templates - now using QR code only
+        // Route::get('{approvalRequestId}/templates', [DigitalSignatureController::class, 'getTemplatesForSigning'])
+        //     ->name('templates');
         Route::post('{approvalRequestId}/process', [DigitalSignatureController::class, 'processDocumentSigning'])
             ->name('process');
     });

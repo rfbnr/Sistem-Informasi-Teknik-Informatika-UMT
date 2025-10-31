@@ -6,14 +6,13 @@ use TCPDF;
 use Exception;
 use setasign\Fpdi\Tcpdf\Fpdi;
 use App\Models\DocumentSignature;
-use App\Models\SignatureTemplate;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 /**
  * PDFSignatureService
  *
- * Service untuk menangani physical embedding signature template ke dalam PDF
+ * REFACTORED: Service untuk embedding QR code ke dalam PDF
  * Menggunakan TCPDF library untuk manipulasi PDF
  */
 class PDFSignatureService
@@ -24,52 +23,44 @@ class PDFSignatureService
     private array $tempFilesToClean = [];
 
     /**
-     * Merge signature template into PDF document
+     * REFACTORED: Embed QR code into PDF document
+     * No signature template - only QR code at user-defined position
      *
      * @param string $originalPdfPath - Absolute path to original PDF file
-     * @param int $templateId - SignatureTemplate ID
-     * @param array $positioningData - Position, size, page data from frontend
-     * @param DocumentSignature $documentSignature - For QR code generation
-     * @param string|null $qrCodePath - Optional QR code image path
-     * @return string - Path to final signed PDF (storage path)
+     * @param string $qrCodePath - Absolute path to QR code image
+     * @param array $qrPositioningData - QR position from user drag & drop
+     * @param DocumentSignature $documentSignature - For metadata
+     * @return string - Path to final PDF with embedded QR (storage path)
      * @throws Exception
      */
-    public function mergeSignatureIntoPDF(
+    public function embedQRCodeIntoPDF(
         string $originalPdfPath,
-        int $templateId,
-        array $positioningData,
-        DocumentSignature $documentSignature,
-        ?string $qrCodePath = null
+        string $qrCodePath,
+        array $qrPositioningData,
+        DocumentSignature $documentSignature
     ): string {
         try {
-            Log::info('Starting PDF signature merge', [
+            Log::info('Starting QR code embedding into PDF', [
                 'original_pdf' => $originalPdfPath,
-                'template_id' => $templateId,
-                'positioning_data' => $positioningData,
+                'qr_code_path' => $qrCodePath,
+                'qr_positioning_data' => $qrPositioningData,
                 'document_signature_id' => $documentSignature->id
             ]);
 
-            // Validate original PDF exists
+            // Validate files exist
             if (!file_exists($originalPdfPath)) {
                 throw new Exception("Original PDF file not found: {$originalPdfPath}");
             }
 
-            // Get signature template
-            $template = SignatureTemplate::findOrFail($templateId);
-
-            // Get template image path
-            // $templateImagePath = Storage::path($template->signature_image_path);
-            $templateImagePath = Storage::disk('public')->path($template->signature_image_path);
-
-            if (!file_exists($templateImagePath)) {
-                throw new Exception("Template image not found: {$templateImagePath}");
+            if (!file_exists($qrCodePath)) {
+                throw new Exception("QR code image not found: {$qrCodePath}");
             }
 
-            // Parse positioning data
-            $page = $positioningData['page'] ?? 1;
-            $position = $positioningData['position'] ?? ['x' => 0, 'y' => 0];
-            $size = $positioningData['size'] ?? ['width' => 200, 'height' => 100];
-            $canvasDimensions = $positioningData['canvas_dimensions'] ?? null;
+            // Parse QR positioning data from user drag & drop
+            $page = $qrPositioningData['page'] ?? 1;
+            $position = $qrPositioningData['position'] ?? ['x' => 0, 'y' => 0];
+            $size = $qrPositioningData['size'] ?? ['width' => 50, 'height' => 50];
+            $canvasDimensions = $qrPositioningData['canvas_dimensions'] ?? null;
 
             // Initialize FPDI (extends TCPDF with PDF import capability)
             $pdf = new Fpdi('P', 'mm', 'A4', true, 'UTF-8', false);
@@ -148,21 +139,16 @@ class PDFSignatureService
                 // Use the imported page
                 $pdf->useTemplate($templateIdx);
 
-                // If this is the target page, add signature
+                // If this is the target page, add QR code at user-defined position
                 if ($i == $page) {
-                    $this->addSignatureToPage(
+                    $this->addQRCodeToPage(
                         $pdf,
-                        $templateImagePath,
+                        $qrCodePath,
                         $position,
                         $size,
                         $pageSize,
                         $canvasDimensions
                     );
-
-                    // Add QR code if provided
-                    if ($qrCodePath && file_exists($qrCodePath)) {
-                        $this->addQRCodeToPage($pdf, $qrCodePath, $pageSize);
-                    }
                 }
             }
 
@@ -187,7 +173,7 @@ class PDFSignatureService
             // Output PDF to file
             $pdf->Output($signedPdfAbsolutePath, 'F');
 
-            Log::info('PDF signature merge completed', [
+            Log::info('QR code embedded into PDF successfully', [
                 'output_path' => $signedPdfStoragePath,
                 'file_size' => filesize($signedPdfAbsolutePath)
             ]);
@@ -198,34 +184,34 @@ class PDFSignatureService
             return $signedPdfStoragePath;
 
         } catch (Exception $e) {
-            Log::error('PDF signature merge failed', [
+            Log::error('QR code embedding failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
                 'original_pdf' => $originalPdfPath,
-                'template_id' => $templateId
+                'qr_code_path' => $qrCodePath
             ]);
 
             // Clean up temp files even on error
             $this->cleanupTempFiles();
 
-            throw new Exception('Failed to merge signature into PDF: ' . $e->getMessage());
+            throw new Exception('Failed to embed QR code into PDF: ' . $e->getMessage());
         }
     }
 
     /**
-     * Add signature image to PDF page
+     * REFACTORED: Add QR code to PDF page at user-defined position
      *
      * @param Fpdi $pdf
-     * @param string $imagePathAbsolute
-     * @param array $position - ['x' => pixel, 'y' => pixel]
-     * @param array $size - ['width' => pixel, 'height' => pixel]
+     * @param string $qrCodePath - Absolute path to QR code image
+     * @param array $position - ['x' => pixel, 'y' => pixel] from user drag & drop
+     * @param array $size - ['width' => pixel, 'height' => pixel] from user drag & drop
      * @param array $pageSize - ['width' => mm, 'height' => mm]
      * @param array|null $canvasDimensions - ['width' => pixel, 'height' => pixel]
      * @return void
      */
-    private function addSignatureToPage(
+    private function addQRCodeToPage(
         TCPDF $pdf,
-        string $imagePathAbsolute,
+        string $qrCodePath,
         array $position,
         array $size,
         array $pageSize,
@@ -252,7 +238,7 @@ class PDFSignatureService
             $width = $size['width'] * $scaleX;
             $height = $size['height'] * $scaleY;
 
-            Log::info('Adding signature to PDF', [
+            Log::info('Adding QR code to PDF at user-defined position', [
                 'original_position_px' => $position,
                 'original_size_px' => $size,
                 'converted_position_mm' => ['x' => $x, 'y' => $y],
@@ -260,9 +246,9 @@ class PDFSignatureService
                 'page_size_mm' => $pageSize
             ]);
 
-            // Add signature image
+            // Add QR code image at user's position
             $pdf->Image(
-                $imagePathAbsolute,
+                $qrCodePath,
                 $x,
                 $y,
                 $width,
@@ -282,70 +268,11 @@ class PDFSignatureService
             );
 
         } catch (Exception $e) {
-            Log::error('Failed to add signature to PDF page', [
-                'error' => $e->getMessage(),
-                'image_path' => $imagePathAbsolute
-            ]);
-            throw $e;
-        }
-    }
-
-    /**
-     * Add QR code to PDF page (bottom right corner)
-     *
-     * @param Fpdi $pdf
-     * @param string $qrCodePath - Absolute path to QR code image
-     * @param array $pageSize - ['width' => mm, 'height' => mm]
-     * @return void
-     */
-    private function addQRCodeToPage(TCPDF $pdf, string $qrCodePath, array $pageSize): void
-    {
-        try {
-            // Position QR code at bottom right corner
-            $qrSize = 16; // 28mm x 28mm
-            $margin = 10; // 10mm from edges
-
-            $x = $pageSize['width'] - $qrSize - $margin;
-            $y = $pageSize['height'] - $qrSize - $margin;
-
-            Log::info('Adding QR code to PDF', [
-                'qr_path' => $qrCodePath,
-                'position' => ['x' => $x, 'y' => $y],
-                'size' => $qrSize
-            ]);
-
-            // Add QR code image
-            $pdf->Image(
-                $qrCodePath,
-                $x,
-                $y,
-                $qrSize,
-                $qrSize,
-                '',
-                '',
-                '',
-                false,
-                300,
-                '',
-                false,
-                false,
-                0,
-                false,
-                false,
-                false
-            );
-
-            // Add verification text below QR code
-            // $pdf->SetFont('helvetica', '', 7);
-            // $pdf->SetTextColor(100, 100, 100);
-            // $pdf->Text($x, $y + $qrSize + 5, 'Scan untuk verifikasi');
-
-        } catch (Exception $e) {
             Log::error('Failed to add QR code to PDF', [
                 'error' => $e->getMessage(),
                 'qr_path' => $qrCodePath
             ]);
-            // Don't throw - QR code is optional
+            throw $e;
         }
     }
 

@@ -29,7 +29,8 @@ return new class extends Migration
         // Get all mappings that might need updating
         $mappings = DB::table('verification_code_mappings as vcm')
             ->join('document_signatures as doc', 'vcm.document_signature_id', '=', 'doc.id')
-            ->join('digital_signatures as ds', 'doc.digital_signature_id', '=', 'ds.id')
+            ->join('digital_signatures as ds', 'doc.id', '=', 'ds.document_signature_id')
+            // ->join('digital_signatures as ds', 'doc.digital_signature_id', '=', 'ds.id')
             ->select(
                 'vcm.id',
                 'vcm.short_code',

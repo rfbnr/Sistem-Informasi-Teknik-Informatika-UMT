@@ -253,10 +253,19 @@
                         </h5>
                     </div>
                     <div class="card-body">
+                        <div class="alert alert-info mb-3">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Unique Encryption Key:</strong> This document is secured with a unique RSA-2048 digital signature key that was automatically generated specifically for this document. Each signed document has its own independent encryption key for maximum security.
+                        </div>
+
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <strong>Signature ID:</strong><br>
                                 <code>{{ $documentSignature->digitalSignature->signature_id ?? 'N/A' }}</code>
+                                <br>
+                                <span class="badge bg-primary mt-1">
+                                    <i class="fas fa-key me-1"></i> Auto-Generated Unique Key
+                                </span>
                             </div>
                             <div class="col-md-6">
                                 <strong>Signature Status:</strong><br>
@@ -332,6 +341,35 @@
                             </div>
                         </div>
                         @endif
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <strong>Signing Method:</strong><br>
+                                @if(isset($documentSignature->signature_metadata['placement_method']))
+                                    @if($documentSignature->signature_metadata['placement_method'] === 'drag_drop_qr')
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-qrcode me-1"></i> QR Code Drag & Drop
+                                        </span>
+                                    @else
+                                        <span class="badge bg-secondary">
+                                            {{ ucwords(str_replace('_', ' ', $documentSignature->signature_metadata['placement_method'])) }}
+                                        </span>
+                                    @endif
+                                @else
+                                    <span class="text-muted">Not specified</span>
+                                @endif
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Signed Via:</strong><br>
+                                @if(isset($documentSignature->signature_metadata['signed_via']))
+                                    <span class="badge bg-info">
+                                        <i class="fas fa-globe me-1"></i> {{ ucwords(str_replace('_', ' ', $documentSignature->signature_metadata['signed_via'])) }}
+                                    </span>
+                                @else
+                                    <span class="text-muted">Not specified</span>
+                                @endif
+                            </div>
+                        </div>
 
                         <div class="row mb-3">
                             <div class="col-md-6">

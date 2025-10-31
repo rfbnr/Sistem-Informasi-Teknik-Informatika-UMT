@@ -20,33 +20,33 @@ class DocumentSignature extends Model
 
     protected $fillable = [
         'approval_request_id',
-        'digital_signature_id',
+        // 'digital_signature_id',
         'document_hash',
         'signature_value',
         'signature_metadata',
-        'qr_code_path',
+        'temporary_qr_code_path', // NEW: temporary QR for drag & drop
+        'qr_code_path', // Final QR after signing
         'verification_url',
         'cms_signature',
         'signed_at',
-        'signed_by',
+        // 'signed_by',
         'signature_status',
-        'canvas_data_path',
-        'positioning_data',
+        'qr_positioning_data', // RENAMED: from positioning_data
         'final_pdf_path',
         'verification_token',
-        'verified_at',
-        'verified_by',
-        'rejected_at',
-        'rejected_by',
-        'rejection_reason'
+        // 'verified_at',
+        // 'verified_by',
+        // 'rejected_at',
+        // 'rejected_by',
+        // 'rejection_reason'
     ];
 
     protected $casts = [
         'signed_at' => 'datetime',
-        'verified_at' => 'datetime',
-        'rejected_at' => 'datetime',
+        // 'verified_at' => 'datetime',
+        // 'rejected_at' => 'datetime',
         'signature_metadata' => 'array',
-        'positioning_data' => 'array',
+        'qr_positioning_data' => 'array', // RENAMED: from positioning_data
     ];
 
     // Status constants
@@ -104,28 +104,30 @@ class DocumentSignature extends Model
     }
 
     /**
-     * Relasi ke DigitalSignature
+     * REFACTORED: 1-to-1 relationship with DigitalSignature
+     * Each document has its own unique key
      */
     public function digitalSignature()
     {
-        return $this->belongsTo(DigitalSignature::class);
+        return $this->hasOne(DigitalSignature::class, 'document_signature_id');
+        // return $this->belongsTo(DigitalSignature::class);
     }
 
     /**
      * Relasi ke Kaprodi (signer)
      */
-    public function signer()
-    {
-        return $this->belongsTo(Kaprodi::class, 'signed_by');
-    }
+    // public function signer()
+    // {
+    //     return $this->belongsTo(Kaprodi::class, 'signed_by');
+    // }
 
     /**
      * Relasi ke User (verifier)
      */
-    public function verifier()
-    {
-        return $this->belongsTo(Kaprodi::class, 'verified_by');
-    }
+    // public function verifier()
+    // {
+    //     return $this->belongsTo(Kaprodi::class, 'verified_by');
+    // }
 
     /**
      * Relasi ke Kaprodi (rejector)
@@ -166,124 +168,124 @@ class DocumentSignature extends Model
     /**
      * Create CMS signature dari dokumen
      */
-    public function createCMSSignature($documentContent, $privateKey)
-    {
-        try {
-            // Generate hash dari dokumen
-            $documentHash = hash('sha256', $documentContent);
+    // public function createCMSSignature($documentContent, $privateKey)
+    // {
+    //     try {
+    //         // Generate hash dari dokumen
+    //         $documentHash = hash('sha256', $documentContent);
 
-            // Create signature dengan RSA-SHA256
-            $signature = '';
-            if (!openssl_sign($documentHash, $signature, $privateKey, OPENSSL_ALGO_SHA256)) {
-                $this->logAudit('signature_creation_failed', null, null,
-                    'Failed to create CMS signature: OpenSSL signing error');
+    //         // Create signature dengan RSA-SHA256
+    //         $signature = '';
+    //         if (!openssl_sign($documentHash, $signature, $privateKey, OPENSSL_ALGO_SHA256)) {
+    //             $this->logAudit('signature_creation_failed', null, null,
+    //                 'Failed to create CMS signature: OpenSSL signing error');
 
-                throw new \Exception('Failed to create digital signature: ' . openssl_error_string());
-            }
+    //             throw new \Exception('Failed to create digital signature: ' . openssl_error_string());
+    //         }
 
-            // Encode ke base64 untuk storage
-            $this->cms_signature = base64_encode($signature);
-            $this->signature_value = hash('sha256', $signature); // Hash dari signature sebagai identifier
-            $this->signed_at = now();
-            $this->signature_status = self::STATUS_SIGNED;
+    //         // Encode ke base64 untuk storage
+    //         $this->cms_signature = base64_encode($signature);
+    //         $this->signature_value = hash('sha256', $signature); // Hash dari signature sebagai identifier
+    //         $this->signed_at = now();
+    //         $this->signature_status = self::STATUS_SIGNED;
 
-            $this->save();
+    //         $this->save();
 
-            // Log audit
-            $this->logAudit('document_signed', self::STATUS_PENDING, self::STATUS_SIGNED,
-                'Document has been digitally signed');
+    //         // Log audit
+    //         $this->logAudit('document_signed', self::STATUS_PENDING, self::STATUS_SIGNED,
+    //             'Document has been digitally signed');
 
-            return $this->cms_signature;
+    //         return $this->cms_signature;
 
-        } catch (\Exception $e) {
-            $this->logAudit('signature_creation_failed', null, null,
-                'Failed to create CMS signature: ' . $e->getMessage());
-            Log::error('CMS Signature Creation Failed: ' . $e->getMessage());
-            throw $e;
-        }
-    }
+    //     } catch (\Exception $e) {
+    //         $this->logAudit('signature_creation_failed', null, null,
+    //             'Failed to create CMS signature: ' . $e->getMessage());
+    //         Log::error('CMS Signature Creation Failed: ' . $e->getMessage());
+    //         throw $e;
+    //     }
+    // }
 
     /**
      * Verify CMS signature
      */
-    public function verifyCMSSignature($documentContent, $publicKey)
-    {
-        try {
-            if (!$this->cms_signature) {
-                return false;
-            }
+    // public function verifyCMSSignature($documentContent, $publicKey)
+    // {
+    //     try {
+    //         if (!$this->cms_signature) {
+    //             return false;
+    //         }
 
-            // Generate hash dari dokumen
-            $documentHash = hash('sha256', $documentContent);
+    //         // Generate hash dari dokumen
+    //         $documentHash = hash('sha256', $documentContent);
 
-            // Decode signature dari base64
-            $signature = base64_decode($this->cms_signature);
+    //         // Decode signature dari base64
+    //         $signature = base64_decode($this->cms_signature);
 
-            // Verify signature
-            $result = openssl_verify($documentHash, $signature, $publicKey, OPENSSL_ALGO_SHA256);
+    //         // Verify signature
+    //         $result = openssl_verify($documentHash, $signature, $publicKey, OPENSSL_ALGO_SHA256);
 
-            $isValid = $result === 1;
+    //         $isValid = $result === 1;
 
-            SignatureVerificationLog::create([
-                'document_signature_id' => $this->id,
-                'approval_request_id' => $this->approval_request_id,
-                'user_id' => Auth::id(),
-                'verification_method' => 'cms_verify',
-                'verification_token_hash' => hash('sha256', $this->verification_token),
-                'is_valid' => $isValid,
-                'result_status' => $isValid ? 'success' : 'failed',
-                'ip_address' => request()->ip(),
-                'user_agent' => request()->userAgent(),
-                'referrer' => request()->headers->get('referer'),
-                'metadata' => null,
-                'verified_at' => now()
-            ]);
+    //         SignatureVerificationLog::create([
+    //             'document_signature_id' => $this->id,
+    //             'approval_request_id' => $this->approval_request_id,
+    //             'user_id' => Auth::id(),
+    //             'verification_method' => 'cms_verify',
+    //             'verification_token_hash' => hash('sha256', $this->verification_token),
+    //             'is_valid' => $isValid,
+    //             'result_status' => $isValid ? 'success' : 'failed',
+    //             'ip_address' => request()->ip(),
+    //             'user_agent' => request()->userAgent(),
+    //             'referrer' => request()->headers->get('referer'),
+    //             'metadata' => null,
+    //             'verified_at' => now()
+    //         ]);
 
-            if ($isValid && $this->signature_status !== self::STATUS_VERIFIED) {
-                $this->signature_status = self::STATUS_VERIFIED;
-                $this->verified_at = now();
-                $this->verified_by = Auth::id();
-                $this->save();
+    //         if ($isValid && $this->signature_status !== self::STATUS_VERIFIED) {
+    //             $this->signature_status = self::STATUS_VERIFIED;
+    //             $this->verified_at = now();
+    //             $this->verified_by = Auth::id();
+    //             $this->save();
 
-                $this->logAudit('signature_verified', self::STATUS_SIGNED, self::STATUS_VERIFIED,
-                    'Digital signature has been verified');
-            }
+    //             $this->logAudit('signature_verified', self::STATUS_SIGNED, self::STATUS_VERIFIED,
+    //                 'Digital signature has been verified');
+    //         }
 
-            return $isValid;
+    //         return $isValid;
 
-        } catch (\Exception $e) {
-            Log::error('CMS Signature Verification Failed: ' . $e->getMessage());
+    //     } catch (\Exception $e) {
+    //         Log::error('CMS Signature Verification Failed: ' . $e->getMessage());
 
-            SignatureVerificationLog::create([
-                'document_signature_id' => $this->id,
-                'approval_request_id' => $this->approval_request_id,
-                'user_id' => Auth::id(),
-                'verification_method' => 'cms_verify',
-                'verification_token_hash' => hash('sha256', $this->verification_token),
-                'is_valid' => false,
-                'result_status' => 'failed',
-                'ip_address' => request()->ip(),
-                'user_agent' => request()->userAgent(),
-                'referrer' => request()->headers->get('referer'),
-                'metadata' => ['error' => $e->getMessage()],
-                'verified_at' => now()
-            ]);
+    //         SignatureVerificationLog::create([
+    //             'document_signature_id' => $this->id,
+    //             'approval_request_id' => $this->approval_request_id,
+    //             'user_id' => Auth::id(),
+    //             'verification_method' => 'cms_verify',
+    //             'verification_token_hash' => hash('sha256', $this->verification_token),
+    //             'is_valid' => false,
+    //             'result_status' => 'failed',
+    //             'ip_address' => request()->ip(),
+    //             'user_agent' => request()->userAgent(),
+    //             'referrer' => request()->headers->get('referer'),
+    //             'metadata' => ['error' => $e->getMessage()],
+    //             'verified_at' => now()
+    //         ]);
 
-            // Log failed verification
-            // SignatureVerificationLog::create([
-            //     'document_signature_id' => $this->id,
-            //     'verification_token' => $this->verification_token,
-            //     'ip_address' => request()->ip(),
-            //     'user_agent' => request()->userAgent(),
-            //     'verification_result' => false,
-            //     'verification_details' => 'Verification error: ' . $e->getMessage(),
-            //     'verification_method' => 'cms_verify',
-            //     'verified_at' => now()
-            // ]);
+    //         // Log failed verification
+    //         // SignatureVerificationLog::create([
+    //         //     'document_signature_id' => $this->id,
+    //         //     'verification_token' => $this->verification_token,
+    //         //     'ip_address' => request()->ip(),
+    //         //     'user_agent' => request()->userAgent(),
+    //         //     'verification_result' => false,
+    //         //     'verification_details' => 'Verification error: ' . $e->getMessage(),
+    //         //     'verification_method' => 'cms_verify',
+    //         //     'verified_at' => now()
+    //         // ]);
 
-            return false;
-        }
-    }
+    //         return false;
+    //     }
+    // }
 
     /**
      * Check if signature is valid
@@ -371,7 +373,7 @@ class DocumentSignature extends Model
             'document_name' => $this->approvalRequest->document_name,
             'document_type' => $this->approvalRequest->document_type,
             'document_number' => $this->approvalRequest->full_document_number,
-            'signed_by' => $this->signer->name,
+            // 'signed_by' => $this->signer->name,
             'signed_at' => $this->signed_at ? $this->signed_at->format('d F Y H:i:s') : null,
             'signature_status' => $this->signature_status,
             'status_label' => $this->getStatusLabel(),
@@ -418,28 +420,67 @@ class DocumentSignature extends Model
     }
 
     /**
-     * Save canvas data hasil signing
+     * NEW: Generate temporary QR code for drag & drop positioning
+     * Called when Kaprodi approves document
      */
-    public function saveCanvasData($canvasDataUrl, $positioningData)
+    public function generateTemporaryQRCode()
     {
         try {
-            // Convert base64 canvas data ke file
-            $canvasData = str_replace('data:image/png;base64,', '', $canvasDataUrl);
-            $canvasData = base64_decode($canvasData);
+            // Generate dummy/temporary text for QR
+            $tempData = "TEMP_QR_DOC_{$this->id}_" . now()->timestamp;
 
-            $filename = 'canvas_data_' . $this->id . '_' . time() . '.png';
-            $path = 'signature_canvas/' . $filename;
+            // Use QRCodeService to generate
+            $qrCodeService = app(\App\Services\QRCodeService::class);
 
-            Storage::disk('public')->put($path, $canvasData);
+            // Generate simple QR code
+            $qrCode = \Endroid\QrCode\QrCode::create($tempData)
+                ->setSize(300)
+                ->setMargin(10);
 
-            $this->canvas_data_path = $path;
-            $this->positioning_data = $positioningData;
+            $writer = new \Endroid\QrCode\Writer\PngWriter();
+            $result = $writer->write($qrCode);
+
+            // Save to storage
+            $filename = 'temp_qr_' . $this->id . '_' . time() . '.png';
+            $path = 'temp-qrcodes/' . $filename;
+
+            Storage::disk('public')->put($path, $result->getString());
+
+            // Update record
+            $this->temporary_qr_code_path = $path;
             $this->save();
+
+            Log::info('Temporary QR code generated', [
+                'document_signature_id' => $this->id,
+                'temp_qr_path' => $path
+            ]);
 
             return $path;
 
         } catch (\Exception $e) {
-            Log::error('Failed to save canvas data: ' . $e->getMessage());
+            Log::error('Failed to generate temporary QR code: ' . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    /**
+     * NEW: Save QR positioning data from user drag & drop
+     */
+    public function saveQRPositioning($positioningData)
+    {
+        try {
+            $this->qr_positioning_data = $positioningData;
+            $this->save();
+
+            Log::info('QR positioning saved', [
+                'document_signature_id' => $this->id,
+                'positioning' => $positioningData
+            ]);
+
+            return true;
+
+        } catch (\Exception $e) {
+            Log::error('Failed to save QR positioning: ' . $e->getMessage());
             throw $e;
         }
     }
@@ -454,7 +495,7 @@ class DocumentSignature extends Model
             // Implementasi tergantung pada library PDF yang digunakan (TCPDF, DomPDF, etc)
 
             $originalPdf = $this->approvalRequest->document_path;
-            $canvasImage = $this->canvas_data_path;
+            // $canvasImage = $this->canvas_data_path;
 
             // Placeholder untuk PDF processing
             $finalPdfPath = 'signed_documents/final_' . $this->id . '_' . time() . '.pdf';
@@ -485,14 +526,14 @@ class DocumentSignature extends Model
             'document_signature_id' => $this->id,
             'signature_status' => $this->signature_status,
             'status_transition' => $statusFrom ? "{$statusFrom} → {$statusTo}" : $statusTo,
-            'signed_by' => $this->signer->name ?? 'Unknown',
-            'verified_by' => $this->verifier->name ?? null,
+            'signed_by' => 'Signed by System',
+            // 'verified_by' => $this->verifier->name ?? null,
         ]));
 
         SignatureAuditLog::create([
             'document_signature_id' => $this->id,
             'approval_request_id' => $this->approval_request_id,
-            'user_id' => $this->signed_by,
+            // 'user_id' => $this->signed_by,
             'kaprodi_id' => $this->verified_by ?? $this->rejected_by,
             'action' => $action,
             'status_from' => $statusFrom,

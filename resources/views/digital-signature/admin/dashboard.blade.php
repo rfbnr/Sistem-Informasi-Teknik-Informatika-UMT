@@ -38,9 +38,9 @@
                     <button class="btn btn-light" onclick="refreshDashboard()">
                         <i class="fas fa-sync-alt me-1"></i> Refresh
                     </button>
-                    <a href="{{ route('admin.signature.keys.create') }}" class="btn btn-warning">
+                    {{-- <a href="{{ route('admin.signature.keys.create') }}" class="btn btn-warning">
                         <i class="fas fa-plus me-1"></i> New Signature
-                    </a>
+                    </a> --}}
                 </div>
             </div>
         </div>
@@ -231,7 +231,6 @@
                                     </div>
                                     <div class="ms-3">
                                         <button class="btn btn-sm btn-primary mb-1 w-100"
-                                                {{-- onclick="quickVerify({{ $docSig->id }}, '{{ $docSig->approvalRequest->document_name }}')"> --}}
                                                 onclick="quickPreviewDocument({{ $docSig->id }})"
                                                     title="Quick Preview & Verify">
                                             <i class="fas fa-check-double me-1"></i> Preview & Verify
@@ -263,7 +262,7 @@
     </div>
 
     <!-- Second Row: Recent Signatures & Quick Actions -->
-    <div class="row">
+    {{-- <div class="row">
         <div class="col-lg-8 mb-4">
             <div class="card">
                 <div class="card-header bg-primary text-white">
@@ -421,7 +420,7 @@
                 </div>
             </div>
         </div>
-    </div>
+    </div> --}}
 
     <!-- Verification Statistics Chart -->
     <div class="row mt-4">
@@ -541,6 +540,7 @@
 
 @include('digital-signature.admin.approval-requests.partials.view-document-modal')
 @include('digital-signature.admin.approval-requests.partials.approve-modal')
+
 {{-- @include('digital-signature.admin.approval-requests.partials.reject-modal') --}}
 {{-- @include('digital-signature.admin.approval-requests.partials.approve-signature-modal') --}}
 
@@ -554,55 +554,6 @@ let currentVerifyId = null;
 function refreshDashboard() {
     location.reload();
 }
-
-// QUICK APPROVE
-// function quickApprove(approvalId, documentName) {
-//     currentApprovalId = approvalId;
-//     document.getElementById('approveDocumentName').textContent = documentName;
-//     document.getElementById('approve_notes').value = '';
-
-//     const modal = new bootstrap.Modal(document.getElementById('quickApproveModal'));
-//     modal.show();
-// }
-
-// document.getElementById('quickApproveForm').addEventListener('submit', function(e) {
-//     e.preventDefault();
-
-//     const notes = document.getElementById('approve_notes').value;
-//     const submitBtn = this.querySelector('button[type="submit"]');
-//     const originalBtnHtml = submitBtn.innerHTML;
-
-//     submitBtn.disabled = true;
-//     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Approving...';
-
-//     fetch(`/admin/signature/approval-requests/${currentApprovalId}/approve`, {
-//         method: 'POST',
-//         headers: {
-//             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-//             'Content-Type': 'application/json',
-//             'Accept': 'application/json'
-//         },
-//         body: JSON.stringify({ notes: notes })
-//     })
-//     .then(response => response.json())
-//     .then(data => {
-//         if (data.success) {
-//             alert('✅ Approval request approved successfully!');
-//             bootstrap.Modal.getInstance(document.getElementById('quickApproveModal')).hide();
-//             refreshDashboard();
-//         } else {
-//             alert('❌ Failed to approve: ' + (data.message || data.error || 'Unknown error'));
-//             submitBtn.disabled = false;
-//             submitBtn.innerHTML = originalBtnHtml;
-//         }
-//     })
-//     .catch(error => {
-//         console.error('Approval error:', error);
-//         alert('❌ Network error: Failed to approve request. Please try again.');
-//         submitBtn.disabled = false;
-//         submitBtn.innerHTML = originalBtnHtml;
-//     });
-// });
 
 // Show Approve Modal
 function showApproveModal(id, documentName, documentType) {

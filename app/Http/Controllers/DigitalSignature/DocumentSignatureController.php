@@ -90,8 +90,8 @@ class DocumentSignatureController extends Controller
             $documentSignature = DocumentSignature::with([
                 'approvalRequest.user',
                 'digitalSignature',
-                'signer',
-                'verifier',
+                // 'signer',
+                // 'verifier',
                 'auditLogs'
             ])->findOrFail($id);
 
@@ -112,7 +112,6 @@ class DocumentSignatureController extends Controller
             ));
 
         } catch (\Exception $e) {
-            // dd($e);
             Log::error('Document signature show error: ' . $e->getMessage());
             return back()->with('error', 'Document signature not found');
         }
@@ -720,7 +719,7 @@ class DocumentSignatureController extends Controller
                     'approvalRequest',
                     'digitalSignature',
                     'signer',
-                    'verifier',
+                    // 'verifier',
                     'rejector'
                 ])
                 ->whereHas('approvalRequest', function($q) use ($user) {
@@ -817,7 +816,7 @@ class DocumentSignatureController extends Controller
                     'approvalRequest.signApprover',  // Who approved signature
                     'digitalSignature',       // Crypto info
                     'signer',                 // Who signed (if signed_by exists)
-                    'verifier',               // Who verified (if verified_by exists)
+                    // 'verifier',               // Who verified (if verified_by exists)
                     'rejector'                // Who rejected (if rejected_by exists)
                 ])
                 ->findOrFail($id);

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
@@ -14,7 +15,7 @@ class ApprovalRequest extends Model
 
     protected $fillable = [
         'user_id',
-        'nomor',
+        // 'nomor',
         'document_name',
         'document_path',
         'signed_document_path',
@@ -30,12 +31,12 @@ class ApprovalRequest extends Model
         'approval_notes',
         'rejection_reason',
         'document_type',
-        'priority',
+        // 'priority',
         'workflow_metadata',
-        'department',
-        'deadline',
+        // 'department',
+        // 'deadline',
         // 'revision_count',
-        'admin_notes'
+        // 'admin_notes'
     ];
 
     protected $casts = [
@@ -43,7 +44,7 @@ class ApprovalRequest extends Model
         'rejected_at' => 'datetime',
         'user_signed_at' => 'datetime',
         'sign_approved_at' => 'datetime',
-        'deadline' => 'datetime',
+        // 'deadline' => 'datetime',
         'workflow_metadata' => 'array',
     ];
 
@@ -56,10 +57,10 @@ class ApprovalRequest extends Model
     const STATUS_CANCELLED = 'cancelled';
 
     // Priority constants
-    const PRIORITY_LOW = 'low';
-    const PRIORITY_NORMAL = 'normal';
-    const PRIORITY_HIGH = 'high';
-    const PRIORITY_URGENT = 'urgent';
+    // const PRIORITY_LOW = 'low';
+    // const PRIORITY_NORMAL = 'normal';
+    // const PRIORITY_HIGH = 'high';
+    // const PRIORITY_URGENT = 'urgent';
 
     /**
      * Boot method untuk auto-generate nomor
@@ -70,32 +71,32 @@ class ApprovalRequest extends Model
 
         static::creating(function ($model) {
             // Generate nomor otomatis saat create
-            $lastNumber = DB::table('approval_requests')->max('nomor');
+            // $lastNumber = DB::table('approval_requests')->max('nomor');
 
-            if ($lastNumber) {
-                $newNumber = str_pad(intval($lastNumber) + 1, 3, '0', STR_PAD_LEFT);
-            } else {
-                $newNumber = '001';
-            }
+            // if ($lastNumber) {
+            //     $newNumber = str_pad(intval($lastNumber) + 1, 3, '0', STR_PAD_LEFT);
+            // } else {
+            //     $newNumber = '001';
+            // }
 
-            $model->nomor = $newNumber;
+            // $model->nomor = $newNumber;
 
             // Set default values
-            if (empty($model->priority)) {
-                $model->priority = self::PRIORITY_NORMAL;
-            }
+            // if (empty($model->priority)) {
+            //     $model->priority = self::PRIORITY_NORMAL;
+            // }
 
-            if (empty($model->department) && $model->user) {
-                $model->department = 'Teknik Informatika'; // Default department
-            }
+            // if (empty($model->department) && $model->user) {
+            //     $model->department = 'Teknik Informatika'; // Default department
+            // }
         });
 
         static::created(function ($model) {
             // Log audit trail untuk request creation with standardized metadata
             $metadata = SignatureAuditLog::createMetadata([
                 'document_name' => $model->document_name,
-                'nomor' => $model->nomor,
-                'priority' => $model->priority,
+                // 'nomor' => $model->nomor,
+                // 'priority' => $model->priority,
                 'requester' => $model->user->name ?? 'Unknown',
                 'document_type' => $model->document_type ?? 'general',
             ]);
@@ -185,10 +186,10 @@ class ApprovalRequest extends Model
     /**
      * Check apakah sudah selesai (final)
      */
-    public function isCompleted()
-    {
-        return $this->status === self::STATUS_SIGN_APPROVED;
-    }
+    // public function isCompleted()
+    // {
+    //     return $this->status === self::STATUS_SIGN_APPROVED;
+    // }
 
     /**
      * Check apakah bisa ditandatangani user
@@ -209,26 +210,26 @@ class ApprovalRequest extends Model
     /**
      * Check apakah mendekati deadline
      */
-    public function isNearDeadline($days = 3)
-    {
-        if (!$this->deadline) {
-            return false;
-        }
+    // public function isNearDeadline($days = 3)
+    // {
+    //     if (!$this->deadline) {
+    //         return false;
+    //     }
 
-        return $this->deadline <= now()->addDays($days) && !$this->isCompleted();
-    }
+    //     return $this->deadline <= now()->addDays($days) && !$this->isCompleted();
+    // }
 
     /**
      * Check apakah sudah melewati deadline
      */
-    public function isOverdue()
-    {
-        if (!$this->deadline) {
-            return false;
-        }
+    // public function isOverdue()
+    // {
+    //     if (!$this->deadline) {
+    //         return false;
+    //     }
 
-        return $this->deadline < now() && !$this->isCompleted();
-    }
+    //     return $this->deadline < now() && !$this->isCompleted();
+    // }
 
     /**
      * Approve dokumen (admin/kaprodi)
@@ -276,13 +277,16 @@ class ApprovalRequest extends Model
     /**
      * Mark sebagai sudah ditandatangani user
      */
-    public function markUserSigned()
+    public function markUserSigned($signPath)
     {
         $oldStatus = $this->status;
 
         $this->update([
             'status' => self::STATUS_USER_SIGNED,
-            'user_signed_at' => now()
+            'user_signed_at' => now(),
+            'sign_approved_at' => now(),
+            'sign_approved_by' => $this->approved_by,
+            'signed_document_path' => $signPath,
         ]);
 
         // Log audit
@@ -293,14 +297,15 @@ class ApprovalRequest extends Model
     /**
      * Approve tanda tangan
      */
-    public function approveSignature($approverId, $signPath)
+    public function approveSignature($signPath)
     {
         $oldStatus = $this->status;
 
         $this->update([
             'status' => self::STATUS_SIGN_APPROVED,
+            'user_signed_at' => now(),
             'sign_approved_at' => now(),
-            'sign_approved_by' => $approverId,
+            'sign_approved_by' => $this->approved_by,
             'signed_document_path' => $signPath,
             // 'approval_notes' => $notes
         ]);
@@ -330,7 +335,8 @@ class ApprovalRequest extends Model
     }
 
     /**
-     * Create DocumentSignature record
+     * REFACTORED: Create DocumentSignature record with temporary QR code
+     * Digital signature key will be auto-generated during signing (not now)
      */
     private function createDocumentSignature()
     {
@@ -338,30 +344,46 @@ class ApprovalRequest extends Model
             return $this->documentSignature;
         }
 
-        // Get active digital signature
-        $digitalSignature = DigitalSignature::active()->valid()->first();
+        try {
+            // Create DocumentSignature with pending status
+            // Digital signature key will be generated later during signing
+            $documentSignature = DocumentSignature::create([
+                'approval_request_id' => $this->id,
+                // 'digital_signature_id' => null, // Will be auto-generated during signing
+                'document_hash' => null, // Will be generated during signing
+                'signature_status' => DocumentSignature::STATUS_PENDING
+            ]);
 
-        // dd($digitalSignature);
+            // Auto-generate temporary QR code for drag & drop positioning
+            try {
+                $documentSignature->generateTemporaryQRCode();
 
-        if (!$digitalSignature) {
+                Log::info('Temporary QR code generated for DocumentSignature', [
+                    'document_signature_id' => $documentSignature->id,
+                    'approval_request_id' => $this->id,
+                    'temporary_qr_path' => $documentSignature->temporary_qr_code_path
+                ]);
+            } catch (\Exception $qrException) {
+                // Log QR generation failure but don't fail the entire process
+                Log::error('Temporary QR code generation failed', [
+                    'document_signature_id' => $documentSignature->id,
+                    'error' => $qrException->getMessage()
+                ]);
+            }
+
+            $this->logStatusChange('document_signature_created', null, null,
+                'DocumentSignature created with temporary QR code for positioning', [
+                    'document_signature_id' => $documentSignature->id
+                ]);
+
+            return $documentSignature;
+
+        } catch (\Exception $e) {
             $this->logStatusChange('signature_creation_failed', null, null,
-                'Failed to create document signature: No valid digital signature available');
+                'Failed to create document signature: ' . $e->getMessage());
 
-            throw new \Exception('No valid digital signature available for signing process');
+            throw new \Exception('Failed to create document signature: ' . $e->getMessage());
         }
-
-        // Generate document hash
-        $documentPath = Storage::disk('public')->path($this->document_path);
-        $documentHash = DocumentSignature::generateDocumentHash($documentPath);
-
-        return DocumentSignature::create([
-            'approval_request_id' => $this->id,
-            'digital_signature_id' => $digitalSignature->id,
-            'document_hash' => $documentHash,
-            // 'signed_by' => $this->user_id,
-            'signed_by' => Auth::id(),
-            'signature_status' => DocumentSignature::STATUS_PENDING
-        ]);
     }
 
     /**
@@ -401,41 +423,41 @@ class ApprovalRequest extends Model
     /**
      * Get priority label
      */
-    public function getPriorityLabelAttribute()
-    {
-        $labels = [
-            self::PRIORITY_LOW => 'Rendah',
-            self::PRIORITY_NORMAL => 'Normal',
-            self::PRIORITY_HIGH => 'Tinggi',
-            self::PRIORITY_URGENT => 'Mendesak'
-        ];
+    // public function getPriorityLabelAttribute()
+    // {
+    //     $labels = [
+    //         self::PRIORITY_LOW => 'Rendah',
+    //         self::PRIORITY_NORMAL => 'Normal',
+    //         self::PRIORITY_HIGH => 'Tinggi',
+    //         self::PRIORITY_URGENT => 'Mendesak'
+    //     ];
 
-        return $labels[$this->priority] ?? 'Normal';
-    }
+    //     return $labels[$this->priority] ?? 'Normal';
+    // }
 
     /**
      * Get priority badge class
      */
-    public function getPriorityBadgeClassAttribute()
-    {
-        $classes = [
-            self::PRIORITY_LOW => 'badge-light',
-            self::PRIORITY_NORMAL => 'badge-secondary',
-            self::PRIORITY_HIGH => 'badge-warning',
-            self::PRIORITY_URGENT => 'badge-danger'
-        ];
+    // public function getPriorityBadgeClassAttribute()
+    // {
+    //     $classes = [
+    //         self::PRIORITY_LOW => 'badge-light',
+    //         self::PRIORITY_NORMAL => 'badge-secondary',
+    //         self::PRIORITY_HIGH => 'badge-warning',
+    //         self::PRIORITY_URGENT => 'badge-danger'
+    //     ];
 
-        return $classes[$this->priority] ?? 'badge-secondary';
-    }
+    //     return $classes[$this->priority] ?? 'badge-secondary';
+    // }
 
     /**
      * Generate nomor surat lengkap
      */
-    public function getFullDocumentNumberAttribute()
-    {
-        $currentYear = now()->year;
-        return "{$this->nomor}/III.3.AU/KEP-FT/VIII/{$currentYear}";
-    }
+    // public function getFullDocumentNumberAttribute()
+    // {
+    //     $currentYear = now()->year;
+    //     return "{$this->nomor}/III.3.AU/KEP-FT/VIII/{$currentYear}";
+    // }
 
     /**
      * Get workflow progress percentage
@@ -474,43 +496,43 @@ class ApprovalRequest extends Model
     /**
      * Increment revision count
      */
-    public function incrementRevision($notes = null)
-    {
-        $this->increment('revision_count');
+    // public function incrementRevision($notes = null)
+    // {
+    //     $this->increment('revision_count');
 
-        if ($notes) {
-            $this->update(['admin_notes' => $notes]);
-        }
+    //     if ($notes) {
+    //         $this->update(['admin_notes' => $notes]);
+    //     }
 
-        $this->logStatusChange('revision_requested', null, null,
-            'Document revision requested', ['revision_count' => $this->revision_count, 'notes' => $notes]);
-    }
+    //     $this->logStatusChange('revision_requested', null, null,
+    //         'Document revision requested', ['revision_count' => $this->revision_count, 'notes' => $notes]);
+    // }
 
     /**
      * Set priority
      */
-    public function setPriority($priority, $reason = null)
-    {
-        $oldPriority = $this->priority;
-        $this->update(['priority' => $priority]);
+    // public function setPriority($priority, $reason = null)
+    // {
+    //     $oldPriority = $this->priority;
+    //     $this->update(['priority' => $priority]);
 
-        $this->logStatusChange('priority_changed', $oldPriority, $priority,
-            'Document priority has been changed', ['reason' => $reason]);
-    }
+    //     $this->logStatusChange('priority_changed', $oldPriority, $priority,
+    //         'Document priority has been changed', ['reason' => $reason]);
+    // }
 
     /**
      * Set deadline
      */
-    public function setDeadline($deadline, $reason = null)
-    {
-        $oldDeadline = $this->deadline;
-        $this->update(['deadline' => $deadline]);
+    // public function setDeadline($deadline, $reason = null)
+    // {
+    //     $oldDeadline = $this->deadline;
+    //     $this->update(['deadline' => $deadline]);
 
-        $this->logStatusChange('deadline_set',
-            $oldDeadline ? $oldDeadline->toDateString() : null,
-            $deadline->toDateString(),
-            'Document deadline has been set', ['reason' => $reason]);
-    }
+    //     $this->logStatusChange('deadline_set',
+    //         $oldDeadline ? $oldDeadline->toDateString() : null,
+    //         $deadline->toDateString(),
+    //         'Document deadline has been set', ['reason' => $reason]);
+    // }
 
     /**
      * Log status change untuk audit trail with standardized metadata
@@ -520,7 +542,7 @@ class ApprovalRequest extends Model
         // Merge with standardized metadata
         $enhancedMetadata = SignatureAuditLog::createMetadata(array_merge($metadata, [
             'document_name' => $this->document_name,
-            'nomor' => $this->nomor,
+            // 'nomor' => $this->nomor,
             'approval_request_id' => $this->id,
             'status_transition' => $statusFrom ? "{$statusFrom} → {$statusTo}" : $statusTo,
             'changed_by' => Auth::user()->name ?? 'System',
@@ -569,36 +591,36 @@ class ApprovalRequest extends Model
         return $query->where('status', self::STATUS_SIGN_APPROVED);
     }
 
-    public function scopeByPriority($query, $priority)
-    {
-        return $query->where('priority', $priority);
-    }
+    // public function scopeByPriority($query, $priority)
+    // {
+    //     return $query->where('priority', $priority);
+    // }
 
-    public function scopeHighPriority($query)
-    {
-        return $query->whereIn('priority', [self::PRIORITY_HIGH, self::PRIORITY_URGENT]);
-    }
+    // public function scopeHighPriority($query)
+    // {
+    //     return $query->whereIn('priority', [self::PRIORITY_HIGH, self::PRIORITY_URGENT]);
+    // }
 
-    public function scopeOverdue($query)
-    {
-        return $query->where('deadline', '<', now())
-                    ->whereNotIn('status', [self::STATUS_SIGN_APPROVED, self::STATUS_REJECTED, self::STATUS_CANCELLED]);
-    }
+    // public function scopeOverdue($query)
+    // {
+    //     return $query->where('deadline', '<', now())
+    //                 ->whereNotIn('status', [self::STATUS_SIGN_APPROVED, self::STATUS_REJECTED, self::STATUS_CANCELLED]);
+    // }
 
-    public function scopeNearDeadline($query, $days = 3)
-    {
-        return $query->where('deadline', '<=', now()->addDays($days))
-                    ->where('deadline', '>=', now())
-                    ->whereNotIn('status', [self::STATUS_SIGN_APPROVED, self::STATUS_REJECTED, self::STATUS_CANCELLED]);
-    }
+    // public function scopeNearDeadline($query, $days = 3)
+    // {
+    //     return $query->where('deadline', '<=', now()->addDays($days))
+    //                 ->where('deadline', '>=', now())
+    //                 ->whereNotIn('status', [self::STATUS_SIGN_APPROVED, self::STATUS_REJECTED, self::STATUS_CANCELLED]);
+    // }
 
     public function scopeByUser($query, $userId)
     {
         return $query->where('user_id', $userId);
     }
 
-    public function scopeByDepartment($query, $department)
-    {
-        return $query->where('department', $department);
-    }
+    // public function scopeByDepartment($query, $department)
+    // {
+    //     return $query->where('department', $department);
+    // }
 }

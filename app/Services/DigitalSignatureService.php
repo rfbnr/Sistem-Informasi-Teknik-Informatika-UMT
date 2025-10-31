@@ -63,9 +63,14 @@ class DigitalSignatureService
     }
 
     /**
-     * Create digital signature dengan enhanced metadata
+     * REFACTORED: Create unique digital signature key per document
+     * Auto-called during signing process
+     *
+     * @param DocumentSignature $documentSignature
+     * @param int $validityYears Default 3 years for document signatures
+     * @return DigitalSignature
      */
-    public function createDigitalSignature($purpose = 'Document Signing', $createdBy = null, $validityYears = 1)
+    public function createDigitalSignatureForDocument(DocumentSignature $documentSignature, $validityYears = 3)
     {
         try {
             $keyPair = $this->generateKeyPair();
@@ -79,8 +84,7 @@ class DigitalSignatureService
                 'algorithm' => $keyPair['algorithm'],
                 'key_length' => $keyPair['key_length'],
                 'certificate' => $keyPair['certificate'],
-                'signature_purpose' => $purpose,
-                'created_by' => $createdBy ?? Auth::id(),
+                'document_signature_id' => $documentSignature->id, // 1-to-1 relationship
                 'valid_from' => $validFrom,
                 'valid_until' => $validUntil,
                 'status' => DigitalSignature::STATUS_ACTIVE,
@@ -88,29 +92,34 @@ class DigitalSignatureService
                     'created_ip' => request()->ip(),
                     'created_user_agent' => request()->userAgent(),
                     'key_fingerprint' => $keyPair['fingerprint'],
-                    'created_at_timestamp' => now()->timestamp
+                    'created_at_timestamp' => now()->timestamp,
+                    'document_name' => $documentSignature->approvalRequest->document_name ?? 'Unknown',
+                    'auto_generated' => true
                 ]
             ]);
 
-            Log::info('Digital signature created successfully', [
+            Log::info('Digital signature key generated for document', [
                 'signature_id' => $signature->signature_id,
-                'created_by' => $createdBy
+                'document_signature_id' => $documentSignature->id,
+                'approval_request_id' => $documentSignature->approval_request_id
             ]);
 
-            // Create audit log with standardized metadata
+            // Create audit log
             $metadata = SignatureAuditLog::createMetadata([
                 'signature_id' => $signature->signature_id,
                 'key_length' => $signature->key_length,
                 'algorithm' => $signature->algorithm,
-                'purpose' => $purpose,
                 'validity_years' => $validityYears,
+                'document_signature_id' => $documentSignature->id,
+                'approval_request_id' => $documentSignature->approval_request_id,
+                'auto_generated' => true
             ]);
 
             SignatureAuditLog::create([
-                'kaprodi_id' => $createdBy ?? Auth::id(),
+                'kaprodi_id' => Auth::guard('kaprodi')->id(),
                 'action' => SignatureAuditLog::ACTION_SIGNATURE_KEY_GENERATED,
                 'status_to' => $signature->status,
-                'description' => 'Digital signature key pair generated successfully',
+                'description' => 'Digital signature key pair auto-generated for document signing',
                 'metadata' => $metadata,
                 'ip_address' => request()->ip(),
                 'user_agent' => request()->userAgent(),
@@ -120,41 +129,43 @@ class DigitalSignatureService
             return $signature;
 
         } catch (\Exception $e) {
-            Log::error('Digital signature creation failed: ' . $e->getMessage());
+            Log::error('Digital signature creation for document failed: ' . $e->getMessage());
             throw $e;
         }
     }
 
     /**
-     * Create CMS signature untuk dokumen
+     * REFACTORED: Create CMS signature untuk dokumen
+     * Can accept either DigitalSignature instance or ID
      */
-    public function createCMSSignature($documentPath, $digitalSignatureId)
+    public function createCMSSignature($documentPath, $digitalSignature)
     {
         try {
-            $digitalSignature = DigitalSignature::findOrFail($digitalSignatureId);
+            // Handle both DigitalSignature instance or ID
+            if (!$digitalSignature instanceof DigitalSignature) {
+                $digitalSignature = DigitalSignature::findOrFail($digitalSignature);
+            }
 
             if (!$digitalSignature->isValid()) {
                 throw new \Exception('Digital signature is not valid or expired');
             }
 
             // Read document content
-            // Handle both absolute path (signed PDF) and relative path (original PDF)
             $documentContent = null;
 
             if (file_exists($documentPath)) {
-                // Absolute path (e.g., signed PDF from mergeSignatureIntoPDF)
+                // Absolute path
                 $documentContent = file_get_contents($documentPath);
                 Log::info('Reading document from absolute path', [
                     'path' => $documentPath,
                     'size' => strlen($documentContent)
                 ]);
             } else {
-                // Relative path from storage (original PDF)
+                // Relative path from storage
                 $documentContent = Storage::disk('public')->get($documentPath);
                 Log::info('Reading document from storage', [
                     'path' => $documentPath,
                     'disk' => 'public',
-                    'content' => $documentContent,
                     'size' => $documentContent ? strlen($documentContent) : 0
                 ]);
             }
@@ -165,11 +176,9 @@ class DigitalSignatureService
 
             // Generate document hash
             $documentHash = hash('sha256', $documentContent);
-            // $documentHash = hash('sha256', $documentContent);
 
             // Create signature menggunakan private key
             $signature = '';
-
             $privateKey = $digitalSignature->private_key;
 
             if (!openssl_sign($documentHash, $signature, $privateKey, OPENSSL_ALGO_SHA256)) {
@@ -280,61 +289,89 @@ class DigitalSignatureService
     }
 
     /**
-     * Sign approval request document
+     * REFACTORED: Sign document with auto-generated unique key
+     * Called when user submits QR positioning
+     *
+     * @param DocumentSignature $documentSignature
+     * @param string $finalPdfPath Path to PDF with embedded QR
+     * @return DocumentSignature
      */
-    public function signApprovalRequest($approvalRequestId, $digitalSignatureId, $documentPath = null)
+    public function signDocumentWithUniqueKey(DocumentSignature $documentSignature, $finalPdfPath)
     {
         try {
-            $approvalRequest = ApprovalRequest::findOrFail($approvalRequestId);
+            $approvalRequest = $documentSignature->approvalRequest;
 
-            if ($approvalRequest->status !== ApprovalRequest::STATUS_APPROVED) {
-                throw new \Exception('Approval request is not ready for signing');
+            if (!$approvalRequest) {
+                throw new \Exception('Approval request not found');
             }
 
-            // Determine which document path to sign
-            // If $documentPath provided (signed PDF), use it
-            // Otherwise, use original document path
-            $pathToSign = $documentPath ?? $approvalRequest->document_path;
-
-            Log::info('Signing approval request', [
-                'approval_request_id' => $approvalRequestId,
-                'document_path_provided' => $documentPath !== null,
-                'path_to_sign' => $pathToSign,
-                'is_signed_pdf' => $documentPath !== null
+            Log::info('Starting document signing with unique key', [
+                'document_signature_id' => $documentSignature->id,
+                'approval_request_id' => $approvalRequest->id,
+                'final_pdf_path' => $finalPdfPath
             ]);
 
-            // Create CMS signature from the correct document (signed PDF or original)
-            $signatureData = $this->createCMSSignature($pathToSign, $digitalSignatureId);
+            // STEP 1: Generate unique digital signature key for this document
+            $digitalSignature = $this->createDigitalSignatureForDocument($documentSignature);
 
-            // Create or update DocumentSignature record
-            $documentSignature = DocumentSignature::updateOrCreate(
-                ['approval_request_id' => $approvalRequestId],
-                [
-                    'digital_signature_id' => $digitalSignatureId,
-                    'document_hash' => $signatureData['document_hash'],
-                    'signature_value' => $signatureData['signature_value'],
-                    'cms_signature' => $signatureData['cms_signature'],
-                    'signed_at' => $signatureData['signed_at'],
-                    // 'signed_by' => Auth::id(),
-                    // sign by kaprodi
-                    // 'signed_by' => Auth::guard('kaprodi')->id(),
-                    'signature_status' => DocumentSignature::STATUS_SIGNED,
-                    'signature_metadata' => $signatureData['metadata']
-                ]
-            );
+            // STEP 2: Create CMS signature from final PDF (with embedded QR)
+            $signatureData = $this->createCMSSignature($finalPdfPath, $digitalSignature);
 
-            // Update approval request status
-            // $approvalRequest->markUserSigned();
-
-            Log::info('Approval request signed successfully', [
-                'approval_request_id' => $approvalRequestId,
-                'document_signature_id' => $documentSignature->id
+            // STEP 3: Update DocumentSignature with signature data
+            $documentSignature->update([
+                'digital_signature_id' => $digitalSignature->id,
+                'document_hash' => $signatureData['document_hash'],
+                'signature_value' => $signatureData['signature_value'],
+                'cms_signature' => $signatureData['cms_signature'],
+                'signed_at' => $signatureData['signed_at'],
+                'signed_by' => Auth::guard('kaprodi')->id(),
+                'signature_status' => DocumentSignature::STATUS_VERIFIED,
+                'signature_metadata' => $signatureData['metadata'],
+                'final_pdf_path' => $finalPdfPath
             ]);
 
-            return $documentSignature;
+            // STEP 4: Update approval request status
+            $approvalRequest->update([
+                'status' => ApprovalRequest::STATUS_SIGN_APPROVED
+            ]);
+
+            Log::info('Document signed successfully with unique key', [
+                'document_signature_id' => $documentSignature->id,
+                'digital_signature_id' => $digitalSignature->id,
+                'signature_id' => $digitalSignature->signature_id
+            ]);
+
+            // STEP 5: Create audit log
+            $metadata = SignatureAuditLog::createMetadata([
+                'document_signature_id' => $documentSignature->id,
+                'digital_signature_id' => $digitalSignature->id,
+                'signature_id' => $digitalSignature->signature_id,
+                'document_name' => $approvalRequest->document_name,
+                'document_hash' => $signatureData['document_hash'],
+                'final_pdf_path' => $finalPdfPath
+            ]);
+
+            SignatureAuditLog::create([
+                'kaprodi_id' => Auth::guard('kaprodi')->id(),
+                'document_signature_id' => $documentSignature->id,
+                'approval_request_id' => $approvalRequest->id,
+                'action' => SignatureAuditLog::ACTION_DOCUMENT_SIGNED,
+                'status_from' => DocumentSignature::STATUS_PENDING,
+                'status_to' => DocumentSignature::STATUS_VERIFIED,
+                'description' => 'Document signed with auto-generated unique digital signature key',
+                'metadata' => $metadata,
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+                'performed_at' => now()
+            ]);
+
+            return $documentSignature->fresh(['digitalSignature', 'approvalRequest']);
 
         } catch (\Exception $e) {
-            Log::error('Approval request signing failed: ' . $e->getMessage());
+            Log::error('Document signing with unique key failed: ' . $e->getMessage(), [
+                'document_signature_id' => $documentSignature->id ?? null,
+                'error' => $e->getTraceAsString()
+            ]);
             throw $e;
         }
     }
@@ -401,37 +438,16 @@ class DigitalSignatureService
     }
 
     /**
-     * Get signature statistics
+     * DEPRECATED: Get signature statistics (not used in new flow)
+     * Kept for backward compatibility if needed
      */
-    public function getSignatureStatistics($digitalSignatureId)
-    {
-        try {
-            $digitalSignature = DigitalSignature::findOrFail($digitalSignatureId);
-
-            return [
-                'signature_id' => $digitalSignature->signature_id,
-                'created_at' => $digitalSignature->created_at,
-                'status' => $digitalSignature->status,
-                'valid_until' => $digitalSignature->valid_until,
-                'total_documents_signed' => $digitalSignature->documentSignatures()->count(),
-                'successful_signatures' => $digitalSignature->documentSignatures()
-                    ->where('signature_status', DocumentSignature::STATUS_VERIFIED)->count(),
-                'pending_signatures' => $digitalSignature->documentSignatures()
-                    ->where('signature_status', DocumentSignature::STATUS_PENDING)->count(),
-                'last_used' => $digitalSignature->documentSignatures()
-                    ->latest('signed_at')->first()?->signed_at,
-                'days_until_expiry' => $digitalSignature->valid_until->diffInDays(now(), false),
-                'usage_stats' => $digitalSignature->getUsageStats()
-            ];
-
-        } catch (\Exception $e) {
-            Log::error('Failed to get signature statistics: ' . $e->getMessage());
-            throw $e;
-        }
-    }
+    // public function getSignatureStatistics($digitalSignatureId)
+    // {
+    //     // No longer used - each document has unique key
+    // }
 
     /**
-     * Revoke digital signature
+     * Revoke digital signature (per-document basis now)
      */
     public function revokeSignature($digitalSignatureId, $reason = null)
     {
@@ -439,26 +455,29 @@ class DigitalSignatureService
             $digitalSignature = DigitalSignature::findOrFail($digitalSignatureId);
             $digitalSignature->revoke($reason);
 
-            // Invalidate all associated document signatures
-            $digitalSignature->documentSignatures()->update([
-                'signature_status' => DocumentSignature::STATUS_INVALID
-            ]);
+            // Invalidate associated document signature (only 1 now - 1-to-1)
+            if ($documentSignature = $digitalSignature->documentSignature) {
+                $documentSignature->update([
+                    'signature_status' => DocumentSignature::STATUS_INVALID
+                ]);
+            }
 
             Log::info('Digital signature revoked', [
                 'signature_id' => $digitalSignature->signature_id,
-                'reason' => $reason
+                'reason' => $reason,
+                'document_signature_id' => $digitalSignature->document_signature_id
             ]);
 
-            // Create audit log with standardized metadata
+            // Create audit log
             $metadata = SignatureAuditLog::createMetadata([
                 'signature_id' => $digitalSignature->signature_id,
                 'reason' => $reason ?? 'No reason provided',
-                'affected_documents' => $digitalSignature->documentSignatures()->count(),
-                'revoked_by' => Auth::user()->name ?? 'System',
+                'document_signature_id' => $digitalSignature->document_signature_id,
+                'revoked_by' => Auth::guard('kaprodi')->user()->name ?? 'System',
             ]);
 
             SignatureAuditLog::create([
-                'kaprodi_id' => Auth::id(),
+                'kaprodi_id' => Auth::guard('kaprodi')->id(),
                 'action' => SignatureAuditLog::ACTION_SIGNATURE_KEY_REVOKED,
                 'status_from' => DigitalSignature::STATUS_ACTIVE,
                 'status_to' => $digitalSignature->status,

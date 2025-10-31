@@ -321,7 +321,8 @@ class VerificationService
             $verificationResult = $this->digitalSignatureService->verifyCMSSignature(
                 $pathToVerify,
                 $documentSignature->cms_signature,
-                $documentSignature->digital_signature_id
+                $documentSignature->digitalSignature->id
+                // $documentSignature->digital_signature_id
             );
 
             return [

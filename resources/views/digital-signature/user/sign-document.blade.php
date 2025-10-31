@@ -1,9 +1,8 @@
-{{-- resources/views/digital-signature/user/sign-document-new.blade.php --}}
-{{-- NEW VERSION: Drag & Drop Template TTD Kaprodi --}}
-{{-- @extends('digital-signature.layouts.app') --}}
+{{-- resources/views/digital-signature/user/sign-document.blade.php --}}
+{{-- REFACTORED: QR Code Drag & Drop (No Signature Template) --}}
 @extends('user.layouts.app')
 
-@section('title', 'Digital Document Signing - Drag & Drop')
+@section('title', 'Digital Document Signing - QR Drag & Drop')
 
 @push('styles')
 <style>
@@ -16,7 +15,6 @@
 
 /* ========== SIGNING STEPS INDICATOR ========== */
 .signing-steps {
-    /* background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); */
     background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
     color: white;
     border-radius: 1rem;
@@ -60,6 +58,66 @@
     color: white;
 }
 
+/* ========== QR CODE SECTION ========== */
+.qr-code-section {
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.qr-code-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    background: #f8f9fa;
+    border-radius: 0.5rem;
+    border: 2px dashed #007bff;
+}
+
+.qr-code-item {
+    background: white;
+    border: 2px solid #007bff;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    cursor: grab;
+    transition: all 0.3s ease;
+    text-align: center;
+    max-width: 300px;
+}
+
+.qr-code-item:hover {
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+    transform: translateY(-2px);
+}
+
+.qr-code-item.dragging {
+    opacity: 0.5;
+    cursor: grabbing;
+}
+
+.qr-code-preview-img {
+    width: 200px;
+    height: 200px;
+    object-fit: contain;
+    margin-bottom: 1rem;
+}
+
+.qr-info h6 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #333;
+}
+
+.qr-info p {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 0;
+}
+
 /* ========== PDF PREVIEW CONTAINER ========== */
 .pdf-preview-section {
     background: white;
@@ -85,7 +143,7 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-#signatureOverlay {
+#qrOverlay {
     position: absolute;
     top: 0;
     left: 0;
@@ -94,40 +152,40 @@
     pointer-events: none;
 }
 
-.placed-signature {
+.placed-qr {
     position: absolute;
-    border: 2px dashed #007bff;
-    background: rgba(0, 123, 255, 0.1);
+    border: 2px dashed #28a745;
+    background: rgba(40, 167, 69, 0.1);
     cursor: move;
     pointer-events: all;
     border-radius: 0.25rem;
-    padding: 0.5rem;
+    /* padding: 0.5rem; */
     z-index: 10;
 }
 
-.placed-signature:hover {
-    border-color: #0056b3;
-    background: rgba(0, 123, 255, 0.2);
+.placed-qr:hover {
+    border-color: #218838;
+    background: rgba(40, 167, 69, 0.2);
 }
 
-.placed-signature.selected {
-    border-color: #28a745;
+.placed-qr.selected {
+    border-color: #007bff;
     border-width: 3px;
-    box-shadow: 0 0 15px rgba(40, 167, 69, 0.5);
+    box-shadow: 0 0 15px rgba(0, 123, 255, 0.5);
 }
 
-.placed-signature img {
+.placed-qr img {
     width: 100%;
     height: auto;
     display: block;
     pointer-events: none;
 }
 
-.signature-handles {
+.qr-handles {
     position: absolute;
     width: 10px;
     height: 10px;
-    background: #007bff;
+    background: #28a745;
     border: 2px solid white;
     border-radius: 50%;
     cursor: nwse-resize;
@@ -138,7 +196,7 @@
 .handle-sw { bottom: -5px; left: -5px; cursor: nesw-resize; }
 .handle-se { bottom: -5px; right: -5px; cursor: nwse-resize; }
 
-.delete-signature-btn {
+.delete-qr-btn {
     position: absolute;
     top: -10px;
     right: -10px;
@@ -156,121 +214,8 @@
     font-weight: bold;
 }
 
-.delete-signature-btn:hover {
+.delete-qr-btn:hover {
     background: #c82333;
-}
-
-/* ========== TEMPLATE SELECTOR ========== */
-.template-selector-section {
-    background: white;
-    border-radius: 1rem;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    padding: 2rem;
-    margin-bottom: 2rem;
-}
-
-.template-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 1.5rem;
-    margin-top: 1rem;
-}
-
-.template-item {
-    background: white;
-    border: 2px solid #dee2e6;
-    border-radius: 0.75rem;
-    padding: 1rem;
-    cursor: grab;
-    transition: all 0.3s ease;
-    position: relative;
-}
-
-.template-item:hover {
-    border-color: #007bff;
-    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.2);
-    transform: translateY(-2px);
-}
-
-.template-item.dragging {
-    opacity: 0.5;
-    cursor: grabbing;
-}
-
-.template-item.default-badge::after {
-    content: "DEFAULT";
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background: #28a745;
-    color: white;
-    font-size: 10px;
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-weight: bold;
-}
-
-.template-preview-img {
-    width: 100%;
-    height: 150px;
-    object-fit: contain;
-    background: #f8f9fa;
-    border-radius: 0.5rem;
-    margin-bottom: 0.75rem;
-    padding: 0.5rem;
-}
-
-.template-info h6 {
-    font-size: 14px;
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-    color: #333;
-}
-
-.template-meta {
-    font-size: 12px;
-    color: #666;
-}
-
-.template-meta i {
-    margin-right: 5px;
-}
-
-/* ========== CONTROL PANEL ========== */
-.control-panel-section {
-    background: white;
-    border-radius: 1rem;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    padding: 2rem;
-    margin-bottom: 2rem;
-}
-
-.control-group {
-    margin-bottom: 1.5rem;
-}
-
-.control-group label {
-    display: block;
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-    color: #333;
-}
-
-.range-control {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.range-control input[type="range"] {
-    flex: 1;
-}
-
-.range-value {
-    min-width: 60px;
-    text-align: center;
-    font-weight: 600;
-    color: #007bff;
 }
 
 /* ========== PAGE NAVIGATION ========== */
@@ -366,27 +311,6 @@
 }
 
 /* ========== RESPONSIVE ========== */
-/* Tablet (768px - 991px) */
-@media (max-width: 991px) {
-    .signing-container {
-        padding: 1.5rem;
-    }
-
-    .template-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 1rem;
-    }
-
-    .control-panel-section {
-        padding: 1.5rem;
-    }
-
-    .pdf-preview-wrapper {
-        max-height: 600px;
-    }
-}
-
-/* Mobile (max 768px) */
 @media (max-width: 768px) {
     .signing-container {
         padding: 1rem;
@@ -394,7 +318,6 @@
 
     .signing-steps {
         padding: 1rem;
-        margin-bottom: 1.5rem;
     }
 
     .step-indicator {
@@ -414,34 +337,8 @@
         margin-bottom: 0;
     }
 
-    .template-grid {
-        grid-template-columns: 1fr;
-        gap: 1rem;
-    }
-
-    .template-preview-img {
-        height: 120px;
-    }
-
-    .pdf-preview-section {
-        padding: 1rem;
-    }
-
     .pdf-preview-wrapper {
         max-height: 400px;
-    }
-
-    .control-panel-section {
-        padding: 1rem;
-    }
-
-    .control-group {
-        margin-bottom: 1rem;
-    }
-
-    .range-value {
-        min-width: 50px;
-        font-size: 14px;
     }
 
     .signing-controls {
@@ -459,116 +356,227 @@
         gap: 1rem;
     }
 
-    .signing-controls .d-flex.gap-2 {
-        width: 100%;
-    }
-
     .signing-controls button {
         width: 100%;
-        justify-content: center;
-    }
-
-    .page-navigation {
-        padding: 0.75rem;
-        gap: 0.5rem;
-    }
-
-    .page-navigation button {
-        padding: 0.4rem 0.75rem;
-        font-size: 14px;
-    }
-
-    .page-info {
-        font-size: 14px;
     }
 }
 
-/* Small Mobile (max 576px) */
-@media (max-width: 576px) {
-    .signing-container {
-        padding: 0.75rem;
-    }
+/* ========== VISUAL GUIDE / TOOLTIP ========== */
+.visual-guide {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    padding: 2rem;
+    max-width: 500px;
+    z-index: 10000;
+    display: none;
+}
 
-    .signing-steps {
-        padding: 0.75rem;
-    }
+.visual-guide.active {
+    display: block;
+}
 
-    .signing-steps h5 {
-        font-size: 1rem;
-    }
+.visual-guide-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+    display: none;
+}
 
-    .signing-steps p {
-        font-size: 0.85rem;
-    }
+.visual-guide-overlay.active {
+    display: block;
+}
 
-    .step-number {
-        width: 30px;
-        height: 30px;
-        font-size: 14px;
-    }
+.guide-step {
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: start;
+    gap: 1rem;
+}
 
-    .step-item small {
-        font-size: 0.75rem;
-    }
+.guide-step-number {
+    width: 30px;
+    height: 30px;
+    background: #007bff;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    flex-shrink: 0;
+}
 
-    .pdf-preview-section {
-        padding: 0.75rem;
-    }
+.guide-step-content h6 {
+    margin: 0 0 0.5rem 0;
+    color: #333;
+}
 
-    .pdf-preview-wrapper {
-        max-height: 350px;
-    }
+.guide-step-content p {
+    margin: 0;
+    color: #666;
+    font-size: 14px;
+}
 
-    .control-panel-section {
-        padding: 0.75rem;
-    }
+/* ========== QR SIZE PRESETS ========== */
+.qr-size-presets {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
 
-    .control-panel-section h4 {
-        font-size: 1rem;
-    }
+.qr-size-btn {
+    padding: 0.5rem 1rem;
+    border: 2px solid #dee2e6;
+    background: white;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 14px;
+    font-weight: 500;
+}
 
-    .control-group label {
-        font-size: 14px;
-    }
+.qr-size-btn:hover {
+    border-color: #007bff;
+    background: #f8f9fa;
+}
 
-    .signing-controls {
-        padding: 0.75rem;
-    }
+.qr-size-btn.active {
+    background: #007bff;
+    color: white;
+    border-color: #007bff;
+}
 
-    .signing-controls .form-check-label {
-        font-size: 13px;
-    }
+/* ========== QR CONTROL BUTTONS ========== */
+.qr-controls {
+    margin-top: 1rem;
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
 
-    .signing-controls small {
-        font-size: 11px;
-    }
+.qr-control-btn {
+    padding: 0.5rem 1rem;
+    border: 1px solid #dee2e6;
+    background: white;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
 
-    .page-navigation button {
-        padding: 0.35rem 0.5rem;
-        font-size: 13px;
-    }
+.qr-control-btn:hover:not(:disabled) {
+    background: #f8f9fa;
+    border-color: #007bff;
+}
 
-    .page-navigation button i {
-        font-size: 12px;
-    }
+.qr-control-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
 
-    .page-info {
-        font-size: 13px;
-    }
+.qr-control-btn i {
+    font-size: 12px;
+}
 
-    /* Hide button text, show only icons on very small screens */
-    .page-navigation button .btn-text {
-        display: none;
-    }
+/* ========== KEYBOARD SHORTCUTS INDICATOR ========== */
+.keyboard-shortcuts {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-top: 1rem;
+}
+
+.keyboard-shortcuts h6 {
+    margin: 0 0 0.75rem 0;
+    font-size: 14px;
+    color: #333;
+}
+
+.shortcut-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.5rem;
+}
+
+.shortcut-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 13px;
+}
+
+.shortcut-key {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    padding: 0.15rem 0.4rem;
+    font-family: monospace;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+/* ========== PREVIEW MODAL ========== */
+.preview-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 10000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+
+.preview-modal.active {
+    display: flex;
+}
+
+.preview-modal-content {
+    background: white;
+    border-radius: 1rem;
+    max-width: 1000px;
+    max-height: 90vh;
+    overflow: auto;
+    padding: 2rem;
+}
+
+.preview-canvas-wrapper {
+    border: 2px solid #dee2e6;
+    border-radius: 0.5rem;
+    background: #f8f9fa;
+    padding: 1rem;
+    margin: 1rem 0;
+    text-align: center;
+}
+
+#previewCanvas {
+    max-width: 100%;
+    height: auto;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* Touch device optimizations */
 @media (hover: none) and (pointer: coarse) {
-    /* Increase touch targets */
-    .signature-handles {
+    .qr-handles {
         width: 24px;
         height: 24px;
-        background: #007bff;
+        background: #28a745;
         border: 3px solid white;
         box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }
@@ -578,7 +586,7 @@
     .handle-sw { bottom: -12px; left: -12px; }
     .handle-se { bottom: -12px; right: -12px; }
 
-    .delete-signature-btn {
+    .delete-qr-btn {
         width: 32px;
         height: 32px;
         top: -16px;
@@ -586,19 +594,8 @@
         font-size: 18px;
     }
 
-    .template-item {
-        padding: 1.25rem;
-        cursor: pointer;
-    }
-
-    .placed-signature {
-        border-width: 3px;
-        padding: 0.75rem;
-    }
-
-    /* Prevent text selection during drag */
-    .template-item,
-    .placed-signature {
+    .qr-code-item,
+    .placed-qr {
         -webkit-user-select: none;
         -moz-user-select: none;
         -ms-user-select: none;
@@ -625,48 +622,109 @@
             </div>
             <div class="step-item">
                 <div class="step-number active">2</div>
-                <small>Select Template</small>
+                <small>Position QR Code</small>
             </div>
             <div class="step-item">
                 <div class="step-number">3</div>
-                <small>Position Signature</small>
-            </div>
-            <div class="step-item">
-                <div class="step-number">4</div>
                 <small>Complete Signing</small>
             </div>
         </div>
-        <h5 class="mb-0">Step 2: Select & Position Your Signature Template</h5>
-        <p class="mb-0 opacity-75">Drag and drop the signature template onto the document</p>
+        <h5 class="mb-0">Step 2: Position QR Code on Document</h5>
+        <p class="mb-0 opacity-75">Drag and drop the QR code to your desired position on the document</p>
     </div>
 
-    <!-- Template Selector -->
-    {{-- <div class="template-selector-section">
+    <!-- QR Code Section -->
+    <div class="qr-code-section">
         <div class="d-flex align-items-center mb-3">
-            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3"
+            <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center me-3"
                  style="width: 50px; height: 50px;">
-                <i class="fas fa-stamp"></i>
+                <i class="fas fa-qrcode"></i>
             </div>
             <div>
-                <h4 class="mb-1">Select Signature Template</h4>
-                <p class="text-muted mb-0">Drag the template to the document above</p>
+                <h4 class="mb-1">Verification QR Code</h4>
+                <p class="text-muted mb-0">Drag this QR code to the document below to position it</p>
             </div>
         </div>
 
-        <div id="templateGrid" class="template-grid">
-            <div class="text-center py-5">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading...</span>
+        <div class="qr-code-wrapper" id="qrCodeWrapper">
+            @if($documentSignature && $documentSignature->temporary_qr_code_path)
+                <div class="qr-code-item" id="qrCodeItem" draggable="true">
+                    <img src="{{ Storage::url($documentSignature->temporary_qr_code_path) }}"
+                         alt="Verification QR Code"
+                         class="qr-code-preview-img"
+                         id="qrCodeImage">
+                    <div class="qr-info">
+                        <h6><i class="fas fa-qrcode me-2"></i>Document Verification QR</h6>
+                        <p>Drag this QR code to your preferred position on the PDF document</p>
+                    </div>
                 </div>
-                <p class="mt-2 text-muted">Loading templates...</p>
+            @else
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Temporary QR code not found. Please contact administrator.
+                </div>
+            @endif
+        </div>
+
+        <!-- QR Size Presets & Controls -->
+        <div class="qr-size-presets">
+            <button class="qr-size-btn" onclick="setQRSize('small')">
+                <i class="fas fa-compress-alt me-1"></i> Small (80x80)
+            </button>
+            <button class="qr-size-btn active" onclick="setQRSize('medium')">
+                <i class="fas fa-expand-alt me-1"></i> Medium (100x100)
+            </button>
+            <button class="qr-size-btn" onclick="setQRSize('large')">
+                <i class="fas fa-expand me-1"></i> Large (150x150)
+            </button>
+        </div>
+
+        <!-- QR Control Buttons -->
+        <div class="qr-controls">
+            <button class="qr-control-btn" id="resetQRBtn" onclick="resetQRPosition()" disabled>
+                <i class="fas fa-redo"></i> Reset Position
+            </button>
+            <button class="qr-control-btn" id="undoBtn" onclick="undo()" disabled>
+                <i class="fas fa-undo"></i> Undo
+            </button>
+            <button class="qr-control-btn" id="redoBtn" onclick="redo()" disabled>
+                <i class="fas fa-redo"></i> Redo
+            </button>
+            <button class="qr-control-btn" onclick="showGuide()">
+                <i class="fas fa-question-circle"></i> Help
+            </button>
+        </div>
+
+        <!-- Keyboard Shortcuts -->
+        <div class="keyboard-shortcuts">
+            <h6><i class="fas fa-keyboard me-2"></i>Keyboard Shortcuts</h6>
+            <div class="shortcut-list">
+                <div class="shortcut-item">
+                    <span class="shortcut-key">↑ ↓ ← →</span>
+                    <span>Move QR (1px)</span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-key">Shift + ↑↓←→</span>
+                    <span>Move QR (10px)</span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-key">Ctrl + Z</span>
+                    <span>Undo</span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-key">Ctrl + Y</span>
+                    <span>Redo</span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-key">Delete</span>
+                    <span>Remove QR</span>
+                </div>
             </div>
         </div>
-    </div> --}}
+    </div>
 
-    <!-- Document Information -->
+    <!-- Document Information & PDF Preview -->
     <div class="pdf-preview-section">
-
-
         <div class="mb-3">
             <h4 class="mb-3">
                 <i class="fas fa-file-alt text-primary me-2"></i>
@@ -675,15 +733,15 @@
             <div class="row">
                 <div class="col-md-8">
                     <div class="row">
-                        <div class="col-sm-6">
+                        <div class="col-sm-6 mb-2">
                             <strong>Document Number:</strong><br>
                             <span class="text-muted">{{ $approvalRequest->full_document_number }}</span>
                         </div>
-                        <div class="col-sm-6">
+                        <div class="col-sm-6 mb-2">
                             <strong>Document Type:</strong><br>
-                            <span class="text-muted">{{ $approvalRequest->document_type ? $approvalRequest->document_type : 'N/A' }}</span>
+                            <span class="text-muted">{{ $approvalRequest->document_type ?? 'N/A' }}</span>
                         </div>
-                        <div class="col-sm-6">
+                        <div class="col-sm-6 mb-2">
                             <strong>Submitted:</strong><br>
                             <span class="text-muted">{{ $approvalRequest->created_at->format('d M Y H:i') }}</span>
                         </div>
@@ -697,36 +755,12 @@
                     </div>
                 </div>
             </div>
-
-            {{--  --}}
-            <div class="template-selector-section mt-5">
-                <div class="d-flex align-items-center mb-3">
-                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3"
-                        style="width: 30px; height: 30px;">
-                        <i class="fas fa-stamp"></i>
-                    </div>
-                    <div>
-                        <h4 class="mb-1">Select Signature Template</h4>
-                        <p class="text-muted mb-0">Drag the template to the document above</p>
-                    </div>
-                </div>
-
-                <div id="templateGrid" class="template-grid">
-                    <div class="text-center py-5">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <p class="mt-2 text-muted">Loading templates...</p>
-                    </div>
-                </div>
-            </div>
-
         </div>
 
-        <!-- PDF Preview with Overlay -->
+        <!-- PDF Preview with QR Overlay -->
         <div class="pdf-preview-wrapper" id="pdfPreviewWrapper">
             <canvas id="pdfCanvas"></canvas>
-            <div id="signatureOverlay"></div>
+            <div id="qrOverlay"></div>
         </div>
 
         <!-- Page Navigation -->
@@ -742,69 +776,6 @@
             </button>
         </div>
     </div>
-
-
-
-    <!-- Control Panel -->
-    <div class="control-panel-section" id="controlPanel" style="display: none;">
-        <div class="d-flex align-items-center mb-3">
-            <div class="bg-warning text-white rounded-circle d-flex align-items-center justify-content-center me-3"
-                 style="width: 50px; height: 50px;">
-                <i class="fas fa-sliders-h"></i>
-            </div>
-            <div>
-                <h4 class="mb-1">Adjust Signature Position & Size</h4>
-                <p class="text-muted mb-0">Fine-tune the signature placement</p>
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="col-md-6">
-                <div class="control-group">
-                    <label>Width</label>
-                    <div class="range-control">
-                        <input type="range" id="widthSlider" min="50" max="500" value="200" class="form-range">
-                        <span class="range-value"><span id="widthValue">200</span>px</span>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="control-group">
-                    <label>Height</label>
-                    <div class="range-control">
-                        <input type="range" id="heightSlider" min="50" max="300" value="100" class="form-range">
-                        <span class="range-value"><span id="heightValue">100</span>px</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="col-md-6">
-                <div class="control-group">
-                    <label>Horizontal Position</label>
-                    <div class="range-control">
-                        <input type="range" id="positionXSlider" min="0" max="100" value="50" class="form-range">
-                        <span class="range-value"><span id="positionXValue">50</span>%</span>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="control-group">
-                    <label>Vertical Position</label>
-                    <div class="range-control">
-                        <input type="range" id="positionYSlider" min="0" max="100" value="50" class="form-range">
-                        <span class="range-value"><span id="positionYValue">50</span>%</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="alert alert-info">
-            <i class="fas fa-info-circle me-2"></i>
-            <strong>Tip:</strong> You can also drag the signature directly on the document and resize using the corner handles.
-        </div>
-    </div>
 </div>
 
 <!-- Signing Controls (Sticky Bottom) -->
@@ -814,22 +785,22 @@
             <div class="form-check">
                 <input class="form-check-input" type="checkbox" id="confirmSignature">
                 <label class="form-check-label" for="confirmSignature">
-                    I confirm that this signature placement is correct and I authorize this document
+                    I confirm that the QR code position is correct and I authorize this document
                 </label>
             </div>
             <small class="text-muted">
                 <i class="fas fa-shield-alt me-1"></i>
-                This signature will be legally binding and cryptographically secured
+                This signature will be legally binding and cryptographically secured with a unique key
             </small>
         </div>
         <div class="d-flex gap-2">
             <button class="btn btn-outline-secondary" onclick="goBack()">
                 <i class="fas fa-arrow-left me-1"></i> Back
             </button>
-            <button class="btn btn-warning" id="previewBtn" onclick="previewSignature()" disabled>
+            <button class="btn btn-warning" id="previewBtn" onclick="showPreview()" disabled>
                 <i class="fas fa-eye me-1"></i> Preview
             </button>
-            <button class="btn btn-success" id="signBtn" onclick="signDocument()" disabled>
+            <button class="btn btn-success" id="signBtn" onclick="confirmAndSign()" disabled>
                 <i class="fas fa-signature me-1"></i> Sign Document
             </button>
         </div>
@@ -841,41 +812,99 @@
     <div class="loading-content">
         <div class="spinner"></div>
         <h5>Processing Digital Signature...</h5>
-        <p class="text-muted mb-0">Please wait while we securely sign your document</p>
+        <p class="text-muted mb-0">Generating unique encryption key and signing your document</p>
+        <p class="text-muted"><small>Please wait, this may take a moment...</small></p>
+    </div>
+</div>
+
+<!-- Visual Guide / Tutorial -->
+<div class="visual-guide-overlay" id="visualGuideOverlay" onclick="hideGuide()"></div>
+<div class="visual-guide" id="visualGuide">
+    <h4 class="mb-3"><i class="fas fa-info-circle me-2 text-primary"></i>How to Sign Your Document</h4>
+
+    <div class="guide-step">
+        <div class="guide-step-number">1</div>
+        <div class="guide-step-content">
+            <h6>Drag the QR Code</h6>
+            <p>Click and drag the QR code from the box above onto your PDF document at your desired position.</p>
+        </div>
+    </div>
+
+    <div class="guide-step">
+        <div class="guide-step-number">2</div>
+        <div class="guide-step-content">
+            <h6>Adjust Size & Position</h6>
+            <p>Use the size presets (Small/Medium/Large) or drag the corner handles to resize. You can also use arrow keys for precise positioning.</p>
+        </div>
+    </div>
+
+    <div class="guide-step">
+        <div class="guide-step-number">3</div>
+        <div class="guide-step-content">
+            <h6>Preview Your Signature</h6>
+            <p>Click the "Preview" button to see how your document will look after signing.</p>
+        </div>
+    </div>
+
+    <div class="guide-step">
+        <div class="guide-step-number">4</div>
+        <div class="guide-step-content">
+            <h6>Sign the Document</h6>
+            <p>Check the confirmation box and click "Sign Document". A unique encryption key will be generated automatically.</p>
+        </div>
+    </div>
+
+    <div class="alert alert-info mt-3 mb-0">
+        <i class="fas fa-lightbulb me-2"></i>
+        <strong>Pro Tip:</strong> Use Ctrl+Z to undo and Ctrl+Y to redo your changes!
+    </div>
+
+    <div class="mt-3 text-end">
+        <button class="btn btn-primary" onclick="hideGuide()">
+            <i class="fas fa-check me-1"></i> Got it!
+        </button>
+        <label class="form-check-label ms-3">
+            <input type="checkbox" class="form-check-input" id="dontShowAgain">
+            Don't show this again
+        </label>
     </div>
 </div>
 
 <!-- Preview Modal -->
-<div class="modal fade" id="previewModal" tabindex="-1">
-    <div class="modal-dialog modal-xl">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Signature Preview</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="text-center mb-3">
-                    <h6>Your signature will appear like this on the document:</h6>
-                </div>
-                <div id="finalPreview" class="border rounded p-3 bg-light" style="min-height: 300px; position: relative;">
-                    <canvas id="previewCanvas"></canvas>
-                </div>
-                <div class="mt-3">
-                    <strong>Document Details:</strong>
-                    <ul class="list-unstyled mt-2">
-                        <li><strong>Document:</strong> {{ $approvalRequest->document_name }}</li>
-                        <li><strong>Number:</strong> {{ $approvalRequest->full_document_number }}</li>
-                        <li><strong>Signer:</strong> {{ auth()->user()->name }}</li>
-                        <li><strong>Timestamp:</strong> <span id="signingTimestamp"></span></li>
-                    </ul>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
-                {{-- <button type="button" class="btn btn-success" onclick="confirmSigning()">
-                    <i class="fas fa-signature me-1"></i> Confirm & Sign
-                </button> --}}
-            </div>
+<div class="preview-modal" id="previewModal" onclick="hidePreview(event)">
+    <div class="preview-modal-content" onclick="event.stopPropagation()">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 class="mb-0"><i class="fas fa-eye me-2"></i>Document Preview</h4>
+            <button class="btn btn-sm btn-outline-secondary" onclick="hidePreview()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>
+            This is how your document will appear after signing. The QR code will be embedded at the position you selected.
+        </div>
+
+        <div class="preview-canvas-wrapper">
+            <canvas id="previewCanvas"></canvas>
+        </div>
+
+        <div class="mt-3">
+            <strong>Document Details:</strong>
+            <ul class="list-unstyled mt-2">
+                <li><strong>Document:</strong> {{ $approvalRequest->document_name }}</li>
+                <li><strong>Number:</strong> {{ $approvalRequest->full_document_number }}</li>
+                <li><strong>Signer:</strong> {{ auth()->user()->name }}</li>
+                <li><strong>Signing Time:</strong> <span id="signingTimestamp"></span></li>
+                <li><strong>Encryption:</strong> RSA-2048 with SHA-256 (Unique key per document)</li>
+            </ul>
+        </div>
+
+        <div class="text-end mt-3">
+            <button class="btn btn-secondary" onclick="hidePreview()">Close</button>
+            <button class="btn btn-success" onclick="hidePreview(); confirmAndSign();">
+                <i class="fas fa-signature me-1"></i> Proceed to Sign
+            </button>
         </div>
     </div>
 </div>
@@ -896,9 +925,8 @@ let pageNumPending = null;
 let canvas = document.getElementById('pdfCanvas');
 let ctx = canvas.getContext('2d');
 
-let availableTemplates = [];
-let placedSignature = null;
-let selectedTemplate = null;
+let placedQR = null;
+let qrCodeImageSrc = "{{ $documentSignature && $documentSignature->temporary_qr_code_path ? Storage::url($documentSignature->temporary_qr_code_path) : '' }}";
 
 const approvalRequestId = {{ $approvalRequest->id }};
 const documentPath = "{{ Storage::url($approvalRequest->document_path) }}";
@@ -907,23 +935,23 @@ const documentPath = "{{ Storage::url($approvalRequest->document_path) }}";
 let isTouchDevice = false;
 let touchStartX = 0;
 let touchStartY = 0;
-let currentTouchTemplate = null;
+let isDraggingQR = false;
+
+// Undo/Redo history
+let qrHistory = [];
+let historyIndex = -1;
+const MAX_HISTORY = 50;
+
+// QR size presets
+const QR_SIZES = {
+    small: { width: 80, height: 80 },
+    medium: { width: 100, height: 100 },
+    large: { width: 150, height: 150 }
+};
+
+let currentQRSize = 'medium';
 
 // ==================== UTILITY FUNCTIONS ====================
-// Debounce function for performance optimization
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
-
-// Detect touch device
 function detectTouchDevice() {
     isTouchDevice = ('ontouchstart' in window) ||
                     (navigator.maxTouchPoints > 0) ||
@@ -934,9 +962,8 @@ function detectTouchDevice() {
 
 // ==================== INITIALIZATION ====================
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Initializing document signing...');
+    console.log('Initializing QR code signing interface...');
 
-    // Detect touch device
     detectTouchDevice();
 
     // Initialize PDF.js worker
@@ -945,12 +972,41 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load PDF document
     loadPDF();
 
-    // Load templates
-    loadTemplates();
+    // Setup drag & drop for QR code
+    setupQRDragDrop();
 
     // Setup event listeners
     setupEventListeners();
+
+    // Show guide for first-time users
+    showGuideIfFirstTime();
+
+    // Setup keyboard shortcuts
+    setupKeyboardShortcuts();
 });
+
+// ==================== VISUAL GUIDE ====================
+function showGuideIfFirstTime() {
+    const hasSeenGuide = localStorage.getItem('qr_signing_guide_seen');
+    if (!hasSeenGuide) {
+        setTimeout(() => showGuide(), 500);
+    }
+}
+
+function showGuide() {
+    document.getElementById('visualGuideOverlay').classList.add('active');
+    document.getElementById('visualGuide').classList.add('active');
+}
+
+function hideGuide() {
+    document.getElementById('visualGuideOverlay').classList.remove('active');
+    document.getElementById('visualGuide').classList.remove('active');
+
+    const dontShowAgain = document.getElementById('dontShowAgain').checked;
+    if (dontShowAgain) {
+        localStorage.setItem('qr_signing_guide_seen', 'true');
+    }
+}
 
 // ==================== PDF RENDERING ====================
 async function loadPDF() {
@@ -965,7 +1021,6 @@ async function loadPDF() {
 
         console.log(`PDF loaded successfully. Total pages: ${totalPages}`);
 
-        // Render first page
         renderPage(currentPage);
 
     } catch (error) {
@@ -992,7 +1047,7 @@ async function renderPage(pageNumber) {
         canvas.width = viewport.width;
 
         // Adjust overlay size
-        const overlay = document.getElementById('signatureOverlay');
+        const overlay = document.getElementById('qrOverlay');
         overlay.style.width = viewport.width + 'px';
         overlay.style.height = viewport.height + 'px';
 
@@ -1012,7 +1067,6 @@ async function renderPage(pageNumber) {
 
         console.log(`Page ${pageNumber} rendered successfully`);
 
-        // Update page navigation
         updatePageNavigation();
 
     } catch (error) {
@@ -1039,156 +1093,72 @@ function nextPage() {
     renderPage(currentPage);
 }
 
-// ==================== TEMPLATE LOADING ====================
-async function loadTemplates() {
-    try {
-        console.log('Loading templates...');
+// ==================== QR CODE DRAG & DROP ====================
+function setupQRDragDrop() {
+    const qrCodeItem = document.getElementById('qrCodeItem');
+    const pdfWrapper = document.getElementById('pdfPreviewWrapper');
 
-        const response = await fetch(`/user/signature/sign/${approvalRequestId}/templates`, {
-            method: 'GET',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                'Accept': 'application/json'
-            }
-        });
-        console.log('Templates fetch response status:', response.status);
-
-        const data = await response.json();
-
-        console.log('Templates response:', data);
-
-        if (data.success) {
-            availableTemplates = data.templates;
-            console.log(`Loaded ${data.total} templates`);
-            renderTemplates();
-        } else {
-            throw new Error(data.error || 'Failed to load templates');
-        }
-
-    } catch (error) {
-        console.error('Error loading templates:', error);
-        document.getElementById('templateGrid').innerHTML = `
-            <div class="col-12 text-center py-5">
-                <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
-                <p class="text-danger">Failed to load templates</p>
-                <button class="btn btn-primary btn-sm" onclick="loadTemplates()">Retry</button>
-            </div>
-        `;
-    }
-}
-
-function renderTemplates() {
-    const grid = document.getElementById('templateGrid');
-
-    if (availableTemplates.length === 0) {
-        grid.innerHTML = `
-            <div class="col-12 text-center py-5">
-                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-                <p class="text-muted">No templates available</p>
-            </div>
-        `;
+    if (!qrCodeItem) {
+        console.error('QR code item not found');
         return;
     }
 
-    grid.innerHTML = '';
+    // Desktop drag events
+    if (!isTouchDevice) {
+        qrCodeItem.addEventListener('dragstart', handleQRDragStart);
+        qrCodeItem.addEventListener('dragend', handleQRDragEnd);
+    }
 
-    availableTemplates.forEach(template => {
-        const templateElement = document.createElement('div');
-        templateElement.className = 'template-item' + (template.is_default ? ' default-badge' : '');
-        templateElement.dataset.templateId = template.id;
-        templateElement.dataset.templateName = template.name;
-        templateElement.dataset.signatureUrl = template.signature_image_url;
-        templateElement.draggable = !isTouchDevice; // Disable native drag on touch devices
+    // Touch events for mobile
+    if (isTouchDevice) {
+        qrCodeItem.addEventListener('touchstart', handleQRTouchStart, { passive: false });
+        qrCodeItem.addEventListener('touchmove', handleQRTouchMove, { passive: false });
+        qrCodeItem.addEventListener('touchend', handleQRTouchEnd, { passive: false });
+    }
 
-        templateElement.innerHTML = `
-            <img src="${template.signature_image_url}"
-                 alt="${template.name}"
-                 class="template-preview-img">
-            <div class="template-info">
-                <h6>${template.name}</h6>
-                <div class="template-meta">
-                    <div><i class="fas fa-user"></i> ${template.kaprodi_name}</div>
-                    <div><i class="fas fa-chart-line"></i> Used ${template.usage_count} times</div>
-                </div>
-            </div>
-        `;
-
-        // Add mouse drag event listeners for desktop
-        if (!isTouchDevice) {
-            templateElement.addEventListener('dragstart', handleDragStart);
-            templateElement.addEventListener('dragend', handleDragEnd);
-        }
-
-        // Add touch event listeners for mobile
-        if (isTouchDevice) {
-            templateElement.addEventListener('touchstart', handleTouchStart, { passive: false });
-            templateElement.addEventListener('touchmove', handleTouchMove, { passive: false });
-            templateElement.addEventListener('touchend', handleTouchEnd, { passive: false });
-        }
-
-        // Add click listener for both
-        templateElement.addEventListener('click', () => selectTemplate(template));
-
-        grid.appendChild(templateElement);
-    });
-
-    console.log('Templates rendered successfully');
+    // PDF drop zone events
+    pdfWrapper.addEventListener('dragover', handlePDFDragOver);
+    pdfWrapper.addEventListener('dragleave', handlePDFDragLeave);
+    pdfWrapper.addEventListener('drop', handlePDFDrop);
 }
 
-// ==================== DRAG & DROP ====================
-function handleDragStart(e) {
+function handleQRDragStart(e) {
     e.target.classList.add('dragging');
     e.dataTransfer.effectAllowed = 'copy';
-    e.dataTransfer.setData('templateId', e.target.dataset.templateId);
-    console.log('Drag started for template:', e.target.dataset.templateId);
+    e.dataTransfer.setData('qrcode', 'true');
+    console.log('QR drag started');
 }
 
-function handleDragEnd(e) {
+function handleQRDragEnd(e) {
     e.target.classList.remove('dragging');
-    console.log('Drag ended');
+    console.log('QR drag ended');
 }
 
-function selectTemplate(template) {
-    selectedTemplate = template;
-    console.log('Template selected:', template.name);
-}
-
-// ==================== TOUCH EVENTS ====================
-function handleTouchStart(e) {
-    const templateElement = e.currentTarget;
-    currentTouchTemplate = {
-        id: templateElement.dataset.templateId,
-        name: templateElement.dataset.templateName,
-        signature_image_url: templateElement.dataset.signatureUrl,
-        element: templateElement
-    };
-
+function handleQRTouchStart(e) {
+    isDraggingQR = true;
     touchStartX = e.touches[0].clientX;
     touchStartY = e.touches[0].clientY;
-
-    // Visual feedback
-    templateElement.classList.add('dragging');
-    console.log('Touch start on template:', currentTouchTemplate.name);
+    e.currentTarget.classList.add('dragging');
+    console.log('QR touch start');
 }
 
-function handleTouchMove(e) {
-    if (!currentTouchTemplate) return;
+function handleQRTouchMove(e) {
+    if (!isDraggingQR) return;
 
-    e.preventDefault(); // Prevent scrolling while dragging
+    e.preventDefault();
 
     const touch = e.touches[0];
     const moveX = Math.abs(touch.clientX - touchStartX);
     const moveY = Math.abs(touch.clientY - touchStartY);
 
-    // Only trigger if moved more than 10px (prevent accidental drags)
     if (moveX > 10 || moveY > 10) {
-        // Check if touch is over PDF canvas
         const canvasRect = canvas.getBoundingClientRect();
+        const pdfWrapper = document.getElementById('pdfPreviewWrapper');
+
         if (touch.clientX >= canvasRect.left && touch.clientX <= canvasRect.right &&
             touch.clientY >= canvasRect.top && touch.clientY <= canvasRect.bottom) {
-            // Give visual feedback that drop zone is active
-            pdfWrapper.style.borderColor = '#007bff';
-            pdfWrapper.style.background = 'rgba(0, 123, 255, 0.05)';
+            pdfWrapper.style.borderColor = '#28a745';
+            pdfWrapper.style.background = 'rgba(40, 167, 69, 0.05)';
         } else {
             pdfWrapper.style.borderColor = '#dee2e6';
             pdfWrapper.style.background = '#f8f9fa';
@@ -1196,154 +1166,289 @@ function handleTouchMove(e) {
     }
 }
 
-function handleTouchEnd(e) {
-    if (!currentTouchTemplate) return;
+function handleQRTouchEnd(e) {
+    if (!isDraggingQR) return;
 
     e.preventDefault();
 
     const touch = e.changedTouches[0];
     const canvasRect = canvas.getBoundingClientRect();
 
-    // Check if touch ended over PDF canvas
     if (touch.clientX >= canvasRect.left && touch.clientX <= canvasRect.right &&
         touch.clientY >= canvasRect.top && touch.clientY <= canvasRect.bottom) {
 
-        // Calculate position relative to canvas
         const x = touch.clientX - canvasRect.left;
         const y = touch.clientY - canvasRect.top;
 
-        console.log('Touch drop at:', { x, y });
-
-        // Find template in availableTemplates array
-        const template = availableTemplates.find(t => t.id == currentTouchTemplate.id);
-        if (template) {
-            placeSignatureOnPDF(template, x, y);
-        }
+        console.log('QR touch drop at:', { x, y });
+        placeQROnPDF(x, y);
     }
 
-    // Reset
-    if (currentTouchTemplate.element) {
-        currentTouchTemplate.element.classList.remove('dragging');
-    }
-    currentTouchTemplate = null;
-    pdfWrapper.style.borderColor = '#dee2e6';
-    pdfWrapper.style.background = '#f8f9fa';
-
-    console.log('Touch end');
+    e.currentTarget.classList.remove('dragging');
+    isDraggingQR = false;
+    document.getElementById('pdfPreviewWrapper').style.borderColor = '#dee2e6';
+    document.getElementById('pdfPreviewWrapper').style.background = '#f8f9fa';
 }
 
-// ==================== PDF DROP ZONE ====================
-const pdfWrapper = document.getElementById('pdfPreviewWrapper');
-
-pdfWrapper.addEventListener('dragover', function(e) {
+function handlePDFDragOver(e) {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'copy';
-    pdfWrapper.style.borderColor = '#007bff';
-    pdfWrapper.style.background = 'rgba(0, 123, 255, 0.05)';
-});
+    e.currentTarget.style.borderColor = '#28a745';
+    e.currentTarget.style.background = 'rgba(40, 167, 69, 0.05)';
+}
 
-pdfWrapper.addEventListener('dragleave', function(e) {
-    pdfWrapper.style.borderColor = '#dee2e6';
-    pdfWrapper.style.background = '#f8f9fa';
-});
+function handlePDFDragLeave(e) {
+    e.currentTarget.style.borderColor = '#dee2e6';
+    e.currentTarget.style.background = '#f8f9fa';
+}
 
-pdfWrapper.addEventListener('drop', function(e) {
+function handlePDFDrop(e) {
     e.preventDefault();
-    pdfWrapper.style.borderColor = '#dee2e6';
-    pdfWrapper.style.background = '#f8f9fa';
+    e.currentTarget.style.borderColor = '#dee2e6';
+    e.currentTarget.style.background = '#f8f9fa';
 
-    const templateId = e.dataTransfer.getData('templateId');
+    const hasQR = e.dataTransfer.getData('qrcode');
 
-    if (!templateId) {
-        console.warn('No template ID in drop data');
+    if (!hasQR) {
+        console.warn('No QR code in drop data');
         return;
     }
 
-    const template = availableTemplates.find(t => t.id == templateId);
-
-    if (!template) {
-        console.error('Template not found:', templateId);
-        return;
-    }
-
-    // Get drop position relative to PDF canvas
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    console.log('Template dropped at:', { x, y });
+    console.log('QR dropped at:', { x, y });
 
-    placeSignatureOnPDF(template, x, y);
-});
+    placeQROnPDF(x, y);
+}
 
-// ==================== SIGNATURE PLACEMENT ====================
-function placeSignatureOnPDF(template, x, y) {
-    // Remove existing signature if any
-    if (placedSignature) {
-        placedSignature.remove();
+// ==================== QR PLACEMENT ====================
+function placeQROnPDF(x, y) {
+    // Remove existing QR if any
+    if (placedQR) {
+        placedQR.remove();
     }
 
-    const overlay = document.getElementById('signatureOverlay');
+    const overlay = document.getElementById('qrOverlay');
 
-    // Create signature element
-    const signatureDiv = document.createElement('div');
-    signatureDiv.className = 'placed-signature selected';
-    signatureDiv.id = 'placedSignature';
-    signatureDiv.dataset.templateId = template.id;
-    signatureDiv.style.left = x + 'px';
-    signatureDiv.style.top = y + 'px';
-    signatureDiv.style.width = '200px';
-    signatureDiv.style.height = '100px';
+    // Create QR element
+    const qrDiv = document.createElement('div');
+    qrDiv.className = 'placed-qr selected';
+    qrDiv.id = 'placedQR';
+    qrDiv.style.left = x + 'px';
+    qrDiv.style.top = y + 'px';
+    qrDiv.style.width = '100px';
+    qrDiv.style.height = '100px';
 
-    // Add signature image
+    // Add QR image
     const img = document.createElement('img');
-    img.src = template.signature_image_url;
-    img.alt = template.name;
-    signatureDiv.appendChild(img);
+    img.src = qrCodeImageSrc;
+    img.alt = 'Verification QR Code';
+    qrDiv.appendChild(img);
 
     // Add delete button
     const deleteBtn = document.createElement('div');
-    deleteBtn.className = 'delete-signature-btn';
+    deleteBtn.className = 'delete-qr-btn';
     deleteBtn.innerHTML = '×';
-    deleteBtn.onclick = removeSignature;
-    signatureDiv.appendChild(deleteBtn);
+    deleteBtn.onclick = removeQR;
+    qrDiv.appendChild(deleteBtn);
 
     // Add resize handles
-    ['nw', 'ne', 'sw', 'se'].forEach(pos => {
+    // ['nw', 'ne', 'sw', 'se'].forEach(pos => {
+    //     const handle = document.createElement('div');
+    //     handle.className = `qr-handles handle-${pos}`;
+    //     qrDiv.appendChild(handle);
+    // });
+
+    // Add resize handles with heigh visibility for better UX
+    ['se'].forEach(pos => {
         const handle = document.createElement('div');
-        handle.className = `signature-handles handle-${pos}`;
-        signatureDiv.appendChild(handle);
+        handle.className = `qr-handles handle-${pos}`;
+        qrDiv.appendChild(handle);
     });
 
-    overlay.appendChild(signatureDiv);
-    placedSignature = signatureDiv;
+
+    overlay.appendChild(qrDiv);
+    placedQR = qrDiv;
 
     // Make draggable and resizable
-    makeSignatureDraggable(signatureDiv);
-    makeSignatureResizable(signatureDiv);
+    makeQRDraggable(qrDiv);
+    makeQRResizable(qrDiv);
 
-    // Show control panel
-    document.getElementById('controlPanel').style.display = 'block';
-
-    // Enable buttons
+    // Enable sign button
     updateButtonStates();
 
-    console.log('Signature placed successfully');
+    // Save to history for undo/redo
+    saveToHistory();
+
+    console.log('QR placed successfully');
 }
 
-function makeSignatureDraggable(element) {
-    let isDragging = false;
-    let currentX;
-    let currentY;
-    let initialX;
-    let initialY;
+// ==================== QR SIZE PRESETS ====================
+function setQRSize(size) {
+    if (!placedQR) {
+        alert('Please place the QR code first.');
+        return;
+    }
 
-    // Mouse events for desktop
-    element.addEventListener('mousedown', function(e) {
-        if (e.target.classList.contains('signature-handles') || e.target.classList.contains('delete-signature-btn')) {
+    currentQRSize = size;
+    const sizeConfig = QR_SIZES[size];
+
+    placedQR.style.width = sizeConfig.width + 'px';
+    placedQR.style.height = sizeConfig.height + 'px';
+
+    // Update active button
+    document.querySelectorAll('.qr-size-btn').forEach(btn => btn.classList.remove('active'));
+    event.target.closest('.qr-size-btn').classList.add('active');
+
+    // Save to history
+    saveToHistory();
+
+    console.log('QR size changed to:', size);
+}
+
+// ==================== RESET QR POSITION ====================
+function resetQRPosition() {
+    if (!placedQR) return;
+
+    // Reset to center of canvas
+    const canvasRect = canvas.getBoundingClientRect();
+    const centerX = (canvasRect.width / 2) - (placedQR.offsetWidth / 2);
+    const centerY = (canvasRect.height / 2) - (placedQR.offsetHeight / 2);
+
+    placedQR.style.left = centerX + 'px';
+    placedQR.style.top = centerY + 'px';
+
+    // Save to history
+    saveToHistory();
+
+    console.log('QR position reset to center');
+}
+
+// ==================== UNDO / REDO FUNCTIONALITY ====================
+function saveToHistory() {
+    if (!placedQR) return;
+
+    const state = {
+        left: placedQR.style.left,
+        top: placedQR.style.top,
+        width: placedQR.style.width,
+        height: placedQR.style.height
+    };
+
+    // Remove all states after current index
+    qrHistory = qrHistory.slice(0, historyIndex + 1);
+
+    // Add new state
+    qrHistory.push(state);
+
+    // Limit history size
+    if (qrHistory.length > MAX_HISTORY) {
+        qrHistory.shift();
+    } else {
+        historyIndex++;
+    }
+
+    updateUndoRedoButtons();
+}
+
+function undo() {
+    if (historyIndex > 0 && placedQR) {
+        historyIndex--;
+        const state = qrHistory[historyIndex];
+        applyHistoryState(state);
+        updateUndoRedoButtons();
+        console.log('Undo applied');
+    }
+}
+
+function redo() {
+    if (historyIndex < qrHistory.length - 1 && placedQR) {
+        historyIndex++;
+        const state = qrHistory[historyIndex];
+        applyHistoryState(state);
+        updateUndoRedoButtons();
+        console.log('Redo applied');
+    }
+}
+
+function applyHistoryState(state) {
+    placedQR.style.left = state.left;
+    placedQR.style.top = state.top;
+    placedQR.style.width = state.width;
+    placedQR.style.height = state.height;
+}
+
+function updateUndoRedoButtons() {
+    document.getElementById('undoBtn').disabled = historyIndex <= 0 || !placedQR;
+    document.getElementById('redoBtn').disabled = historyIndex >= qrHistory.length - 1 || !placedQR;
+}
+
+// ==================== KEYBOARD SHORTCUTS ====================
+function setupKeyboardShortcuts() {
+    document.addEventListener('keydown', function(e) {
+        if (!placedQR) return;
+
+        // Ctrl+Z - Undo
+        if (e.ctrlKey && e.key === 'z') {
+            e.preventDefault();
+            undo();
             return;
         }
 
+        // Ctrl+Y - Redo
+        if (e.ctrlKey && e.key === 'y') {
+            e.preventDefault();
+            redo();
+            return;
+        }
+
+        // Delete - Remove QR
+        if (e.key === 'Delete') {
+            e.preventDefault();
+            removeQR();
+            return;
+        }
+
+        // Arrow keys - Move QR
+        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+            e.preventDefault();
+
+            const step = e.shiftKey ? 10 : 1; // Shift = 10px, normal = 1px
+            const currentLeft = parseInt(placedQR.style.left) || 0;
+            const currentTop = parseInt(placedQR.style.top) || 0;
+
+            switch(e.key) {
+                case 'ArrowUp':
+                    placedQR.style.top = (currentTop - step) + 'px';
+                    break;
+                case 'ArrowDown':
+                    placedQR.style.top = (currentTop + step) + 'px';
+                    break;
+                case 'ArrowLeft':
+                    placedQR.style.left = (currentLeft - step) + 'px';
+                    break;
+                case 'ArrowRight':
+                    placedQR.style.left = (currentLeft + step) + 'px';
+                    break;
+            }
+
+            // Debounced save to history
+            clearTimeout(window.keyboardMoveTimeout);
+            window.keyboardMoveTimeout = setTimeout(() => saveToHistory(), 500);
+        }
+    });
+}
+
+function makeQRDraggable(element) {
+    let isDragging = false;
+    let initialX, initialY;
+
+    element.addEventListener('mousedown', function(e) {
+        if (e.target.classList.contains('qr-handles') || e.target.classList.contains('delete-qr-btn')) {
+            return;
+        }
         isDragging = true;
         initialX = e.clientX - element.offsetLeft;
         initialY = e.clientY - element.offsetTop;
@@ -1351,25 +1456,23 @@ function makeSignatureDraggable(element) {
 
     document.addEventListener('mousemove', function(e) {
         if (!isDragging) return;
-
         e.preventDefault();
-        currentX = e.clientX - initialX;
-        currentY = e.clientY - initialY;
-
-        element.style.left = currentX + 'px';
-        element.style.top = currentY + 'px';
+        element.style.left = (e.clientX - initialX) + 'px';
+        element.style.top = (e.clientY - initialY) + 'px';
     });
 
     document.addEventListener('mouseup', function() {
-        isDragging = false;
+        if (isDragging) {
+            isDragging = false;
+            saveToHistory(); // Save after drag complete
+        }
     });
 
-    // Touch events for mobile
+    // Touch support
     element.addEventListener('touchstart', function(e) {
-        if (e.target.classList.contains('signature-handles') || e.target.classList.contains('delete-signature-btn')) {
+        if (e.target.classList.contains('qr-handles') || e.target.classList.contains('delete-qr-btn')) {
             return;
         }
-
         e.preventDefault();
         isDragging = true;
         const touch = e.touches[0];
@@ -1379,29 +1482,28 @@ function makeSignatureDraggable(element) {
 
     document.addEventListener('touchmove', function(e) {
         if (!isDragging) return;
-
         e.preventDefault();
         const touch = e.touches[0];
-        currentX = touch.clientX - initialX;
-        currentY = touch.clientY - initialY;
-
-        element.style.left = currentX + 'px';
-        element.style.top = currentY + 'px';
+        element.style.left = (touch.clientX - initialX) + 'px';
+        element.style.top = (touch.clientY - initialY) + 'px';
     }, { passive: false });
 
     document.addEventListener('touchend', function() {
-        isDragging = false;
+        if (isDragging) {
+            isDragging = false;
+            saveToHistory(); // Save after drag complete
+        }
     });
 }
 
-function makeSignatureResizable(element) {
-    const handles = element.querySelectorAll('.signature-handles');
+function makeQRResizable(element) {
+    const handles = element.querySelectorAll('.qr-handles');
 
     handles.forEach(handle => {
         let isResizing = false;
         let startX, startY, startWidth, startHeight, startLeft, startTop;
+        let aspectRatio; // ✅ Store aspect ratio
 
-        // Mouse events for desktop
         handle.addEventListener('mousedown', function(e) {
             e.stopPropagation();
             isResizing = true;
@@ -1411,22 +1513,24 @@ function makeSignatureResizable(element) {
             startHeight = parseInt(window.getComputedStyle(element).height, 10);
             startLeft = element.offsetLeft;
             startTop = element.offsetTop;
+
+            // ✅ Calculate and lock aspect ratio (should be 1:1 for QR codes)
+            aspectRatio = startWidth / startHeight;
         });
 
         document.addEventListener('mousemove', function(e) {
             if (!isResizing) return;
-
-            const dx = e.clientX - startX;
-            const dy = e.clientY - startY;
-
-            applyResize(handle, dx, dy);
+            applyResize(e.clientX, e.clientY);
         });
 
         document.addEventListener('mouseup', function() {
-            isResizing = false;
+            if (isResizing) {
+                isResizing = false;
+                saveToHistory();
+            }
         });
 
-        // Touch events for mobile
+        // Touch support
         handle.addEventListener('touchstart', function(e) {
             e.stopPropagation();
             e.preventDefault();
@@ -1438,143 +1542,149 @@ function makeSignatureResizable(element) {
             startHeight = parseInt(window.getComputedStyle(element).height, 10);
             startLeft = element.offsetLeft;
             startTop = element.offsetTop;
+
+            // ✅ Lock aspect ratio for touch
+            aspectRatio = startWidth / startHeight;
         }, { passive: false });
 
         document.addEventListener('touchmove', function(e) {
             if (!isResizing) return;
-
             e.preventDefault();
             const touch = e.touches[0];
-            const dx = touch.clientX - startX;
-            const dy = touch.clientY - startY;
-
-            applyResize(handle, dx, dy);
+            applyResize(touch.clientX, touch.clientY);
         }, { passive: false });
 
         document.addEventListener('touchend', function() {
-            isResizing = false;
+            if (isResizing) {
+                isResizing = false;
+                saveToHistory();
+            }
         });
 
-        // Common resize logic
-        function applyResize(handle, dx, dy) {
-            if (handle.classList.contains('handle-se')) {
-                element.style.width = (startWidth + dx) + 'px';
-                element.style.height = (startHeight + dy) + 'px';
-            } else if (handle.classList.contains('handle-sw')) {
-                element.style.width = (startWidth - dx) + 'px';
-                element.style.height = (startHeight + dy) + 'px';
-                element.style.left = (startLeft + dx) + 'px';
-            } else if (handle.classList.contains('handle-ne')) {
-                element.style.width = (startWidth + dx) + 'px';
-                element.style.height = (startHeight - dy) + 'px';
-                element.style.top = (startTop + dy) + 'px';
-            } else if (handle.classList.contains('handle-nw')) {
-                element.style.width = (startWidth - dx) + 'px';
-                element.style.height = (startHeight - dy) + 'px';
-                element.style.left = (startLeft + dx) + 'px';
-                element.style.top = (startTop + dy) + 'px';
-            }
+        function applyResize(clientX, clientY) {
+            const dx = clientX - startX;
+            const dy = clientY - startY;
 
-            updateControlPanelValues();
+            if (handle.classList.contains('handle-se')) {
+                // ✅ Use the larger delta to maintain square aspect
+                const delta = Math.max(Math.abs(dx), Math.abs(dy));
+                const newSize = startWidth + (dx > 0 ? delta : -delta);
+
+                // ✅ Set minimum and maximum size
+                const minSize = 50;
+                const maxSize = 300;
+                const constrainedSize = Math.max(minSize, Math.min(maxSize, newSize));
+
+                // ✅ Apply same size to width and height (square QR)
+                element.style.width = constrainedSize + 'px';
+                element.style.height = constrainedSize + 'px';
+            }
         }
     });
 }
 
-function removeSignature() {
-    if (placedSignature) {
-        placedSignature.remove();
-        placedSignature = null;
-        document.getElementById('controlPanel').style.display = 'none';
+// function makeQRResizableXX(element) {
+//     const handles = element.querySelectorAll('.qr-handles');
+
+//     handles.forEach(handle => {
+//         let isResizing = false;
+//         let startX, startY, startWidth, startHeight, startLeft, startTop;
+
+//         handle.addEventListener('mousedown', function(e) {
+//             e.stopPropagation();
+//             isResizing = true;
+//             startX = e.clientX;
+//             startY = e.clientY;
+//             startWidth = parseInt(window.getComputedStyle(element).width, 10);
+//             startHeight = parseInt(window.getComputedStyle(element).height, 10);
+//             startLeft = element.offsetLeft;
+//             startTop = element.offsetTop;
+//         });
+
+//         document.addEventListener('mousemove', function(e) {
+//             if (!isResizing) return;
+//             applyResize(e.clientX, e.clientY);
+//         });
+
+//         document.addEventListener('mouseup', function() {
+//             if (isResizing) {
+//                 isResizing = false;
+//                 saveToHistory(); // Save after resize complete
+//             }
+//         });
+
+//         // Touch support
+//         handle.addEventListener('touchstart', function(e) {
+//             e.stopPropagation();
+//             e.preventDefault();
+//             isResizing = true;
+//             const touch = e.touches[0];
+//             startX = touch.clientX;
+//             startY = touch.clientY;
+//             startWidth = parseInt(window.getComputedStyle(element).width, 10);
+//             startHeight = parseInt(window.getComputedStyle(element).height, 10);
+//             startLeft = element.offsetLeft;
+//             startTop = element.offsetTop;
+//         }, { passive: false });
+
+//         document.addEventListener('touchmove', function(e) {
+//             if (!isResizing) return;
+//             e.preventDefault();
+//             const touch = e.touches[0];
+//             applyResize(touch.clientX, touch.clientY);
+//         }, { passive: false });
+
+//         document.addEventListener('touchend', function() {
+//             if (isResizing) {
+//                 isResizing = false;
+//                 saveToHistory(); // Save after resize complete
+//             }
+//         });
+
+//         function applyResize(clientX, clientY) {
+//             const dx = clientX - startX;
+//             const dy = clientY - startY;
+
+//             if (handle.classList.contains('handle-se')) {
+//                 element.style.width = (startWidth + dx) + 'px';
+//                 element.style.height = (startHeight + dy) + 'px';
+//             }else if (handle.classList.contains('handle-sw')) {
+//                 element.style.width = (startWidth - dx) + 'px';
+//                 element.style.height = (startHeight + dy) + 'px';
+//                 element.style.left = (startLeft + dx) + 'px';
+//             } else if (handle.classList.contains('handle-ne')) {
+//                 element.style.width = (startWidth + dx) + 'px';
+//                 element.style.height = (startHeight - dy) + 'px';
+//                 element.style.top = (startTop + dy) + 'px';
+//             } else if (handle.classList.contains('handle-nw')) {
+//                 element.style.width = (startWidth - dx) + 'px';
+//                 element.style.height = (startHeight - dy) + 'px';
+//                 element.style.left = (startLeft + dx) + 'px';
+//                 element.style.top = (startTop + dy) + 'px';
+//             }
+//         }
+//     });
+// }
+
+function removeQR() {
+    if (placedQR) {
+        placedQR.remove();
+        placedQR = null;
+
+        // Clear history
+        qrHistory = [];
+        historyIndex = -1;
+
         updateButtonStates();
-        console.log('Signature removed');
+        updateUndoRedoButtons();
+        console.log('QR removed');
     }
 }
 
-// ==================== CONTROL PANEL ====================
-function setupEventListeners() {
-    // Debounced slider update functions
-    const debouncedWidthUpdate = debounce(function(value) {
-        if (placedSignature) {
-            placedSignature.style.width = value + 'px';
-        }
-    }, 10);
-
-    const debouncedHeightUpdate = debounce(function(value) {
-        if (placedSignature) {
-            placedSignature.style.height = value + 'px';
-        }
-    }, 10);
-
-    const debouncedPositionXUpdate = debounce(function(value) {
-        if (placedSignature) {
-            const canvasWidth = canvas.width;
-            const sigWidth = placedSignature.offsetWidth;
-            const maxX = canvasWidth - sigWidth;
-            const x = (value / 100) * maxX;
-            placedSignature.style.left = x + 'px';
-        }
-    }, 10);
-
-    const debouncedPositionYUpdate = debounce(function(value) {
-        if (placedSignature) {
-            const canvasHeight = canvas.height;
-            const sigHeight = placedSignature.offsetHeight;
-            const maxY = canvasHeight - sigHeight;
-            const y = (value / 100) * maxY;
-            placedSignature.style.top = y + 'px';
-        }
-    }, 10);
-
-    // Width slider
-    document.getElementById('widthSlider').addEventListener('input', function(e) {
-        document.getElementById('widthValue').textContent = e.target.value;
-        debouncedWidthUpdate(e.target.value);
-    });
-
-    // Height slider
-    document.getElementById('heightSlider').addEventListener('input', function(e) {
-        document.getElementById('heightValue').textContent = e.target.value;
-        debouncedHeightUpdate(e.target.value);
-    });
-
-    // Position X slider
-    document.getElementById('positionXSlider').addEventListener('input', function(e) {
-        document.getElementById('positionXValue').textContent = e.target.value;
-        debouncedPositionXUpdate(e.target.value);
-    });
-
-    // Position Y slider
-    document.getElementById('positionYSlider').addEventListener('input', function(e) {
-        document.getElementById('positionYValue').textContent = e.target.value;
-        debouncedPositionYUpdate(e.target.value);
-    });
-
-    // Confirm checkbox
-    document.getElementById('confirmSignature').addEventListener('change', updateButtonStates);
-}
-
-function updateControlPanelValues() {
-    if (!placedSignature) return;
-
-    document.getElementById('widthSlider').value = placedSignature.offsetWidth;
-    document.getElementById('widthValue').textContent = placedSignature.offsetWidth;
-
-    document.getElementById('heightSlider').value = placedSignature.offsetHeight;
-    document.getElementById('heightValue').textContent = placedSignature.offsetHeight;
-}
-
-function updateButtonStates() {
-    const hasSignature = placedSignature !== null;
-    const isConfirmed = document.getElementById('confirmSignature').checked;
-
-    document.getElementById('previewBtn').disabled = !hasSignature;
-    document.getElementById('signBtn').disabled = !hasSignature || !isConfirmed;
-}
-
-// ==================== PREVIEW & SIGNING ====================
-function previewSignature() {
-    if (!placedSignature) {
-        alert('Please place a signature template first.');
+// ==================== PREVIEW FUNCTIONALITY ====================
+function showPreview() {
+    if (!placedQR) {
+        alert('Please place the QR code first.');
         return;
     }
 
@@ -1591,11 +1701,11 @@ function previewSignature() {
     // Draw PDF
     previewCtx.drawImage(canvas, 0, 0);
 
-    // Draw signature overlay
+    // Draw QR overlay
     const img = new Image();
-    img.src = placedSignature.querySelector('img').src;
+    img.src = placedQR.querySelector('img').src;
     img.onload = function() {
-        const rect = placedSignature.getBoundingClientRect();
+        const rect = placedQR.getBoundingClientRect();
         const canvasRect = canvas.getBoundingClientRect();
 
         const x = rect.left - canvasRect.left;
@@ -1607,28 +1717,55 @@ function previewSignature() {
     };
 
     // Show modal
-    new bootstrap.Modal(document.getElementById('previewModal')).show();
+    document.getElementById('previewModal').classList.add('active');
 }
 
-function confirmSigning() {
-    // Close preview modal
-    bootstrap.Modal.getInstance(document.getElementById('previewModal')).hide();
-
-    // Show loading
-    document.getElementById('loadingOverlay').classList.add('active');
-
-    // Sign document
-    signDocument();
+function hidePreview(event) {
+    if (event && event.target !== event.currentTarget) return;
+    document.getElementById('previewModal').classList.remove('active');
 }
 
-async function signDocument() {
-    if (!placedSignature) {
-        alert('Please place a signature template first.');
+// ==================== CONFIRMATION & SIGNING ====================
+function confirmAndSign() {
+    if (!placedQR) {
+        alert('Please place the QR code on the document first.');
         return;
     }
 
     if (!document.getElementById('confirmSignature').checked) {
-        alert('Please confirm your signature placement.');
+        alert('Please confirm your QR code placement by checking the confirmation box.');
+        return;
+    }
+
+    // Show confirmation dialog
+    if (confirm('Are you sure you want to sign this document? A unique encryption key will be generated and the document will be permanently signed.')) {
+        signDocument();
+    }
+}
+
+// ==================== EVENT LISTENERS ====================
+function setupEventListeners() {
+    document.getElementById('confirmSignature').addEventListener('change', updateButtonStates);
+}
+
+function updateButtonStates() {
+    const hasQR = placedQR !== null;
+    const isConfirmed = document.getElementById('confirmSignature').checked;
+
+    document.getElementById('previewBtn').disabled = !hasQR;
+    document.getElementById('signBtn').disabled = !hasQR || !isConfirmed;
+    document.getElementById('resetQRBtn').disabled = !hasQR;
+}
+
+// ==================== SIGNING ====================
+async function signDocument() {
+    if (!placedQR) {
+        alert('Please place the QR code on the document first.');
+        return;
+    }
+
+    if (!document.getElementById('confirmSignature').checked) {
+        alert('Please confirm your QR code placement.');
         return;
     }
 
@@ -1637,12 +1774,11 @@ async function signDocument() {
 
         document.getElementById('loadingOverlay').classList.add('active');
 
-        // Get positioning data
-        const rect = placedSignature.getBoundingClientRect();
+        // Get QR positioning data
+        const rect = placedQR.getBoundingClientRect();
         const canvasRect = canvas.getBoundingClientRect();
 
-        const positioningData = {
-            template_id: parseInt(placedSignature.dataset.templateId),
+        const qrPositioningData = {
             page: currentPage,
             position: {
                 x: rect.left - canvasRect.left,
@@ -1658,12 +1794,11 @@ async function signDocument() {
             }
         };
 
-        console.log('Positioning data:', positioningData);
+        console.log('QR positioning data:', qrPositioningData);
 
         // Prepare form data
         const formData = new FormData();
-        formData.append('template_id', positioningData.template_id);
-        formData.append('positioning_data', JSON.stringify(positioningData));
+        formData.append('qr_positioning_data', JSON.stringify(qrPositioningData));
         formData.append('_token', document.querySelector('meta[name="csrf-token"]').content);
 
         // Submit
@@ -1677,7 +1812,7 @@ async function signDocument() {
         document.getElementById('loadingOverlay').classList.remove('active');
 
         if (data.success) {
-            alert('Document signed successfully!');
+            alert('Document signed successfully with unique encryption key!');
             window.location.href = '{{ route("user.signature.approval.status") }}';
         } else {
             throw new Error(data.error || 'Signing failed');
@@ -1691,14 +1826,14 @@ async function signDocument() {
 }
 
 function goBack() {
-    if (confirm('Are you sure you want to go back? Your signature placement will be lost.')) {
+    if (confirm('Are you sure you want to go back? Your QR placement will be lost.')) {
         window.location.href = '{{ route("user.signature.approval.status") }}';
     }
 }
 
 // Prevent accidental page reload
 window.addEventListener('beforeunload', function(e) {
-    if (placedSignature) {
+    if (placedQR) {
         e.preventDefault();
         e.returnValue = '';
         return '';

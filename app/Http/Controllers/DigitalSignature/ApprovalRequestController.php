@@ -139,8 +139,8 @@ class ApprovalRequestController extends Controller
             'document_type' => 'required|string|max:255',
             'document' => 'required|file|mimes:pdf|max:25600', // max file size 25MB
             'notes' => 'required|string|max:1000', // Ubah menjadi required sesuai form
-            'priority' => 'nullable|in:low,normal,high,urgent',
-            'deadline' => 'nullable|date|after:today'
+            // 'priority' => 'nullable|in:low,normal,high,urgent',
+            // 'deadline' => 'nullable|date|after:today'
         ], [
             // Custom error messages
             'document_name.required' => 'Please select a document type.',
@@ -150,9 +150,9 @@ class ApprovalRequestController extends Controller
             'document.max' => 'File size cannot exceed 25MB.',
             'notes.required' => 'Please provide a description for your request.',
             'notes.max' => 'Description cannot exceed 1000 characters.',
-            'deadline.date' => 'Please provide a valid date.',
-            'deadline.after' => 'Deadline must be after today.',
-            'priority.in' => 'Invalid priority level selected.'
+            // 'deadline.date' => 'Please provide a valid date.',
+            // 'deadline.after' => 'Deadline must be after today.',
+            // 'priority.in' => 'Invalid priority level selected.'
         ]);
 
         // Debug: Log validation results
@@ -222,9 +222,9 @@ class ApprovalRequestController extends Controller
                 'document_path' => $documentPath,
                 'status' => ApprovalRequest::STATUS_PENDING,
                 'notes' => $request->input('notes'),
-                'priority' => $request->input('priority', ApprovalRequest::PRIORITY_NORMAL),
-                'deadline' => $request->input('deadline'),
-                'department' => 'Teknik Informatika'
+                // 'priority' => $request->input('priority', ApprovalRequest::PRIORITY_NORMAL),
+                // 'deadline' => $request->input('deadline'),
+                // 'department' => 'Teknik Informatika'
             ]);
 
             // Generate document hash for future integrity verification
@@ -309,14 +309,14 @@ class ApprovalRequestController extends Controller
                 $query->where('status', $request->status);
             }
 
-            if ($request->filled('priority')) {
-                $query->where('priority', $request->priority);
-            }
+            // if ($request->filled('priority')) {
+            //     $query->where('priority', $request->priority);
+            // }
 
             if ($request->filled('search')) {
                 $query->where(function ($q) use ($request) {
                     $q->where('document_name', 'like', '%' . $request->search . '%')
-                      ->orWhere('nomor', 'like', '%' . $request->search . '%')
+                    //   ->orWhere('nomor', 'like', '%' . $request->search . '%')
                       ->orWhereHas('user', function ($subQ) use ($request) {
                           $subQ->where('name', 'like', '%' . $request->search . '%');
                       });
@@ -330,9 +330,9 @@ class ApprovalRequestController extends Controller
                 'pending' => ApprovalRequest::pendingApproval()->count(),
                 'approved' => ApprovalRequest::byStatus(ApprovalRequest::STATUS_APPROVED)->count(),
                 'user_signed' => ApprovalRequest::byStatus(ApprovalRequest::STATUS_USER_SIGNED)->count(),
-                'completed' => ApprovalRequest::completed()->count(),
+                // 'completed' => ApprovalRequest::completed()->count(),
                 'rejected' => ApprovalRequest::byStatus(ApprovalRequest::STATUS_REJECTED)->count(),
-                'overdue' => ApprovalRequest::overdue()->count()
+                // 'overdue' => ApprovalRequest::overdue()->count()
             ];
 
             return view('digital-signature.admin.approval-requests.index', compact('approvalRequests', 'statistics'));

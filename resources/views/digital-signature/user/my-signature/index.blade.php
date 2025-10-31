@@ -128,10 +128,10 @@
                         <!-- Document Number & Signature ID -->
                         <div class="mb-3">
                             <div class="row">
-                                <div class="col-6">
+                                {{-- <div class="col-6">
                                     <strong class="small">Document Number:</strong><br>
                                     <code class="small">{{ $signature->approvalRequest->full_document_number }}</code>
-                                </div>
+                                </div> --}}
                                 <div class="col-6">
                                     <strong class="small">Signature ID:</strong><br>
                                     <code class="small">{{ $signature->digitalSignature->signature_id ?? 'N/A' }}</code>
@@ -165,12 +165,14 @@
                             <div class="col-6">
                                 <strong class="small">Signed By:</strong><br>
                                 <small class="text-muted">
-                                    @if($signature->signer)
+                                    {{-- sign by system --}}
+                                    <span class="text-muted">Signed by System</span>
+                                    {{-- @if($signature->signer)
                                         {{ $signature->signer->name }}<br>
                                         <span class="text-muted" style="font-size: 0.75rem;">NIDN: {{ $signature->signer->NIDN ?? '-' }}</span>
                                     @else
                                         <span class="text-muted">Not signed yet</span>
-                                    @endif
+                                    @endif --}}
                                 </small>
                             </div>
                             <div class="col-6">

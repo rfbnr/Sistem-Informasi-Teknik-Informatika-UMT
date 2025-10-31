@@ -594,18 +594,18 @@ $(document).ready(function() {
     console.log('Document ready, initializing form...');
 
     // Priority selection
-    $('.priority-option').click(function() {
-        $('.priority-option').removeClass('active');
-        $(this).addClass('active');
-        const radioId = $(this).attr('for');
-        $('#' + radioId).prop('checked', true);
-        console.log('Priority selected:', $('#' + radioId).val());
-    });
+    // $('.priority-option').click(function() {
+    //     $('.priority-option').removeClass('active');
+    //     $(this).addClass('active');
+    //     const radioId = $(this).attr('for');
+    //     $('#' + radioId).prop('checked', true);
+    //     console.log('Priority selected:', $('#' + radioId).val());
+    // });
 
-    // Set initial active priority
-    $('input[name="priority"]:checked').each(function() {
-        $('label[for="' + this.id + '"]').addClass('active');
-    });
+    // // Set initial active priority
+    // $('input[name="priority"]:checked').each(function() {
+    //     $('label[for="' + this.id + '"]').addClass('active');
+    // });
 
     // File upload handling - DIPERBAIKI
     const dropzone = document.getElementById('dropzone');
@@ -862,9 +862,9 @@ function resetForm() {
     console.log('Resetting form...');
     document.getElementById('uploadForm').reset();
     removeFile();
-    $('.priority-option').removeClass('active');
-    $('#priority-normal').prop('checked', true);
-    $('label[for="priority-normal"]').addClass('active');
+    // $('.priority-option').removeClass('active');
+    // $('#priority-normal').prop('checked', true);
+    // $('label[for="priority-normal"]').addClass('active');
 
     // Reset submit button
     $('#submitBtn').prop('disabled', false).html('<i class="fas fa-paper-plane me-1"></i> Submit Request');

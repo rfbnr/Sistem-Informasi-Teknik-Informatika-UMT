@@ -18,7 +18,7 @@
     </li>
 
     <!-- Key Management -->
-    <li class="nav-item">
+    {{-- <li class="nav-item">
         <a class="nav-link {{ request()->routeIs('admin.signature.keys.index') || request()->routeIs('admin.signature.keys.view') ? 'active' : '' }}"
            href="{{ route('admin.signature.keys.index') }}">
             <i class="fas fa-key me-2"></i>
@@ -27,7 +27,7 @@
                 <span class="badge bg-warning rounded-pill ms-auto">{{ $stats['expired_signatures'] }}</span>
             @endif
         </a>
-    </li>
+    </li> --}}
 
     <!-- Document Management -->
     <li class="nav-item">
@@ -57,13 +57,13 @@
     </li>
 
     <!-- Templates -->
-    <li class="nav-item">
+    {{-- <li class="nav-item">
         <a class="nav-link {{ request()->routeIs('admin.signature.templates.*') ? 'active' : '' }}"
            href="{{ route('admin.signature.templates.index') }}">
             <i class="fas fa-palette me-2"></i>
             Signature Templates
         </a>
-    </li>
+    </li> --}}
 
     <!-- Verification Tools -->
     {{-- <li class="nav-item">

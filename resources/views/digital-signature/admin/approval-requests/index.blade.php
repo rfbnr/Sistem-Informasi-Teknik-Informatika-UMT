@@ -89,7 +89,7 @@
     <div class="card mb-4">
         <div class="card-body">
             <form method="GET" action="{{ route('admin.signature.approval.index') }}" class="row g-3">
-                <div class="col-md-4">
+                <div class="col-md-6">
                     <div class="input-group">
                         <span class="input-group-text"><i class="fas fa-search"></i></span>
                         <input type="text" class="form-control" name="search"
@@ -103,11 +103,11 @@
                         <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
                         <option value="approved" {{ request('status') == 'approved' ? 'selected' : '' }}>Approved</option>
                         <option value="user_signed" {{ request('status') == 'user_signed' ? 'selected' : '' }}>User Signed</option>
-                        <option value="sign_approved" {{ request('status') == 'sign_approved' ? 'selected' : '' }}>Sign Approved</option>
+                        {{-- <option value="sign_approved" {{ request('status') == 'sign_approved' ? 'selected' : '' }}>Sign Approved</option> --}}
                         <option value="rejected" {{ request('status') == 'rejected' ? 'selected' : '' }}>Rejected</option>
                     </select>
                 </div>
-                <div class="col-md-2">
+                {{-- <div class="col-md-2">
                     <select class="form-select" name="priority">
                         <option value="">All Priority</option>
                         <option value="low" {{ request('priority') == 'low' ? 'selected' : '' }}>Low</option>
@@ -115,7 +115,7 @@
                         <option value="high" {{ request('priority') == 'high' ? 'selected' : '' }}>High</option>
                         <option value="urgent" {{ request('priority') == 'urgent' ? 'selected' : '' }}>Urgent</option>
                     </select>
-                </div>
+                </div> --}}
                 <div class="col-md-2">
                     <button type="submit" class="btn btn-primary w-100">
                         <i class="fas fa-filter"></i> Filter
@@ -152,7 +152,7 @@
                                 <th>Type</th>
                                 <th>Submitted By</th>
                                 <th>Date</th>
-                                <th>Priority</th>
+                                {{-- <th>Priority</th> --}}
                                 <th>Status</th>
                                 <th width="180">Actions</th>
                             </tr>
@@ -209,7 +209,7 @@
                                         </div>
                                     @endif
                                 </td>
-                                <td>
+                                {{-- <td>
                                     @php
                                         $priorityColors = [
                                             'low' => 'secondary',
@@ -222,7 +222,7 @@
                                     <span class="badge bg-{{ $priorityColor }}">
                                         {{ ucfirst($request->priority ?? 'Normal') }}
                                     </span>
-                                </td>
+                                </td> --}}
                                 <td>
                                     <span class="status-badge status-{{ str_replace('_', '-', strtolower($request->status)) }}">
                                         {{ str_replace('_', ' ', ucfirst($request->status)) }}

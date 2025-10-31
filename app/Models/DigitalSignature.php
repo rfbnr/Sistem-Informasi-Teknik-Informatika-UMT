@@ -14,6 +14,7 @@ class DigitalSignature extends Model
 
     protected $fillable = [
         'signature_id',
+        'document_signature_id', // NEW: 1-to-1 relationship
         'public_key',
         'private_key',
         'algorithm',
@@ -24,8 +25,6 @@ class DigitalSignature extends Model
         'status',
         'revocation_reason',
         'revoked_at',
-        'created_by',
-        'signature_purpose',
         'metadata'
     ];
 
@@ -65,19 +64,14 @@ class DigitalSignature extends Model
     }
 
     /**
-     * Relasi ke User (creator)
+     * REFACTORED: 1-to-1 relationship with DocumentSignature
+     * Each key is unique per document
      */
-    public function creator()
+    public function documentSignature()
     {
-        return $this->belongsTo(Kaprodi::class, 'created_by');
-    }
-
-    /**
-     * Relasi ke DocumentSignature
-     */
-    public function documentSignatures()
-    {
-        return $this->hasMany(DocumentSignature::class);
+        // return $this->belongsTo(DocumentSignature::class, 'document_signature_id');
+        return $this->belongsTo(DocumentSignature::class);
+        // return $this->hasOne(DocumentSignature::class);
     }
 
     /**
@@ -99,7 +93,7 @@ class DigitalSignature extends Model
     }
 
     /**
-     * Revoke signature
+     * Revoke signature (per-document basis now)
      */
     public function revoke($reason = null)
     {
@@ -120,12 +114,12 @@ class DigitalSignature extends Model
             'revoked_by' => Auth::user()->name ?? 'System',
             'algorithm' => $this->algorithm,
             'key_length' => $this->key_length,
-            'affected_documents' => $this->documentSignatures()->count(),
+            'document_signature_id' => $this->document_signature_id,
             'was_valid_until' => $this->valid_until?->toDateString(),
         ]);
 
         SignatureAuditLog::create([
-            'user_id' => Auth::id(),
+            'kaprodi_id' => Auth::guard('kaprodi')->id(),
             'action' => SignatureAuditLog::ACTION_SIGNATURE_KEY_REVOKED,
             'status_from' => self::STATUS_ACTIVE,
             'status_to' => self::STATUS_REVOKED,
@@ -140,65 +134,65 @@ class DigitalSignature extends Model
     /**
      * Generate RSA Key Pair
      */
-    public static function generateKeyPair($keyLength = 2048)
-    {
-        try {
-            $config = [
-                "digest_alg" => "sha256",
-                "private_key_bits" => $keyLength,
-                "private_key_type" => OPENSSL_KEYTYPE_RSA,
-            ];
+    // public static function generateKeyPair($keyLength = 2048)
+    // {
+    //     try {
+    //         $config = [
+    //             "digest_alg" => "sha256",
+    //             "private_key_bits" => $keyLength,
+    //             "private_key_type" => OPENSSL_KEYTYPE_RSA,
+    //         ];
 
-            $privateKey = openssl_pkey_new($config);
-            if (!$privateKey) {
-                throw new \Exception('Failed to generate private key: ' . openssl_error_string());
-            }
+    //         $privateKey = openssl_pkey_new($config);
+    //         if (!$privateKey) {
+    //             throw new \Exception('Failed to generate private key: ' . openssl_error_string());
+    //         }
 
-            $publicKey = openssl_pkey_get_details($privateKey);
-            if (!$publicKey) {
-                throw new \Exception('Failed to extract public key: ' . openssl_error_string());
-            }
+    //         $publicKey = openssl_pkey_get_details($privateKey);
+    //         if (!$publicKey) {
+    //             throw new \Exception('Failed to extract public key: ' . openssl_error_string());
+    //         }
 
-            $privateKeyPem = '';
-            if (!openssl_pkey_export($privateKey, $privateKeyPem)) {
-                throw new \Exception('Failed to export private key: ' . openssl_error_string());
-            }
+    //         $privateKeyPem = '';
+    //         if (!openssl_pkey_export($privateKey, $privateKeyPem)) {
+    //             throw new \Exception('Failed to export private key: ' . openssl_error_string());
+    //         }
 
-            return [
-                'private_key' => $privateKeyPem,
-                'public_key' => $publicKey['key'],
-                'key_length' => $publicKey['bits']
-            ];
-        } catch (\Exception $e) {
-            Log::error('RSA Key Generation Failed: ' . $e->getMessage());
-            throw $e;
-        }
-    }
+    //         return [
+    //             'private_key' => $privateKeyPem,
+    //             'public_key' => $publicKey['key'],
+    //             'key_length' => $publicKey['bits']
+    //         ];
+    //     } catch (\Exception $e) {
+    //         Log::error('RSA Key Generation Failed: ' . $e->getMessage());
+    //         throw $e;
+    //     }
+    // }
 
     /**
      * Create new digital signature dengan auto key generation
      */
-    public static function createSignature($purpose = 'Document Signing', $createdBy = null, $validityYears = 1)
-    {
-        $keyPair = self::generateKeyPair();
+    // public static function createSignature($purpose = 'Document Signing', $createdBy = null, $validityYears = 1)
+    // {
+    //     $keyPair = self::generateKeyPair();
 
-        dd(now()->addYears($validityYears));
+    //     dd(now()->addYears($validityYears));
 
-        return self::create([
-            'public_key' => $keyPair['public_key'],
-            'private_key' => $keyPair['private_key'],
-            'algorithm' => 'RSA-SHA256',
-            'key_length' => $keyPair['key_length'],
-            'signature_purpose' => $purpose,
-            'created_by' => $createdBy ?? Auth::id(),
-            'valid_from' => now(),
-            'valid_until' => now()->addYears($validityYears),
-            'metadata' => [
-                'created_ip' => request()->ip(),
-                'created_user_agent' => request()->userAgent()
-            ]
-        ]);
-    }
+    //     return self::create([
+    //         'public_key' => $keyPair['public_key'],
+    //         'private_key' => $keyPair['private_key'],
+    //         'algorithm' => 'RSA-SHA256',
+    //         'key_length' => $keyPair['key_length'],
+    //         'signature_purpose' => $purpose,
+    //         'created_by' => $createdBy ?? Auth::id(),
+    //         'valid_from' => now(),
+    //         'valid_until' => now()->addYears($validityYears),
+    //         'metadata' => [
+    //             'created_ip' => request()->ip(),
+    //             'created_user_agent' => request()->userAgent()
+    //         ]
+    //     ]);
+    // }
 
     /**
      * Encrypt private key untuk storage
@@ -222,16 +216,20 @@ class DigitalSignature extends Model
     }
 
     /**
-     * Get signature statistics
+     * Get signature info (refactored for 1-to-1)
      */
-    public function getUsageStats()
+    public function getSignatureInfo()
     {
         return [
-            'total_documents_signed' => $this->documentSignatures()->count(),
-            'successful_signatures' => $this->documentSignatures()->where('signature_status', 'verified')->count(),
-            'pending_signatures' => $this->documentSignatures()->where('signature_status', 'pending')->count(),
-            'last_used' => $this->documentSignatures()->latest('signed_at')->first()?->signed_at,
-            'days_until_expiry' => now()->diffInDays($this->valid_until, false)
+            'signature_id' => $this->signature_id,
+            'algorithm' => $this->algorithm,
+            'key_length' => $this->key_length,
+            'status' => $this->status,
+            'valid_from' => $this->valid_from,
+            'valid_until' => $this->valid_until,
+            'days_until_expiry' => now()->diffInDays($this->valid_until, false),
+            'is_valid' => $this->isValid(),
+            'document_signature_id' => $this->document_signature_id
         ];
     }
 
@@ -259,27 +257,27 @@ class DigitalSignature extends Model
     /**
      * Validate RSA key pair
      */
-    public function validateKeyPair()
-    {
-        try {
-            $testData = 'test signature validation';
-            $signature = '';
+    // public function validateKeyPair()
+    // {
+    //     try {
+    //         $testData = 'test signature validation';
+    //         $signature = '';
 
-            // Test signing
-            $result = openssl_sign($testData, $signature, $this->private_key, OPENSSL_ALGO_SHA256);
-            if (!$result) {
-                return false;
-            }
+    //         // Test signing
+    //         $result = openssl_sign($testData, $signature, $this->private_key, OPENSSL_ALGO_SHA256);
+    //         if (!$result) {
+    //             return false;
+    //         }
 
-            // Test verification
-            $result = openssl_verify($testData, $signature, $this->public_key, OPENSSL_ALGO_SHA256);
-            return $result === 1;
+    //         // Test verification
+    //         $result = openssl_verify($testData, $signature, $this->public_key, OPENSSL_ALGO_SHA256);
+    //         return $result === 1;
 
-        } catch (\Exception $e) {
-            Log::error('Key pair validation failed for signature ID: ' . $this->signature_id . ' - ' . $e->getMessage());
-            return false;
-        }
-    }
+    //     } catch (\Exception $e) {
+    //         Log::error('Key pair validation failed for signature ID: ' . $this->signature_id . ' - ' . $e->getMessage());
+    //         return false;
+    //     }
+    // }
 
     /**
      * Get fingerprint dari public key

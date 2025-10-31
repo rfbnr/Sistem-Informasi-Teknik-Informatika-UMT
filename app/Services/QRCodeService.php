@@ -180,59 +180,59 @@ class QRCodeService
         // ═══════════════════════════════════════════════════════════════════
         // STEP 0: Get DigitalSignature & Calculate Dynamic Expiration
         // ═══════════════════════════════════════════════════════════════════
-        $digitalSignature = $documentSignature->digitalSignature;
+        // $digitalSignature = $documentSignature->digitalSignature;
 
-        if (!$digitalSignature) {
-            Log::error('Digital signature not found for document signature', [
-                'document_signature_id' => $documentSignature->id
-            ]);
-            throw new \Exception('Digital signature not found. Cannot create verification QR code.');
-        }
+        // if (!$digitalSignature) {
+        //     Log::error('Digital signature not found for document signature', [
+        //         'document_signature_id' => $documentSignature->id
+        //     ]);
+        //     throw new \Exception('Digital signature not found. Cannot create verification QR code.');
+        // }
 
-        // Validate digital signature status
-        if ($digitalSignature->status === 'revoked') {
-            Log::warning('Attempting to create QR for revoked digital signature', [
-                'digital_signature_id' => $digitalSignature->id,
-                'revoked_at' => $digitalSignature->revoked_at,
-                'revocation_reason' => $digitalSignature->revocation_reason
-            ]);
-            throw new \Exception('Cannot create QR code: Digital signature has been revoked.');
-        }
+        // // Validate digital signature status
+        // if ($digitalSignature->status === 'revoked') {
+        //     Log::warning('Attempting to create QR for revoked digital signature', [
+        //         'digital_signature_id' => $digitalSignature->id,
+        //         'revoked_at' => $digitalSignature->revoked_at,
+        //         'revocation_reason' => $digitalSignature->revocation_reason
+        //     ]);
+        //     throw new \Exception('Cannot create QR code: Digital signature has been revoked.');
+        // }
 
-        if ($digitalSignature->valid_until < now()) {
-            Log::warning('Attempting to create QR for expired digital signature', [
-                'digital_signature_id' => $digitalSignature->id,
-                'expired_at' => $digitalSignature->valid_until
-            ]);
-            throw new \Exception('Cannot create QR code: Digital signature has expired.');
-        }
+        // if ($digitalSignature->valid_until < now()) {
+        //     Log::warning('Attempting to create QR for expired digital signature', [
+        //         'digital_signature_id' => $digitalSignature->id,
+        //         'expired_at' => $digitalSignature->valid_until
+        //     ]);
+        //     throw new \Exception('Cannot create QR code: Digital signature has expired.');
+        // }
 
         // Calculate dynamic expiration: minimum of signature validity or 5 years
-        $signatureExpiry = $digitalSignature->valid_until;
-        $defaultExpiry = now()->addYears(5);
+        // $signatureExpiry = $digitalSignature->valid_until;
+        $defaultExpiry = now()->addYears(3);
 
         // Use the earlier date (minimum)
-        $expiresAt = $signatureExpiry < $defaultExpiry
-            ? $signatureExpiry
-            : $defaultExpiry;
-        // $expiresAt = $defaultExpiry;
+        // $expiresAt = $signatureExpiry < $defaultExpiry
+        //     ? $signatureExpiry
+        //     : $defaultExpiry;
+        $expiresAt = $defaultExpiry;
 
         // Ensure expiration is not in the past
         if ($expiresAt < now()) {
             Log::error('Calculated expiration is in the past', [
                 'expires_at' => $expiresAt->toDateTimeString(),
-                'digital_signature_id' => $digitalSignature->id
+                // 'digital_signature_id' => $digitalSignature->id
             ]);
             throw new \Exception('Cannot create QR code: Calculated expiration date is in the past.');
         }
 
         Log::info('QR code expiration calculated dynamically', [
             'document_signature_id' => $documentSignature->id,
-            'digital_signature_id' => $digitalSignature->id,
-            'signature_expiry' => $signatureExpiry->toDateTimeString(),
+            // 'digital_signature_id' => $digitalSignature->id,
+            // 'signature_expiry' => $signatureExpiry->toDateTimeString(),
             'default_expiry' => $defaultExpiry->toDateTimeString(),
             'chosen_expiry' => $expiresAt->toDateTimeString(),
-            'expiry_reason' => $signatureExpiry < $defaultExpiry ? 'signature_validity' : 'default_cap',
+            // 'expiry_reason' => $signatureExpiry < $defaultExpiry ? 'signature_validity' : 'default_cap',
             'days_until_expiry' => now()->diffInDays($expiresAt)
         ]);
 
@@ -511,39 +511,39 @@ class QRCodeService
     /**
      * Get QR code positioning data untuk canvas
      */
-    public function getQRPositioningData($templateId = null)
-    {
-        // Default positioning
-        $defaultPositioning = [
-            'qr_position' => ['x' => 50, 'y' => 50],
-            'qr_size' => 150,
-            'qr_style' => [
-                'border' => true,
-                'border_color' => '#000000',
-                'border_width' => 2,
-                'background' => '#ffffff'
-            ]
-        ];
+    // public function getQRPositioningData($templateId = null)
+    // {
+    //     // Default positioning
+    //     $defaultPositioning = [
+    //         'qr_position' => ['x' => 50, 'y' => 50],
+    //         'qr_size' => 150,
+    //         'qr_style' => [
+    //             'border' => true,
+    //             'border_color' => '#000000',
+    //             'border_width' => 2,
+    //             'background' => '#ffffff'
+    //         ]
+    //     ];
 
-        if ($templateId) {
-            // Get positioning dari template jika ada
-            try {
-                $template = \App\Models\SignatureTemplate::find($templateId);
-                if ($template && isset($template->layout_config['barcode_position'])) {
-                    $barcodePos = $template->layout_config['barcode_position'];
-                    return [
-                        'qr_position' => ['x' => $barcodePos['x'], 'y' => $barcodePos['y']],
-                        'qr_size' => min($barcodePos['width'], $barcodePos['height']),
-                        'qr_style' => $template->style_config['qr_code'] ?? $defaultPositioning['qr_style']
-                    ];
-                }
-            } catch (\Exception $e) {
-                Log::warning('Failed to get template positioning data: ' . $e->getMessage());
-            }
-        }
+    //     if ($templateId) {
+    //         // Get positioning dari template jika ada
+    //         try {
+    //             $template = \App\Models\SignatureTemplate::find($templateId);
+    //             if ($template && isset($template->layout_config['barcode_position'])) {
+    //                 $barcodePos = $template->layout_config['barcode_position'];
+    //                 return [
+    //                     'qr_position' => ['x' => $barcodePos['x'], 'y' => $barcodePos['y']],
+    //                     'qr_size' => min($barcodePos['width'], $barcodePos['height']),
+    //                     'qr_style' => $template->style_config['qr_code'] ?? $defaultPositioning['qr_style']
+    //                 ];
+    //             }
+    //         } catch (\Exception $e) {
+    //             Log::warning('Failed to get template positioning data: ' . $e->getMessage());
+    //         }
+    //     }
 
-        return $defaultPositioning;
-    }
+    //     return $defaultPositioning;
+    // }
 
     /**
      * Generate QR code untuk email attachment
