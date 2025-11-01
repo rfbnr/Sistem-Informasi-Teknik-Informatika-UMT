@@ -893,8 +893,9 @@
             <strong>Document Details:</strong>
             <ul class="list-unstyled mt-2">
                 <li><strong>Document:</strong> {{ $approvalRequest->document_name }}</li>
-                <li><strong>Number:</strong> {{ $approvalRequest->full_document_number }}</li>
-                <li><strong>Signer:</strong> {{ auth()->user()->name }}</li>
+                {{-- <li><strong>Number:</strong> {{ $approvalRequest->full_document_number }}</li> --}}
+                {{-- <li><strong>Signer:</strong> {{ auth()->user()->name }}</li> --}}
+                <li><strong>Signer:</strong> {{ $approvalRequest->approver->name }}</li>
                 <li><strong>Signing Time:</strong> <span id="signingTimestamp"></span></li>
                 <li><strong>Encryption:</strong> RSA-2048 with SHA-256 (Unique key per document)</li>
             </ul>

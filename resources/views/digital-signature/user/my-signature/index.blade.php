@@ -147,7 +147,7 @@
                                     <i class="fas fa-file-alt me-1"></i>{{ $signature->approvalRequest->document_type }}
                                 </span>
                             @endif
-                            @if($signature->approvalRequest->priority)
+                            {{-- @if($signature->approvalRequest->priority)
                                 <span class="badge
                                     @if($signature->approvalRequest->priority === 'urgent') bg-danger
                                     @elseif($signature->approvalRequest->priority === 'high') bg-warning
@@ -156,7 +156,7 @@
                                     @endif">
                                     <i class="fas fa-flag me-1"></i>{{ ucfirst($signature->approvalRequest->priority) }}
                                 </span>
-                            @endif
+                            @endif --}}
                         </div>
                         @endif
 
@@ -166,13 +166,13 @@
                                 <strong class="small">Signed By:</strong><br>
                                 <small class="text-muted">
                                     {{-- sign by system --}}
-                                    <span class="text-muted">Signed by System</span>
-                                    {{-- @if($signature->signer)
+                                    {{-- <span class="text-muted">Signed by System</span> --}}
+                                    @if($signature->signer)
                                         {{ $signature->signer->name }}<br>
                                         <span class="text-muted" style="font-size: 0.75rem;">NIDN: {{ $signature->signer->NIDN ?? '-' }}</span>
                                     @else
                                         <span class="text-muted">Not signed yet</span>
-                                    @endif --}}
+                                    @endif
                                 </small>
                             </div>
                             <div class="col-6">

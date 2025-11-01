@@ -158,7 +158,7 @@
                                     </div>
                                 </div>
 
-                                <div class="method-button" data-method="token" onclick="selectMethod('token')">
+                                {{-- <div class="method-button" data-method="token" onclick="selectMethod('token')">
                                     <div class="d-flex align-items-center">
                                         <div class="me-3">
                                             <i class="fas fa-key fa-2x text-warning"></i>
@@ -168,7 +168,7 @@
                                             <small class="text-muted">Masukkan token verifikasi langsung</small>
                                         </div>
                                     </div>
-                                </div>
+                                </div> --}}
                             </div>
 
                             <!-- Verification Form -->
@@ -207,7 +207,7 @@
                                 </div>
 
                                 <!-- Token Input -->
-                                <div id="tokenSection" class="verification-section" style="display: none;">
+                                {{-- <div id="tokenSection" class="verification-section" style="display: none;">
                                     <div class="form-group mb-3">
                                         <label for="verificationToken" class="form-label font-weight-bold">Token Verifikasi:</label>
                                         <div class="input-group">
@@ -219,7 +219,7 @@
                                         </div>
                                         <small class="text-muted">Token berupa kombinasi huruf dan angka</small>
                                     </div>
-                                </div>
+                                </div> --}}
 
                                 <!-- Submit Button -->
                                 <div class="d-grid">

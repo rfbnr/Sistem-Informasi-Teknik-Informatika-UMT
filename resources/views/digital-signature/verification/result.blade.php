@@ -149,6 +149,25 @@
             margin-top: 1rem;
         }
 
+        /* Document Preview Styling */
+        .modal-xl {
+            max-width: 60%;
+        }
+
+        /* Compact button styling for document preview */
+        .btn-sm.btn-outline-primary,
+        .btn-sm.btn-outline-success {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+            white-space: nowrap;
+        }
+
+        /* Loading indicator animation */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
         @media print {
             body {
                 background: white !important;
@@ -204,10 +223,10 @@
                                                 <strong>Nama Dokumen:</strong><br>
                                                 {{ $document->document_name }}
                                             </div>
-                                            <div class="col-md-6">
+                                            {{-- <div class="col-md-6">
                                                 <strong>Nomor Dokumen:</strong><br>
                                                 {{ $document->full_document_number }}
-                                            </div>
+                                            </div> --}}
                                         </div>
                                         <div class="row mt-3">
                                             <div class="col-md-6">
@@ -341,8 +360,9 @@
                                         </button>
                                     </div>
                                     <div class="col-md-6 mb-2">
-                                        <button class="btn btn-outline-primary btn-block w-100" onclick="window.print()">
-                                            <i class="fas fa-print"></i> Cetak Hasil
+                                        <button class="btn btn-outline-primary btn-block w-100" onclick="previewDocument()"
+                                            title="Preview Signed Document">
+                                            <i class="fas fa-print"></i> Lihat Dokumen
                                         </button>
                                     </div>
                                 </div>
@@ -425,13 +445,117 @@
         </div>
     </div>
 
+    <!-- Document Preview Modal -->
+    <div class="modal fade" id="documentPreviewModal" tabindex="-1" aria-labelledby="documentPreviewModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="documentPreviewModalLabel">
+                        <i class="fas fa-file-pdf me-2"></i>
+                        <span id="previewTitle">Document Preview</span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0" style="height: 80vh;">
+                    <div id="pdfLoadingIndicator" class="text-center py-5" style="display: none;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-3 text-muted">Loading document...</p>
+                    </div>
+                    <iframe id="documentPreviewFrame"
+                            style="width: 100%; height: 100%; border: none; display: none;"
+                            frameborder="0">
+                    </iframe>
+                    <div id="previewError" class="alert alert-danger m-3" style="display: none;">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Error:</strong> <span id="errorMessage">Unable to load document preview.</span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i> Close
+                    </button>
+                    <a id="downloadDocumentBtn" href="#" class="btn btn-success" target="_blank">
+                        <i class="fas fa-download me-1"></i> Download Document
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
     <script>
+        @php
+            $document = $verificationResult['details']['approval_request'];
+        @endphp
+
+        function previewDocument(type) {
+            const modal = new bootstrap.Modal(document.getElementById('documentPreviewModal'));
+            const iframe = document.getElementById('documentPreviewFrame');
+            const loading = document.getElementById('pdfLoadingIndicator');
+            const errorDiv = document.getElementById('previewError');
+            const titleSpan = document.getElementById('previewTitle');
+            const downloadBtn = document.getElementById('downloadDocumentBtn');
+
+            // Reset modal state
+            iframe.style.display = 'none';
+            errorDiv.style.display = 'none';
+            loading.style.display = 'block';
+
+            const signedFileName = '{{ $document->signed_document_path ? basename($document->signed_document_path) : "Not Signed Yet" }}';
+
+            // Set title based on type
+            titleSpan.textContent = 'Signed Document Preview';
+
+            // Get document path
+            const docPath = '{{ $document->signed_document_path ? asset("storage/" . $document->signed_document_path) : "" }}';
+
+            if (!docPath) {
+                loading.style.display = 'none';
+                errorDiv.style.display = 'block';
+                document.getElementById('errorMessage').textContent = 'Document not available for preview.';
+                modal.show();
+                return;
+            }
+
+            // Set download button
+            downloadBtn.href = docPath;
+            downloadBtn.style.display = 'none';
+
+            // Show modal
+            modal.show();
+
+            // Load PDF in iframe
+            iframe.onload = function() {
+                loading.style.display = 'none';
+                iframe.style.display = 'block';
+            };
+
+            iframe.onerror = function() {
+                loading.style.display = 'none';
+                errorDiv.style.display = 'block';
+                document.getElementById('errorMessage').textContent = 'Failed to load document. The file may be corrupted or not accessible.';
+            };
+
+            // Set iframe source (add #toolbar=0 to hide PDF toolbar for cleaner view)
+            iframe.src = docPath + '#toolbar=0';
+
+            // Fallback timeout in case onload doesn't fire
+            setTimeout(function() {
+                if (loading.style.display !== 'none') {
+                    loading.style.display = 'none';
+                    iframe.style.display = 'block';
+                }
+            }, 3000);
+        }
+
         function downloadCertificate() {
+            console.log('Token:', '{{ request()->route('token') ?? '' }}');
             @if($verificationResult['is_valid'])
                 // Construct certificate download URL
                 const token = '{{ request()->route('token') ?? '' }}';

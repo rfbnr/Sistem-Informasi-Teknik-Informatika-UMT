@@ -27,7 +27,7 @@ return new class extends Migration
                 'pending',           // Menunggu approve admin/prodi
                 'approved',          // Sudah diapprove, siap untuk ditandatangani user
                 'user_signed',       // User sudah tanda tangan, menunggu approve sign
-                // 'sign_approved',     // Tanda tangan sudah diapprove, dokumen final
+                'sign_approved',     // Tanda tangan sudah diapprove, dokumen final
                 'rejected',          // Ditolak
                 // 'cancelled'          // Dibatalkan
             ])->default('pending')->after('notes');

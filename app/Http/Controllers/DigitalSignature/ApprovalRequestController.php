@@ -330,7 +330,7 @@ class ApprovalRequestController extends Controller
                 'pending' => ApprovalRequest::pendingApproval()->count(),
                 'approved' => ApprovalRequest::byStatus(ApprovalRequest::STATUS_APPROVED)->count(),
                 'user_signed' => ApprovalRequest::byStatus(ApprovalRequest::STATUS_USER_SIGNED)->count(),
-                // 'completed' => ApprovalRequest::completed()->count(),
+                'completed' => ApprovalRequest::completed()->count(),
                 'rejected' => ApprovalRequest::byStatus(ApprovalRequest::STATUS_REJECTED)->count(),
                 // 'overdue' => ApprovalRequest::overdue()->count()
             ];
@@ -351,7 +351,7 @@ class ApprovalRequestController extends Controller
                 'user',
                 'documentSignature.digitalSignature',
                 'documentSignature.signer',
-                'documentSignature.rejector',
+                // 'documentSignature.rejector',
                 'approver',
                 'rejector'
             ])->findOrFail($id);

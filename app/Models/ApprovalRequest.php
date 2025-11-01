@@ -186,10 +186,10 @@ class ApprovalRequest extends Model
     /**
      * Check apakah sudah selesai (final)
      */
-    // public function isCompleted()
-    // {
-    //     return $this->status === self::STATUS_SIGN_APPROVED;
-    // }
+    public function isCompleted()
+    {
+        return $this->status === self::STATUS_SIGN_APPROVED;
+    }
 
     /**
      * Check apakah bisa ditandatangani user
@@ -282,7 +282,8 @@ class ApprovalRequest extends Model
         $oldStatus = $this->status;
 
         $this->update([
-            'status' => self::STATUS_USER_SIGNED,
+            // 'status' => self::STATUS_USER_SIGNED,
+            'status' => self::STATUS_SIGN_APPROVED,
             'user_signed_at' => now(),
             'sign_approved_at' => now(),
             'sign_approved_by' => $this->approved_by,

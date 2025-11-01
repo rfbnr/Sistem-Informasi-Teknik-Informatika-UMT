@@ -37,7 +37,6 @@
                     {{ $approvalRequest->document_name }}
                 </h1>
                 <p class="mb-0 opacity-75">
-                    Request #{{ $approvalRequest->nomor ?? $approvalRequest->id }} -
                     Submitted {{ $approvalRequest->created_at->format('d M Y') }}
                 </p>
             </div>
@@ -151,27 +150,27 @@
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
-                        <div class="col-md-6">
+                        {{-- <div class="col-md-6">
                             <label class="text-muted small">Document Number</label>
                             <p class="mb-0 fw-bold">{{ $approvalRequest->nomor ?? 'Not assigned yet' }}</p>
-                        </div>
+                        </div> --}}
                         <div class="col-md-6">
                             <label class="text-muted small">Document Type</label>
-                            <p class="mb-0 fw-bold">{{ $approvalRequest->document_name }}</p>
+                            <p class="mb-0 fw-bold">{{ $approvalRequest->document_type }}</p>
                         </div>
                         <div class="col-md-6">
                             <label class="text-muted small">Submitted By</label>
                             <p class="mb-0 fw-bold">
                                 {{ $approvalRequest->user->name ?? 'Unknown' }}
-                                @if($approvalRequest->user && $approvalRequest->user->nim)
-                                    <br><small class="text-muted">NIM: {{ $approvalRequest->user->nim }}</small>
+                                @if($approvalRequest->user && $approvalRequest->user->NIM)
+                                    <br><small class="text-muted">NIM: {{ $approvalRequest->user->NIM }}</small>
                                 @endif
                             </p>
                         </div>
-                        <div class="col-md-6">
+                        {{-- <div class="col-md-6">
                             <label class="text-muted small">Department</label>
                             <p class="mb-0">{{ $approvalRequest->department ?? 'Teknik Informatika' }}</p>
-                        </div>
+                        </div> --}}
                         <div class="col-md-6">
                             <label class="text-muted small">Submission Date</label>
                             <p class="mb-0">
@@ -179,7 +178,7 @@
                                 <br><small class="text-muted">{{ $approvalRequest->created_at->diffForHumans() }}</small>
                             </p>
                         </div>
-                        <div class="col-md-6">
+                        {{-- <div class="col-md-6">
                             <label class="text-muted small">Priority</label>
                             <p class="mb-0">
                                 @php
@@ -195,8 +194,8 @@
                                     {{ ucfirst($approvalRequest->priority ?? 'Normal') }}
                                 </span>
                             </p>
-                        </div>
-                        @if($approvalRequest->deadline)
+                        </div> --}}
+                        {{-- @if($approvalRequest->deadline)
                             <div class="col-md-12">
                                 <label class="text-muted small">Deadline</label>
                                 <p class="mb-0">
@@ -207,11 +206,11 @@
                                     @endif
                                 </p>
                             </div>
-                        @endif
+                        @endif --}}
                         @if($approvalRequest->notes)
                             <div class="col-12">
                                 <label class="text-muted small">Notes from Student</label>
-                                <div class="alert alert-info border-0 mb-0">
+                                <div class="alert alert-info border-0 mb-0 fade-in alert-dismissible">
                                     <i class="fas fa-comment-dots me-2"></i>
                                     {{ $approvalRequest->notes }}
                                 </div>

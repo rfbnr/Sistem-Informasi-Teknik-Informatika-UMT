@@ -23,7 +23,7 @@ return new class extends Migration
             $table->text('verification_url')->nullable(); // URL untuk verifikasi
             $table->text('cms_signature')->nullable(); // CMS signature format
             $table->timestamp('signed_at')->nullable(); // Waktu penandatanganan
-            // $table->foreignId('signed_by')->nullable(); // Kaprodi yang menandatangani
+            $table->foreignId('signed_by')->nullable(); // Kaprodi yang menandatangani
             $table->enum('signature_status', ['pending', 'signed', 'verified', 'invalid', 'rejected'])->default('pending');
             // $table->string('canvas_data_path')->nullable(); // Path canvas data untuk signature
             $table->json('qr_positioning_data')->nullable(); // Data posisi barcode signature
@@ -35,7 +35,7 @@ return new class extends Migration
 
             $table->foreign('approval_request_id')->references('id')->on('approval_requests')->onDelete('cascade');
             // $table->foreign('digital_signature_id')->references('id')->on('digital_signatures')->onDelete('cascade');
-            // $table->foreign('signed_by')->references('id')->on('kaprodis')->onDelete('cascade');
+            $table->foreign('signed_by')->references('id')->on('kaprodis')->onDelete('cascade');
             // $table->foreign('verified_by')->references('id')->on('kaprodis')->onDelete('set null');
 
             $table->index(['document_hash', 'signature_status']);

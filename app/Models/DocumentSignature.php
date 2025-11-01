@@ -29,7 +29,7 @@ class DocumentSignature extends Model
         'verification_url',
         'cms_signature',
         'signed_at',
-        // 'signed_by',
+        'signed_by',
         'signature_status',
         'qr_positioning_data', // RENAMED: from positioning_data
         'final_pdf_path',
@@ -116,10 +116,10 @@ class DocumentSignature extends Model
     /**
      * Relasi ke Kaprodi (signer)
      */
-    // public function signer()
-    // {
-    //     return $this->belongsTo(Kaprodi::class, 'signed_by');
-    // }
+    public function signer()
+    {
+        return $this->belongsTo(Kaprodi::class, 'signed_by');
+    }
 
     /**
      * Relasi ke User (verifier)
@@ -373,7 +373,7 @@ class DocumentSignature extends Model
             'document_name' => $this->approvalRequest->document_name,
             'document_type' => $this->approvalRequest->document_type,
             'document_number' => $this->approvalRequest->full_document_number,
-            // 'signed_by' => $this->signer->name,
+            'signed_by' => $this->signer->name,
             'signed_at' => $this->signed_at ? $this->signed_at->format('d F Y H:i:s') : null,
             'signature_status' => $this->signature_status,
             'status_label' => $this->getStatusLabel(),
@@ -464,6 +464,22 @@ class DocumentSignature extends Model
     }
 
     /**
+     * NEW: Clear temporary QR code after finalization
+     */
+    public function clearTemporaryQRCode()
+    {
+        if ($this->temporary_qr_code_path && Storage::disk('public')->exists($this->temporary_qr_code_path)) {
+            Storage::disk('public')->delete($this->temporary_qr_code_path);
+            $this->temporary_qr_code_path = null;
+            $this->save();
+
+            Log::info('Temporary QR code cleared', [
+                'document_signature_id' => $this->id
+            ]);
+        }
+    }
+
+    /**
      * NEW: Save QR positioning data from user drag & drop
      */
     public function saveQRPositioning($positioningData)
@@ -526,14 +542,14 @@ class DocumentSignature extends Model
             'document_signature_id' => $this->id,
             'signature_status' => $this->signature_status,
             'status_transition' => $statusFrom ? "{$statusFrom} → {$statusTo}" : $statusTo,
-            'signed_by' => 'Signed by System',
+            'signed_by' => $this->signer->name ?? null,
             // 'verified_by' => $this->verifier->name ?? null,
         ]));
 
         SignatureAuditLog::create([
             'document_signature_id' => $this->id,
             'approval_request_id' => $this->approval_request_id,
-            // 'user_id' => $this->signed_by,
+            'user_id' => $this->signed_by,
             'kaprodi_id' => $this->verified_by ?? $this->rejected_by,
             'action' => $action,
             'status_from' => $statusFrom,

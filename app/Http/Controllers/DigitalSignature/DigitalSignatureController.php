@@ -54,7 +54,7 @@ class DigitalSignatureController extends Controller
                 'verified_signatures' => DocumentSignature::where('signature_status', DocumentSignature::STATUS_VERIFIED)->count(),
                 // NEW: Approval Request stats
                 'pending_approvals' => ApprovalRequest::where('status', ApprovalRequest::STATUS_PENDING)->count(),
-                'need_verification' => DocumentSignature::where('signature_status', DocumentSignature::STATUS_SIGNED)->count(),
+                // 'need_verification' => DocumentSignature::where('signature_status', DocumentSignature::STATUS_SIGNED)->count(),
                 'rejected_signatures' => DocumentSignature::where('signature_status', DocumentSignature::STATUS_REJECTED)->count(),
             ];
 
@@ -349,7 +349,6 @@ class DigitalSignatureController extends Controller
             // STEP 6: Update Approval Request Status
             // ========================================================================
             $approvalRequest->markUserSigned($pdfWithQRPath);
-            // $approvalRequest->approveSignature($pdfWithQRPath);
 
             // Calculate signing duration
             $durationMs = (int) ((microtime(true) - $startTime) * 1000);

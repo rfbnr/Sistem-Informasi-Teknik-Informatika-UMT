@@ -114,12 +114,22 @@
                             {{ $documentSignature->approvalRequest->document_name }}
                         </div>
                         <div class="col-md-6">
+                            <strong>Document Type:</strong><br>
+                            @if($documentSignature->approvalRequest->document_type)
+                                <span class="badge bg-secondary">
+                                    {{ $documentSignature->approvalRequest->document_type }}
+                                </span>
+                            @else
+                                <span class="text-muted">Not specified</span>
+                            @endif
+                        </div>
+                        {{-- <div class="col-md-6">
                             <strong>Document Number:</strong><br>
                             <code>{{ $documentSignature->approvalRequest->full_document_number }}</code>
-                        </div>
+                        </div> --}}
                     </div>
 
-                    <div class="row mb-3">
+                    {{-- <div class="row mb-3">
                         <div class="col-md-6">
                             <strong>Document Type:</strong><br>
                             @if($documentSignature->approvalRequest->document_type)
@@ -136,11 +146,11 @@
                                 {{ ucfirst($documentSignature->approvalRequest->priority) }}
                             </span>
                         </div>
-                        {{-- <div class="col-md-4">
+                        <div class="col-md-4">
                             <strong>Department:</strong><br>
                             {{ $documentSignature->approvalRequest->department ?? 'N/A' }}
-                        </div> --}}
-                    </div>
+                        </div>
+                    </div> --}}
 
                     <div class="row mb-3">
                         <div class="col-md-6">
@@ -247,10 +257,19 @@
                         </h5>
                     </div>
                     <div class="card-body">
+                        <div class="alert alert-info mb-3">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Unique Encryption Key:</strong> This document is secured with a unique RSA-2048 digital signature key that was automatically generated specifically for this document. Each signed document has its own independent encryption key for maximum security.
+                        </div>
+
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <strong>Signature ID:</strong><br>
                                 <code>{{ $documentSignature->digitalSignature->signature_id ?? 'N/A' }}</code>
+                                <br>
+                                <span class="badge bg-primary mt-1">
+                                    <i class="fas fa-key me-1"></i> Auto-Generated Unique Key
+                                </span>
                             </div>
                             <div class="col-md-6">
                                 <strong>Signature Status:</strong><br>
@@ -329,6 +348,35 @@
 
                         <div class="row mb-3">
                             <div class="col-md-6">
+                                <strong>Signing Method:</strong><br>
+                                @if(isset($documentSignature->signature_metadata['placement_method']))
+                                    @if($documentSignature->signature_metadata['placement_method'] === 'drag_drop_qr')
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-qrcode me-1"></i> QR Code Drag & Drop
+                                        </span>
+                                    @else
+                                        <span class="badge bg-secondary">
+                                            {{ ucwords(str_replace('_', ' ', $documentSignature->signature_metadata['placement_method'])) }}
+                                        </span>
+                                    @endif
+                                @else
+                                    <span class="text-muted">Not specified</span>
+                                @endif
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Signed Via:</strong><br>
+                                @if(isset($documentSignature->signature_metadata['signed_via']))
+                                    <span class="badge bg-info">
+                                        <i class="fas fa-globe me-1"></i> {{ ucwords(str_replace('_', ' ', $documentSignature->signature_metadata['signed_via'])) }}
+                                    </span>
+                                @else
+                                    <span class="text-muted">Not specified</span>
+                                @endif
+                            </div>
+                        </div>
+
+                        {{-- <div class="row mb-3">
+                            <div class="col-md-6">
                                 <strong>Document Hash:</strong><br>
                                 <code class="small">{{ substr($documentSignature->document_hash, 0, 32) }}...</code>
                             </div>
@@ -336,7 +384,7 @@
                                 <strong>Signature Value:</strong><br>
                                 <code class="small">{{ substr($documentSignature->signature_value, 0, 32) }}...</code>
                             </div>
-                        </div>
+                        </div> --}}
 
                         @if($documentSignature->verified_at)
                         <div class="row">
@@ -804,9 +852,9 @@ function previewDocument(type) {
 
     // Set title based on type
     if (type === 'original') {
-        titleSpan.textContent = 'Original Document Preview | ' + originalFileName;
+        titleSpan.textContent = 'Original Document Preview';
     } else {
-        titleSpan.textContent = 'Signed Document Preview | ' + signedFileName;
+        titleSpan.textContent = 'Signed Document Preview';
     }
 
     // Get document path

@@ -63,12 +63,18 @@
                             {{ $documentSignature->approvalRequest->document_name }}
                         </div>
                         <div class="col-md-6">
-                            <strong>Document Number:</strong><br>
-                            <code>{{ $documentSignature->approvalRequest->full_document_number }}</code>
+                            <strong>Document Type:</strong><br>
+                            @if($documentSignature->approvalRequest->document_type)
+                                <span class="badge bg-secondary">
+                                    {{ $documentSignature->approvalRequest->document_type }}
+                                </span>
+                            @else
+                                <span class="text-muted">Not specified</span>
+                            @endif
                         </div>
                     </div>
 
-                    <div class="row mb-3">
+                    {{-- <div class="row mb-3">
                         <div class="col-md-6">
                             <strong>Document Type:</strong><br>
                             @if($documentSignature->approvalRequest->document_type)
@@ -85,11 +91,11 @@
                                 {{ ucfirst($documentSignature->approvalRequest->priority) }}
                             </span>
                         </div>
-                        {{-- <div class="col-md-4">
+                        <div class="col-md-4">
                             <strong>Department:</strong><br>
                             {{ $documentSignature->approvalRequest->department ?? 'N/A' }}
-                        </div> --}}
-                    </div>
+                        </div>
+                    </div> --}}
 
                     <div class="row mb-3">
                         <div class="col-md-6">

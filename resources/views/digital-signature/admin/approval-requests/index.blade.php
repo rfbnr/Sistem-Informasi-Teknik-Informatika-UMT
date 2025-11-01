@@ -21,9 +21,9 @@
             </div>
             <div class="col-lg-4 text-end">
                 <div class="btn-group">
-                    <button class="btn btn-outline-light" data-bs-toggle="modal" data-bs-target="#bulkApproveModal">
+                    {{-- <button class="btn btn-outline-light" data-bs-toggle="modal" data-bs-target="#bulkApproveModal">
                         <i class="fas fa-check-double me-1"></i> Bulk Approve
-                    </button>
+                    </button> --}}
                     <a href="{{ route('admin.signature.approval.export') }}" class="btn btn-success">
                         <i class="fas fa-download me-1"></i> Export
                     </a>
@@ -63,10 +63,16 @@
                 <div class="text-muted"><i class="fas fa-check me-1"></i> Approved</div>
             </div>
         </div>
-        <div class="col-md-3">
+        {{-- <div class="col-md-3">
             <div class="stats-card">
                 <div class="stats-number text-success">{{ $statistics['user_signed'] ?? 0 }}</div>
                 <div class="text-muted"><i class="fas fa-signature me-1"></i> User Signed</div>
+            </div>
+        </div> --}}
+        <div class="col-md-3">
+            <div class="stats-card">
+                <div class="stats-number text-success">{{ $statistics['completed'] ?? 0 }}</div>
+                <div class="text-muted"><i class="fas fa-signature me-1"></i> Completed</div>
             </div>
         </div>
         <div class="col-md-3">
@@ -102,8 +108,8 @@
                         <option value="">All Status</option>
                         <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
                         <option value="approved" {{ request('status') == 'approved' ? 'selected' : '' }}>Approved</option>
-                        <option value="user_signed" {{ request('status') == 'user_signed' ? 'selected' : '' }}>User Signed</option>
-                        {{-- <option value="sign_approved" {{ request('status') == 'sign_approved' ? 'selected' : '' }}>Sign Approved</option> --}}
+                        {{-- <option value="user_signed" {{ request('status') == 'user_signed' ? 'selected' : '' }}>User Signed</option> --}}
+                        <option value="sign_approved" {{ request('status') == 'sign_approved' ? 'selected' : '' }}>Sign Approved</option>
                         <option value="rejected" {{ request('status') == 'rejected' ? 'selected' : '' }}>Rejected</option>
                     </select>
                 </div>
@@ -144,10 +150,10 @@
                     <table class="table table-hover align-middle">
                         <thead>
                             <tr>
-                                <th width="40">
+                                {{-- <th width="40">
                                     <input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)">
-                                </th>
-                                <th>Nomor</th>
+                                </th> --}}
+                                <th>No</th>
                                 <th>Document</th>
                                 <th>Type</th>
                                 <th>Submitted By</th>
@@ -160,13 +166,13 @@
                         <tbody>
                             @foreach($approvalRequests as $request)
                             <tr id="request-row-{{ $request->id }}">
-                                <td>
+                                {{-- <td>
                                     @if($request->status === 'pending')
                                         <input type="checkbox" class="request-checkbox" value="{{ $request->id }}">
                                     @endif
-                                </td>
+                                </td> --}}
                                 <td>
-                                    <strong class="text-primary">{{ $request->nomor ?? 'N/A' }}</strong>
+                                    {{ $loop->iteration + ($approvalRequests->currentPage() - 1) * $approvalRequests->perPage() }}
                                 </td>
                                 <td>
                                     <div>

@@ -66,10 +66,10 @@ class PDFSignatureService
             $pdf = new Fpdi('P', 'mm', 'A4', true, 'UTF-8', false);
 
             // Set document information
-            $pdf->SetCreator('UMT Digital Signature System');
-            $pdf->SetAuthor($documentSignature->signer->name ?? 'UMT');
-            $pdf->SetTitle('Signed Document');
-            $pdf->SetSubject('Digitally Signed Document');
+            $pdf->SetCreator('UMT Informatika • Digital Signature System');
+            $pdf->SetAuthor($documentSignature->signer->name ?? 'UMT Informatika');
+            $pdf->SetTitle('Signed Document ID #' . $documentSignature->id);
+            $pdf->SetSubject('Digitally Signed Document with QR Code');
 
             // Remove default header/footer
             $pdf->setPrintHeader(false);

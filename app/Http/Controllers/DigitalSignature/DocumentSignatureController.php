@@ -764,6 +764,7 @@ class DocumentSignatureController extends Controller
 
             $statistics = [
                 'total' => (clone $baseQuery)->count(),
+                'signed' => (clone $baseQuery)->where('signature_status', 'signed')->count(),
 
                 'verified' => (clone $baseQuery)->where('signature_status', 'verified')->count(),
 

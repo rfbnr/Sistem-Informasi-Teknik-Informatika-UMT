@@ -60,7 +60,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-lg-2 col-md-4 mb-3">
+        <div class="col-lg-3 col-md-4 mb-3">
             <div class="stats-card clickable" onclick="window.location='{{ route('admin.signature.approval.index') }}'">
                 <div class="stats-number text-warning">{{ $stats['pending_approvals'] ?? 0 }}</div>
                 <div class="text-muted small">Pending Approvals</div>
@@ -72,7 +72,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-lg-2 col-md-4 mb-3">
+        {{-- <div class="col-lg-2 col-md-4 mb-3">
             <div class="stats-card clickable" onclick="window.location='{{ route('admin.signature.documents.index', ['status' => 'signed']) }}'">
                 <div class="stats-number text-info">{{ $stats['need_verification'] ?? 0 }}</div>
                 <div class="text-muted small">Need Verification</div>
@@ -83,8 +83,8 @@
                     </small>
                 </div>
             </div>
-        </div>
-        <div class="col-lg-2 col-md-4 mb-3">
+        </div> --}}
+        <div class="col-lg-3 col-md-4 mb-3">
             <div class="stats-card">
                 <div class="stats-number text-success">{{ $stats['verified_signatures'] ?? 0 }}</div>
                 <div class="text-muted small">Verified</div>
@@ -124,7 +124,7 @@
 
     <div class="row">
         <!-- Pending Approvals - Quick Approve -->
-        <div class="col-lg-6 mb-4">
+        <div class="col-lg-8 mb-4">
             <div class="card border-warning">
                 <div class="card-header bg-warning text-dark">
                     <div class="d-flex justify-content-between align-items-center">
@@ -193,8 +193,45 @@
             </div>
         </div>
 
+        <!-- System Status -->
+        <div class="col-lg-4 mb-4">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-server me-2"></i>
+                        System Status
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="mb-2">
+                                <i class="fas fa-circle text-success"></i>
+                                <span class="ms-1">System</span>
+                            </div>
+                            <small class="text-muted">Online</small>
+                        </div>
+                        <div class="col-6">
+                            <div class="mb-2">
+                                <i class="fas fa-circle text-success"></i>
+                                <span class="ms-1">Verification</span>
+                            </div>
+                            <small class="text-muted">Active</small>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="text-center">
+                        <small class="text-muted">
+                            Last updated: {{ now()->format('d M Y H:i') }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
         <!-- Need Verification - Quick Verify -->
-        <div class="col-lg-6 mb-4">
+        {{-- <div class="col-lg-6 mb-4">
             <div class="card border-info">
                 <div class="card-header bg-info text-white">
                     <div class="d-flex justify-content-between align-items-center">
@@ -258,7 +295,7 @@
                     @endif
                 </div>
             </div>
-        </div>
+        </div> --}}
     </div>
 
     <!-- Second Row: Recent Signatures & Quick Actions -->

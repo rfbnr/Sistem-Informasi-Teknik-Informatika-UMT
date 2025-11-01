@@ -130,10 +130,12 @@
                     <table class="table table-hover">
                         <thead>
                             <tr>
-                                <th>
+                                {{-- <th>
                                     <input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)">
-                                </th>
+                                </th> --}}
+                                <th>No</th>
                                 <th>Document</th>
+                                <th>Signature ID</th>
                                 <th>Signed By</th>
                                 <th>Algorithm</th>
                                 <th>Signed At</th>
@@ -145,13 +147,15 @@
                         <tbody>
                             @foreach($documentSignatures as $docSig)
                             <tr>
-                                <td>
+                                {{-- <td>
                                     <input type="checkbox" class="signature-checkbox" value="{{ $docSig->id }}">
-                                </td>
+                                </td> --}}
+                                <td>{{ $loop->iteration + ($documentSignatures->currentPage() - 1) * $documentSignatures->perPage() }}</td>
                                 <td>
                                     <strong>{{ $docSig->approvalRequest->document_name }}</strong><br>
                                     <small class="text-muted">{{ $docSig->approvalRequest->full_document_number }}</small>
                                 </td>
+                                <td>{{ $docSig->digitalSignature->signature_id ?? 'N/A' }}</td>
                                 <td>{{ $docSig->signer->name ?? 'Unknown' }}</td>
                                 <td>
                                     <span class="badge bg-info">
@@ -185,11 +189,11 @@
                                 <td>
                                     <div class="btn-group btn-group-sm">
                                         @if($docSig->signature_status !== 'pending')
-                                            <button class="btn btn-outline-warning"
+                                            {{-- <button class="btn btn-outline-warning"
                                                     onclick="quickPreviewDocument({{ $docSig->id }})"
                                                     title="Quick Preview & Verify">
                                                 <i class="fas fa-bolt"></i>
-                                            </button>
+                                            </button> --}}
                                             <a href="{{ route('admin.signature.documents.show', $docSig->id) }}"
                                             class="btn btn-outline-primary" title="View Details">
                                                 <i class="fas fa-eye"></i>

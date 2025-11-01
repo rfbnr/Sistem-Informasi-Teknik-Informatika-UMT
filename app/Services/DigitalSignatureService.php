@@ -44,7 +44,7 @@ class DigitalSignatureService
                 throw new \Exception('Failed to export private key: ' . openssl_error_string());
             }
 
-            // Generate certificate (self-signed untuk testing)
+            // Generate certificate (self-signed)
             $certificate = $this->generateSelfSignedCertificate($privateKey, $publicKeyDetails);
 
             return [
@@ -324,7 +324,8 @@ class DigitalSignatureService
                 'signature_value' => $signatureData['signature_value'],
                 'cms_signature' => $signatureData['cms_signature'],
                 'signed_at' => $signatureData['signed_at'],
-                'signed_by' => Auth::guard('kaprodi')->id(),
+                // 'signed_by' => Auth::guard('kaprodi')->id(),
+                'signed_by' => $approvalRequest->approved_by,
                 'signature_status' => DocumentSignature::STATUS_VERIFIED,
                 'signature_metadata' => $signatureData['metadata'],
                 'final_pdf_path' => $finalPdfPath
@@ -377,7 +378,7 @@ class DigitalSignatureService
     }
 
     /**
-     * Generate self-signed certificate untuk testing
+     * Generate self-signed certificate for the public key
      */
     private function generateSelfSignedCertificate($privateKey, $publicKeyDetails)
     {
@@ -385,12 +386,12 @@ class DigitalSignatureService
             // Certificate subject
             $dn = [
                 "countryName" => "ID",
-                "stateOrProvinceName" => "Jakarta",
-                "localityName" => "Jakarta",
-                "organizationName" => "Digital Signature System",
-                "organizationalUnitName" => "IT Department",
-                "commonName" => "Digital Signature Authority",
-                "emailAddress" => "admin@example.com"
+                "stateOrProvinceName" => "Banten",
+                "localityName" => "Tangerang",
+                "organizationName" => "Universitas Muhammadiyah Tangerang",
+                "organizationalUnitName" => "Program Studi Teknik Informatika",
+                "commonName" => "Teknik Informatika UMT Digital Signature Authority",
+                "emailAddress" => "informatika@umt.ac.id"
             ];
 
             // Generate certificate signing request

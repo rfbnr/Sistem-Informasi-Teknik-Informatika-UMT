@@ -40,7 +40,7 @@ class VerificationController extends Controller
      */
     public function verifyByToken($token)
     {
-        // Rate limiting
+        // // Rate limiting
         $key = 'verify_token:' . request()->ip();
         if (RateLimiter::tooManyAttempts($key, 10)) {
             $seconds = RateLimiter::availableIn($key);
