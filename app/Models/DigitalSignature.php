@@ -218,20 +218,20 @@ class DigitalSignature extends Model
     /**
      * Get signature info (refactored for 1-to-1)
      */
-    public function getSignatureInfo()
-    {
-        return [
-            'signature_id' => $this->signature_id,
-            'algorithm' => $this->algorithm,
-            'key_length' => $this->key_length,
-            'status' => $this->status,
-            'valid_from' => $this->valid_from,
-            'valid_until' => $this->valid_until,
-            'days_until_expiry' => now()->diffInDays($this->valid_until, false),
-            'is_valid' => $this->isValid(),
-            'document_signature_id' => $this->document_signature_id
-        ];
-    }
+    // public function getSignatureInfo()
+    // {
+    //     return [
+    //         'signature_id' => $this->signature_id,
+    //         'algorithm' => $this->algorithm,
+    //         'key_length' => $this->key_length,
+    //         'status' => $this->status,
+    //         'valid_from' => $this->valid_from,
+    //         'valid_until' => $this->valid_until,
+    //         'days_until_expiry' => now()->diffInDays($this->valid_until, false),
+    //         'is_valid' => $this->isValid(),
+    //         'document_signature_id' => $this->document_signature_id
+    //     ];
+    // }
 
     /**
      * Scopes
@@ -282,6 +282,7 @@ class DigitalSignature extends Model
     /**
      * Get fingerprint dari public key
      */
+    //! DIPAKAI
     public function getPublicKeyFingerprint()
     {
         return hash('sha256', $this->public_key);

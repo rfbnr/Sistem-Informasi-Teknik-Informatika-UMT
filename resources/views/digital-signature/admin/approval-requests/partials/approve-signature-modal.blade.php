@@ -1,7 +1,7 @@
 {{-- resources/views/digital-signature/admin/approval-requests/partials/approve-signature-modal.blade.php --}}
 
 <!-- Approve Signature Modal -->
-<div class="modal fade" id="approveSignatureModal" tabindex="-1" aria-labelledby="approveSignatureModalLabel" aria-hidden="true">
+{{-- <div class="modal fade" id="approveSignatureModal" tabindex="-1" aria-labelledby="approveSignatureModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header bg-primary text-white">
@@ -301,4 +301,4 @@ document.addEventListener('DOMContentLoaded', function() {
 .card.border-primary:hover {
     box-shadow: 0 0.5rem 1rem rgba(102, 126, 234, 0.15);
 }
-</style>
+</style> --}}

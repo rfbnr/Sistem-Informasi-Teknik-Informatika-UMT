@@ -39,84 +39,8 @@ class ApprovalRequestController extends Controller
         $this->verificationService = $verificationService;
     }
 
-    // public function create()
-    // {
-    //     return view('digital-signature.user.approval-request');
-    // }
-
-    // public function upload(Request $request)
-    // {
-    //     if (!Auth::check()) {
-    //         return redirect()->back()->with('error', 'Anda harus login terlebih dahulu untuk mengunggah dokumen.');
-    //     }
-
-    //     $validator = Validator::make($request->all(), [
-    //         'document_name' => 'required|string|max:255',
-    //         'document' => 'required|file|mimes:pdf|max:25600', // max file size 25MB
-    //         'notes' => 'nullable|string|max:1000',
-    //         'priority' => 'nullable|in:low,normal,high,urgent',
-    //         'deadline' => 'nullable|date|after:today'
-    //     ]);
-
-    //     // dd($validator['document_file']);
-    //     // dd($request->file('document_file'));
-    //     // dd($request->hasFile('document_file'));
-    //     // dd($request->document_name);
-
-    //     if ($validator->fails()) {
-    //         return redirect()->back()->withErrors($validator)->withInput();
-    //     }
-
-    //     try {
-    //         $documentPath = $request->file('document')->store('documents', 'public');
-
-    //         $approvalRequest = ApprovalRequest::create([
-    //             'user_id' => Auth::id(),
-    //             'document_name' => $request->input('document_name'),
-    //             'document_path' => $documentPath,
-    //             'notes' => $request->input('notes'),
-    //             'priority' => $request->input('priority', ApprovalRequest::PRIORITY_NORMAL),
-    //             'deadline' => $request->input('deadline'),
-    //             'department' => 'Teknik Informatika'
-    //         ]);
-
-    //         // Generate document hash for future integrity verification
-    //         $documentContent = Storage::get($documentPath);
-    //         $documentHash = hash('sha256', $documentContent);
-
-    //         // Store hash in metadata
-    //         $approvalRequest->update([
-    //             'workflow_metadata' => [
-    //                 'document_hash' => $documentHash,
-    //                 'file_size' => strlen($documentContent),
-    //                 'upload_ip' => request()->ip(),
-    //                 'upload_user_agent' => request()->userAgent()
-    //             ]
-    //         ]);
-
-    //         // Send notification to Kaprodi
-    //         // $kaprodiEmails = Kaprodi::pluck('email')->toArray();
-    //         // if (!empty($kaprodiEmails)) {
-    //         //     Mail::to($kaprodiEmails)->send(new NewApprovalRequestNotification($approvalRequest));
-    //         // }
-
-    //         Log::info('Document uploaded for approval', [
-    //             'approval_request_id' => $approvalRequest->id,
-    //             'user_id' => Auth::id(),
-    //             'document_name' => $approvalRequest->document_name
-    //         ]);
-
-    //         // return redirect('mahasiswa/approval-status')->with('success', 'File uploaded successfully!');
-
-    //         return redirect()->route('user.approval.status')
-    //             ->with('success', 'Document uploaded successfully! You will receive email notifications about the approval process.');
-
-    //     } catch (\Exception $e) {
-    //         Log::error('Document upload failed: ' . $e->getMessage());
-    //         return redirect()->back()->with('error', 'Upload failed. Please try again.');
-    //     }
-    // }
-
+    // Handle document upload for approval request
+    //! DIPAKAI DI ROUTE user.signature.approval.upload
     public function upload(Request $request)
     {
         // Debug: Log incoming request
@@ -139,8 +63,6 @@ class ApprovalRequestController extends Controller
             'document_type' => 'required|string|max:255',
             'document' => 'required|file|mimes:pdf|max:25600', // max file size 25MB
             'notes' => 'required|string|max:1000', // Ubah menjadi required sesuai form
-            // 'priority' => 'nullable|in:low,normal,high,urgent',
-            // 'deadline' => 'nullable|date|after:today'
         ], [
             // Custom error messages
             'document_name.required' => 'Please select a document type.',
@@ -150,9 +72,6 @@ class ApprovalRequestController extends Controller
             'document.max' => 'File size cannot exceed 25MB.',
             'notes.required' => 'Please provide a description for your request.',
             'notes.max' => 'Description cannot exceed 1000 characters.',
-            // 'deadline.date' => 'Please provide a valid date.',
-            // 'deadline.after' => 'Deadline must be after today.',
-            // 'priority.in' => 'Invalid priority level selected.'
         ]);
 
         // Debug: Log validation results
@@ -222,9 +141,6 @@ class ApprovalRequestController extends Controller
                 'document_path' => $documentPath,
                 'status' => ApprovalRequest::STATUS_PENDING,
                 'notes' => $request->input('notes'),
-                // 'priority' => $request->input('priority', ApprovalRequest::PRIORITY_NORMAL),
-                // 'deadline' => $request->input('deadline'),
-                // 'department' => 'Teknik Informatika'
             ]);
 
             // Generate document hash for future integrity verification
@@ -299,6 +215,7 @@ class ApprovalRequestController extends Controller
     }
 
     // Display all approval requests for Kaprodi
+    //! DIPAKAI DI ROUTE admin.signature.approval.index
     public function index(Request $request)
     {
         try {
@@ -323,7 +240,7 @@ class ApprovalRequestController extends Controller
                 });
             }
 
-            $approvalRequests = $query->latest()->paginate(15);
+            $approvalRequests = $query->latest()->paginate(10);
 
             // Get statistics
             $statistics = [
@@ -344,6 +261,7 @@ class ApprovalRequestController extends Controller
     }
 
     // Show detailed approval request
+    //! DIPAKAI DI ROUTE admin.signature.approval.show
     public function show($id)
     {
         try {
@@ -393,6 +311,7 @@ class ApprovalRequestController extends Controller
     }
 
     // Build workflow timeline for approval request
+    //! DIPAKAI DI METHOD show
     private function buildWorkflowTimeline($approvalRequest)
     {
         $timeline = [];
@@ -448,19 +367,19 @@ class ApprovalRequestController extends Controller
         }
 
         // Document Signature Rejected (if signature was rejected)
-        if ($approvalRequest->documentSignature &&
-            $approvalRequest->documentSignature->signature_status === DocumentSignature::STATUS_REJECTED &&
-            $approvalRequest->documentSignature->rejected_at) {
-            $timeline[] = [
-                'title' => 'Document Signature Rejected',
-                'description' => $approvalRequest->documentSignature->rejection_reason ?? 'Signature was rejected due to quality or placement issues',
-                'user' => $approvalRequest->documentSignature->rejector->name ?? 'Kaprodi',
-                'timestamp' => $approvalRequest->documentSignature->rejected_at,
-                'icon' => 'fa-ban',
-                'color' => 'danger',
-                'status' => 'completed'
-            ];
-        }
+        // if ($approvalRequest->documentSignature &&
+        //     $approvalRequest->documentSignature->signature_status === DocumentSignature::STATUS_REJECTED &&
+        //     $approvalRequest->documentSignature->rejected_at) {
+        //     $timeline[] = [
+        //         'title' => 'Document Signature Rejected',
+        //         'description' => $approvalRequest->documentSignature->rejection_reason ?? 'Signature was rejected due to quality or placement issues',
+        //         'user' => $approvalRequest->documentSignature->rejector->name ?? 'Kaprodi',
+        //         'timestamp' => $approvalRequest->documentSignature->rejected_at,
+        //         'icon' => 'fa-ban',
+        //         'color' => 'danger',
+        //         'status' => 'completed'
+        //     ];
+        // }
 
         // Approval Request Rejected
         if ($approvalRequest->status === ApprovalRequest::STATUS_REJECTED && $approvalRequest->rejected_at) {
@@ -512,6 +431,7 @@ class ApprovalRequestController extends Controller
     }
 
     // Approve a request
+    //! DIPAKAI DI ROUTE admin.signature.approval.approve
     public function approve(Request $request, $id)
     {
         try {
@@ -552,26 +472,6 @@ class ApprovalRequestController extends Controller
             // FIX #6: Reload approvalRequest to get the freshly created documentSignature relation
             $approvalRequest->refresh();
             $approvalRequest->load('documentSignature');
-
-            // Generate QR code for verification
-            // if ($approvalRequest->documentSignature) {
-            //     try {
-            //         $this->qrCodeService->generateVerificationQR($approvalRequest->documentSignature->id);
-            //         Log::info('QR code generated successfully', [
-            //             'document_signature_id' => $approvalRequest->documentSignature->id
-            //         ]);
-            //     } catch (\Exception $qrException) {
-            //         // Log QR generation failure but don't fail the entire approval
-            //         Log::error('QR code generation failed', [
-            //             'document_signature_id' => $approvalRequest->documentSignature->id,
-            //             'error' => $qrException->getMessage()
-            //         ]);
-            //     }
-            // } else {
-            //     Log::warning('DocumentSignature not created during approval', [
-            //         'approval_request_id' => $id
-            //     ]);
-            // }
 
             // Send notification to student
             try {
@@ -626,6 +526,7 @@ class ApprovalRequestController extends Controller
     }
 
     // Reject a request
+    //! DIPAKAI DI ROUTE admin.signature.approval.reject
     public function reject(Request $request, $id)
     {
         $validator = Validator::make($request->all(), [
@@ -715,6 +616,7 @@ class ApprovalRequestController extends Controller
     }
 
     // Display status of approval requests for the student
+    //! DIPAKAI DI ROUTE user.signature.approval.status
     public function status()
     {
         try {
@@ -731,96 +633,99 @@ class ApprovalRequestController extends Controller
         }
     }
 
-    public function uploadSignedDocument(Request $request, $id)
-    {
-        $validator = Validator::make($request->all(), [
-            'signed_document_path' => 'required|file|mimes:pdf|max:25600',
-        ]);
+    // public function uploadSignedDocument(Request $request, $id)
+    // {
+    //     $validator = Validator::make($request->all(), [
+    //         'signed_document_path' => 'required|file|mimes:pdf|max:25600',
+    //     ]);
 
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 400);
-        }
+    //     if ($validator->fails()) {
+    //         return response()->json(['errors' => $validator->errors()], 400);
+    //     }
 
-        try {
-            $approvalRequest = ApprovalRequest::findOrFail($id);
+    //     try {
+    //         $approvalRequest = ApprovalRequest::findOrFail($id);
 
-            if ($request->hasFile('signed_document_path')) {
-                $file = $request->file('signed_document_path');
-                $path = $file->store('signed_documents', 'public');
+    //         if ($request->hasFile('signed_document_path')) {
+    //             $file = $request->file('signed_document_path');
+    //             $path = $file->store('signed_documents', 'public');
 
-                Log::info('Signed document uploaded: ' . $path);
+    //             Log::info('Signed document uploaded: ' . $path);
 
-                // Update approval request
-                $approvalRequest->update([
-                    'signed_document_path' => $path,
-                    'status' => ApprovalRequest::STATUS_SIGN_APPROVED
-                ]);
+    //             // Update approval request
+    //             $approvalRequest->update([
+    //                 'signed_document_path' => $path,
+    //                 'status' => ApprovalRequest::STATUS_SIGN_APPROVED
+    //             ]);
 
-                // Generate QR code if DocumentSignature exists
-                if ($approvalRequest->documentSignature) {
-                    $qrData = $this->qrCodeService->generateVerificationQR(
-                        $approvalRequest->documentSignature->id
-                    );
+    //             // Generate QR code if DocumentSignature exists
+    //             if ($approvalRequest->documentSignature) {
+    //                 $qrData = $this->qrCodeService->generateVerificationQR(
+    //                     $approvalRequest->documentSignature->id
+    //                 );
 
-                    // Send notification with QR code
-                    Mail::to($approvalRequest->user->email)->send(
-                        new ApprovalRequestSignedNotification($approvalRequest, $qrData['qr_code_url'])
-                    );
-                }
+    //                 // Send notification with QR code
+    //                 Mail::to($approvalRequest->user->email)->send(
+    //                     new ApprovalRequestSignedNotification($approvalRequest, $qrData['qr_code_url'])
+    //                 );
+    //             }
 
-                Log::info('Signed document processed successfully', [
-                    'approval_request_id' => $id,
-                    'file_path' => $path
-                ]);
+    //             Log::info('Signed document processed successfully', [
+    //                 'approval_request_id' => $id,
+    //                 'file_path' => $path
+    //             ]);
 
-                return response()->json(['message' => 'Document uploaded successfully.']);
-            }
+    //             return response()->json(['message' => 'Document uploaded successfully.']);
+    //         }
 
-            return response()->json(['error' => 'File upload failed.'], 400);
+    //         return response()->json(['error' => 'File upload failed.'], 400);
 
-        } catch (\Exception $e) {
-            Log::error('Signed document upload failed: ' . $e->getMessage());
-            return response()->json(['error' => 'Upload failed.'], 500);
-        }
-    }
+    //     } catch (\Exception $e) {
+    //         Log::error('Signed document upload failed: ' . $e->getMessage());
+    //         return response()->json(['error' => 'Upload failed.'], 500);
+    //     }
+    // }
 
-    public function downloadSignedDocument($id)
-    {
-        try {
-            $approvalRequest = ApprovalRequest::findOrFail($id);
+    // Download signed document (or original if not signed)
+    // public function downloadSignedDocument($id)
+    // {
+    //     try {
+    //         $approvalRequest = ApprovalRequest::findOrFail($id);
 
-            // Check authorization
-            if (!Kaprodi::isKaprodi() && $approvalRequest->user_id !== Auth::id()) {
-                abort(403, 'Unauthorized action.');
-            }
+    //         // Check authorization
+    //         if (!Kaprodi::isKaprodi() && $approvalRequest->user_id !== Auth::id()) {
+    //             abort(403, 'Unauthorized action.');
+    //         }
 
-            $filePath = $approvalRequest->signed_document_path ?? $approvalRequest->document_path;
-            $fullPath = storage_path('app/public/' . $filePath);
+    //         $filePath = $approvalRequest->signed_document_path ?? $approvalRequest->document_path;
+    //         $fullPath = storage_path('app/public/' . $filePath);
 
-            if (!file_exists($fullPath)) {
-                abort(404, 'File not found.');
-            }
+    //         if (!file_exists($fullPath)) {
+    //             abort(404, 'File not found.');
+    //         }
 
-            $suffix = $approvalRequest->signed_document_path ? '_signed' : '';
-            $filename = $approvalRequest->document_name . $suffix . '.' . pathinfo($fullPath, PATHINFO_EXTENSION);
+    //         $suffix = $approvalRequest->signed_document_path ? '_signed' : '';
+    //         $filename = $approvalRequest->document_name . $suffix . '.' . pathinfo($fullPath, PATHINFO_EXTENSION);
 
-            Log::info('Document downloaded', [
-                'approval_request_id' => $id,
-                'downloaded_by' => Auth::id(),
-                'file_type' => $suffix ? 'signed' : 'original'
-            ]);
+    //         Log::info('Document downloaded', [
+    //             'approval_request_id' => $id,
+    //             'downloaded_by' => Auth::id(),
+    //             'file_type' => $suffix ? 'signed' : 'original'
+    //         ]);
 
-            // return response()->download($fullPath, $filename);
-            return response($approvalRequest->signed_document_path ?? $approvalRequest->document_path)
-                ->header('Content-Type', mime_content_type($fullPath))
-                ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
+    //         // return response()->download($fullPath, $filename);
+    //         return response($approvalRequest->signed_document_path ?? $approvalRequest->document_path)
+    //             ->header('Content-Type', mime_content_type($fullPath))
+    //             ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
 
-        } catch (\Exception $e) {
-            Log::error('Document download failed: ' . $e->getMessage());
-            return back()->with('error', 'Download failed');
-        }
-    }
+    //     } catch (\Exception $e) {
+    //         Log::error('Document download failed: ' . $e->getMessage());
+    //         return back()->with('error', 'Download failed');
+    //     }
+    // }
 
+    // Download original document (Kaprodi only)
+    //! DIPAKAI DI ROUTE admin.signature.approval.download
     public function downloadDocument($id)
     {
         try {
@@ -855,68 +760,50 @@ class ApprovalRequestController extends Controller
     }
 
     // Public verification endpoint for encrypted document IDs
-    public function verifyDocument($encryptedId)
-    {
-        try {
-            $decryptedData = Crypt::decryptString($encryptedId);
-            $approvalRequestId = explode('|', $decryptedData)[0];
-
-            $approvalRequest = ApprovalRequest::with([
-                'user',
-                'documentSignature.digitalSignature'
-            ])->findOrFail($approvalRequestId);
-
-            // Perform verification
-            $verificationResult = null;
-            if ($approvalRequest->documentSignature) {
-                $verificationResult = $this->verificationService->verifyById(
-                    $approvalRequest->documentSignature->id
-                );
-            }
-
-            return view('approval_requests.verification', compact(
-                'approvalRequest',
-                'verificationResult'
-            ));
-
-        } catch (\Exception $e) {
-            Log::warning('Document verification failed', [
-                'encrypted_id' => $encryptedId,
-                'error' => $e->getMessage()
-            ]);
-
-            return view('approval_requests.verification-error', [
-                'message' => 'Invalid or expired verification link'
-            ]);
-        }
-    }
-
-    // Legacy verification route for backward compatibility
-    public function verifyLegacy($id)
-    {
-        return $this->verifyDocument($id);
-    }
-
-    // public function showUploadForm()
+    // public function verifyDocument($encryptedId)
     // {
     //     try {
-    //         $hasApprovalRequests = ApprovalRequest::where('user_id', Auth::id())->exists();
+    //         $decryptedData = Crypt::decryptString($encryptedId);
+    //         $approvalRequestId = explode('|', $decryptedData)[0];
 
-    //         // Get user's recent requests for context
-    //         $recentRequests = ApprovalRequest::where('user_id', Auth::id())
-    //             ->latest()
-    //             ->limit(5)
-    //             ->get();
-    //             // dd($recentRequests);
+    //         $approvalRequest = ApprovalRequest::with([
+    //             'user',
+    //             'documentSignature.digitalSignature'
+    //         ])->findOrFail($approvalRequestId);
 
-    //         return view('digital-signature.user.approval-request', compact('hasApprovalRequests', 'recentRequests'));
+    //         // Perform verification
+    //         $verificationResult = null;
+    //         if ($approvalRequest->documentSignature) {
+    //             $verificationResult = $this->verificationService->verifyById(
+    //                 $approvalRequest->documentSignature->id
+    //             );
+    //         }
+
+    //         return view('approval_requests.verification', compact(
+    //             'approvalRequest',
+    //             'verificationResult'
+    //         ));
 
     //     } catch (\Exception $e) {
-    //         Log::error('Failed to load upload form: ' . $e->getMessage());
-    //         return back()->with('error', 'Failed to load form');
+    //         Log::warning('Document verification failed', [
+    //             'encrypted_id' => $encryptedId,
+    //             'error' => $e->getMessage()
+    //         ]);
+
+    //         return view('approval_requests.verification-error', [
+    //             'message' => 'Invalid or expired verification link'
+    //         ]);
     //     }
     // }
 
+    // Legacy verification route for backward compatibility
+    // public function verifyLegacy($id)
+    // {
+    //     return $this->verifyDocument($id);
+    // }
+
+    // Show upload form for students
+    //! DIPAKAI DI ROUTE user.signature.approval.form
     public function showUploadForm()
     {
         try {
@@ -948,48 +835,50 @@ class ApprovalRequestController extends Controller
 
     // Additional utility methods for enhanced functionality
 
-    public function bulkApprove(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'approval_request_ids' => 'required|array',
-            'approval_request_ids.*' => 'exists:approval_requests,id',
-            'bulk_notes' => 'nullable|string|max:500'
-        ]);
+    // public function bulkApprove(Request $request)
+    // {
+    //     $validator = Validator::make($request->all(), [
+    //         'approval_request_ids' => 'required|array',
+    //         'approval_request_ids.*' => 'exists:approval_requests,id',
+    //         'bulk_notes' => 'nullable|string|max:500'
+    //     ]);
 
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 400);
-        }
+    //     if ($validator->fails()) {
+    //         return response()->json(['errors' => $validator->errors()], 400);
+    //     }
 
-        try {
-            $approved = 0;
-            $failed = 0;
+    //     try {
+    //         $approved = 0;
+    //         $failed = 0;
 
-            foreach ($request->approval_request_ids as $id) {
-                try {
-                    $approvalRequest = ApprovalRequest::findOrFail($id);
-                    if ($approvalRequest->status === ApprovalRequest::STATUS_PENDING) {
-                        $approvalRequest->approve(Auth::id(), $request->bulk_notes);
-                        $approved++;
-                    }
-                } catch (\Exception $e) {
-                    $failed++;
-                    Log::error("Bulk approve failed for ID {$id}: " . $e->getMessage());
-                }
-            }
+    //         foreach ($request->approval_request_ids as $id) {
+    //             try {
+    //                 $approvalRequest = ApprovalRequest::findOrFail($id);
+    //                 if ($approvalRequest->status === ApprovalRequest::STATUS_PENDING) {
+    //                     $approvalRequest->approve(Auth::id(), $request->bulk_notes);
+    //                     $approved++;
+    //                 }
+    //             } catch (\Exception $e) {
+    //                 $failed++;
+    //                 Log::error("Bulk approve failed for ID {$id}: " . $e->getMessage());
+    //             }
+    //         }
 
-            return response()->json([
-                'success' => true,
-                'message' => "Bulk approval completed. {$approved} approved, {$failed} failed.",
-                'approved' => $approved,
-                'failed' => $failed
-            ]);
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => "Bulk approval completed. {$approved} approved, {$failed} failed.",
+    //             'approved' => $approved,
+    //             'failed' => $failed
+    //         ]);
 
-        } catch (\Exception $e) {
-            Log::error('Bulk approval failed: ' . $e->getMessage());
-            return response()->json(['error' => 'Bulk approval failed'], 500);
-        }
-    }
+    //     } catch (\Exception $e) {
+    //         Log::error('Bulk approval failed: ' . $e->getMessage());
+    //         return response()->json(['error' => 'Bulk approval failed'], 500);
+    //     }
+    // }
 
+    // Export approval requests data
+    //! DIPAKAI DI ROUTE admin.signature.approval.export
     public function exportApprovalRequests(Request $request)
     {
         try {
@@ -1024,6 +913,8 @@ class ApprovalRequestController extends Controller
         }
     }
 
+    // Export to CSV helper
+    //! DIPAKAI DI METHOD exportApprovalRequests
     private function exportToCSV($approvalRequests)
     {
         $filename = 'approval_requests_' . date('Y-m-d_H-i-s') . '.csv';

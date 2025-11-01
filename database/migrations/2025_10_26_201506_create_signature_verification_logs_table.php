@@ -12,9 +12,6 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('signature_verification_logs', function (Blueprint $table) {
-            // $table->id();
-            // $table->timestamps();
-
             $table->id();
 
             // Core fields

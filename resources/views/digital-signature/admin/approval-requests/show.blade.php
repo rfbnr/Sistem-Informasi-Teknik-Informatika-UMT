@@ -178,39 +178,10 @@
                                 <br><small class="text-muted">{{ $approvalRequest->created_at->diffForHumans() }}</small>
                             </p>
                         </div>
-                        {{-- <div class="col-md-6">
-                            <label class="text-muted small">Priority</label>
-                            <p class="mb-0">
-                                @php
-                                    $priorityColors = [
-                                        'low' => 'secondary',
-                                        'normal' => 'primary',
-                                        'high' => 'warning',
-                                        'urgent' => 'danger'
-                                    ];
-                                    $priorityColor = $priorityColors[$approvalRequest->priority] ?? 'secondary';
-                                @endphp
-                                <span class="badge bg-{{ $priorityColor }}">
-                                    {{ ucfirst($approvalRequest->priority ?? 'Normal') }}
-                                </span>
-                            </p>
-                        </div> --}}
-                        {{-- @if($approvalRequest->deadline)
-                            <div class="col-md-12">
-                                <label class="text-muted small">Deadline</label>
-                                <p class="mb-0">
-                                    <i class="fas fa-calendar-alt me-1"></i>
-                                    {{ \Carbon\Carbon::parse($approvalRequest->deadline)->format('d M Y') }}
-                                    @if(\Carbon\Carbon::parse($approvalRequest->deadline)->isPast())
-                                        <span class="badge bg-danger ms-2">Overdue</span>
-                                    @endif
-                                </p>
-                            </div>
-                        @endif --}}
                         @if($approvalRequest->notes)
                             <div class="col-12">
                                 <label class="text-muted small">Notes from Student</label>
-                                <div class="alert alert-info border-0 mb-0 fade-in alert-dismissible">
+                                <div class="alert alert-info border-0 mb-0 show">
                                     <i class="fas fa-comment-dots me-2"></i>
                                     {{ $approvalRequest->notes }}
                                 </div>
@@ -415,7 +386,7 @@
 <!-- Include Modals -->
 @include('digital-signature.admin.approval-requests.partials.approve-modal')
 @include('digital-signature.admin.approval-requests.partials.reject-modal')
-@include('digital-signature.admin.approval-requests.partials.approve-signature-modal')
+{{-- @include('digital-signature.admin.approval-requests.partials.approve-signature-modal') --}}
 
 @endsection
 
@@ -558,33 +529,33 @@ function showApproveSignatureModal(id, documentName) {
     modal.show();
 }
 
-function performApproveSignature() {
-    const requestId = document.getElementById('approveSignatureRequestId').value;
-    const notes = document.getElementById('approve_signature_notes').value;
+// function performApproveSignature() {
+//     const requestId = document.getElementById('approveSignatureRequestId').value;
+//     const notes = document.getElementById('approve_signature_notes').value;
 
-    fetch(`/admin/signature/approval-requests/${requestId}/approve-signature`, {
-        method: 'POST',
-        headers: {
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ approval_notes: notes })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success || !data.error) {
-            alert('Signature approved successfully!');
-            location.reload();
-        } else {
-            alert(data.message || 'Failed to approve signature');
-        }
-        bootstrap.Modal.getInstance(document.getElementById('approveSignatureModal')).hide();
-    })
-    .catch(error => {
-        alert('An error occurred while approving the signature');
-        console.error('Error:', error);
-    });
-}
+//     fetch(`/admin/signature/approval-requests/${requestId}/approve-signature`, {
+//         method: 'POST',
+//         headers: {
+//             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+//             'Content-Type': 'application/json'
+//         },
+//         body: JSON.stringify({ approval_notes: notes })
+//     })
+//     .then(response => response.json())
+//     .then(data => {
+//         if (data.success || !data.error) {
+//             alert('Signature approved successfully!');
+//             location.reload();
+//         } else {
+//             alert(data.message || 'Failed to approve signature');
+//         }
+//         bootstrap.Modal.getInstance(document.getElementById('approveSignatureModal')).hide();
+//     })
+//     .catch(error => {
+//         alert('An error occurred while approving the signature');
+//         console.error('Error:', error);
+//     });
+// }
 
 // Show Alert Helper
 function showAlert(type, message) {

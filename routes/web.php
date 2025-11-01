@@ -103,73 +103,33 @@ Route::middleware(['auth:kaprodi'])->prefix('admin/signature')->name('admin.sign
     Route::get('dashboard', [DigitalSignatureController::class, 'adminDashboard'])
         ->name('dashboard');
 
-    // ==================== DIGITAL SIGNATURE KEY MANAGEMENT ====================
-    // Route::prefix('keys')->name('keys.')->group(function () {
-    //     Route::get('/', [DigitalSignatureController::class, 'keyManagement'])
-    //         ->name('index');
-    //     Route::get('create', [DigitalSignatureController::class, 'createKeyForm'])
-    //         ->name('create');
-    //     Route::post('store', [DigitalSignatureController::class, 'createSignatureKey'])
-    //         ->name('store');
-    //     Route::get('{id}', [DigitalSignatureController::class, 'viewSignatureKey'])
-    //         ->name('view');
-    //     Route::post('{id}/revoke', [DigitalSignatureController::class, 'revokeSignatureKey'])
-    //         ->name('revoke');
-    // });
-
     // ==================== DOCUMENT SIGNATURES MANAGEMENT ====================
     Route::prefix('documents')->name('documents.')->group(function () {
         Route::get('/', [DocumentSignatureController::class, 'index'])
             ->name('index');
         Route::get('{id}', [DocumentSignatureController::class, 'show'])
             ->name('show');
-        Route::get('{id}/quick-preview', [DocumentSignatureController::class, 'quickPreview'])
-            ->name('quick.preview');
-        Route::post('{id}/verify', [DocumentSignatureController::class, 'verify'])
-            ->name('verify');
-        Route::post('{id}/reject', [DocumentSignatureController::class, 'reject'])
-            ->name('reject');
+        // Route::get('{id}/quick-preview', [DocumentSignatureController::class, 'quickPreview'])
+        //     ->name('quick.preview');
+        // Route::post('{id}/verify', [DocumentSignatureController::class, 'verify'])
+        //     ->name('verify');
+        // Route::post('{id}/reject', [DocumentSignatureController::class, 'reject'])
+        //     ->name('reject');
         Route::post('{id}/invalidate', [DocumentSignatureController::class, 'invalidate'])
             ->name('invalidate');
-        Route::post('batch-verify', [DocumentSignatureController::class, 'batchVerify'])
-            ->name('batch.verify');
+        // Route::post('batch-verify', [DocumentSignatureController::class, 'batchVerify'])
+        //     ->name('batch.verify');
         Route::get('{id}/view', [DocumentSignatureController::class, 'viewSignedDocument'])
             ->name('view');
         Route::get('{id}/download', [DocumentSignatureController::class, 'downloadSignedDocument'])
             ->name('download');
         Route::get('{id}/qr-code', [DocumentSignatureController::class, 'downloadQRCode'])
             ->name('qr.download');
-        Route::post('{id}/regenerate-qr', [DocumentSignatureController::class, 'regenerateQRCode'])
-            ->name('qr.regenerate');
+        // Route::post('{id}/regenerate-qr', [DocumentSignatureController::class, 'regenerateQRCode'])
+        //     ->name('qr.regenerate');
         Route::get('export', [DocumentSignatureController::class, 'export'])
             ->name('export');
     });
-
-    // ==================== SIGNATURE TEMPLATE MANAGEMENT ====================
-    // Route::prefix('templates')->name('templates.')->group(function () {
-    //     Route::get('/', [SignatureTemplateController::class, 'index'])
-    //         ->name('index');
-    //     Route::get('create', [SignatureTemplateController::class, 'create'])
-    //         ->name('create');
-    //     Route::post('store', [SignatureTemplateController::class, 'store'])
-    //         ->name('store');
-    //     Route::get('{id}', [SignatureTemplateController::class, 'show'])
-    //         ->name('show');
-    //     Route::get('{id}/edit', [SignatureTemplateController::class, 'edit'])
-    //         ->name('edit');
-    //     Route::put('{id}', [SignatureTemplateController::class, 'update'])
-    //         ->name('update');
-    //     Route::delete('{id}', [SignatureTemplateController::class, 'destroy'])
-    //         ->name('destroy');
-    //     Route::post('{id}/set-default', [SignatureTemplateController::class, 'setDefault'])
-    //         ->name('set.default');
-    //     Route::post('{id}/upload-signature', [SignatureTemplateController::class, 'uploadSignatureImage'])
-    //         ->name('upload.signature');
-    //     Route::post('{id}/clone', [SignatureTemplateController::class, 'clone'])
-    //         ->name('clone');
-    //     Route::get('active/list', [SignatureTemplateController::class, 'getActiveTemplates'])
-    //         ->name('active');
-    // });
 
     // ==================== APPROVAL REQUEST MANAGEMENT ====================
     Route::prefix('approval-requests')->name('approval.')->group(function () {
@@ -181,10 +141,10 @@ Route::middleware(['auth:kaprodi'])->prefix('admin/signature')->name('admin.sign
             ->name('approve');
         Route::post('{id}/reject', [ApprovalRequestController::class, 'reject'])
             ->name('reject');
-        Route::post('{id}/approve-signature', [ApprovalRequestController::class, 'approveSignature'])
-            ->name('approve.signature');
-        Route::post('bulk-approve', [ApprovalRequestController::class, 'bulkApprove'])
-            ->name('bulk.approve');
+        // Route::post('{id}/approve-signature', [ApprovalRequestController::class, 'approveSignature'])
+        //     ->name('approve.signature');
+        // Route::post('bulk-approve', [ApprovalRequestController::class, 'bulkApprove'])
+        //     ->name('bulk.approve');
         Route::get('export', [ApprovalRequestController::class, 'exportApprovalRequests'])
             ->name('export');
         Route::get('{id}/download', [ApprovalRequestController::class, 'downloadDocument'])
@@ -192,17 +152,18 @@ Route::middleware(['auth:kaprodi'])->prefix('admin/signature')->name('admin.sign
     });
 
     // ==================== VERIFICATION TOOLS ====================
-    Route::get('verification-tools', [DigitalSignatureController::class, 'verificationTools'])
-        ->name('verification.tools');
-    Route::post('manual-verify', [DigitalSignatureController::class, 'manualVerification'])
-        ->name('manual.verify');
+    // Route::get('verification-tools', [DigitalSignatureController::class, 'verificationTools'])
+    //     ->name('verification.tools');
+    // Route::post('manual-verify', [DigitalSignatureController::class, 'manualVerification'])
+    //     ->name('manual.verify');
 
     // ==================== STATISTICS & EXPORT ====================
-    Route::get('statistics', [DocumentSignatureController::class, 'getStatistics'])
-        ->name('statistics');
-    Route::get('export', [DigitalSignatureController::class, 'exportStatistics'])
-        ->name('export');
+    // Route::get('statistics', [DocumentSignatureController::class, 'getStatistics'])
+    //     ->name('statistics');
+    // Route::get('export', [DigitalSignatureController::class, 'exportStatistics'])
+    //     ->name('export');
 
+    //! Belum di Cross-check penggunaan route di bawah ini
     // ==================== REPORTS & ANALYTICS ====================
     Route::prefix('reports')->name('reports.')->group(function () {
         Route::get('/', [ReportAnalyticsController::class, 'index'])
@@ -313,51 +274,51 @@ Route::prefix('api')->middleware(['auth:web,kaprodi'])->name('api.')->group(func
 // ===================================================================
 // DEVELOPMENT & TESTING ROUTES (Local Environment Only)
 // ===================================================================
-if (app()->environment('local', 'staging')) {
-    Route::prefix('dev/signature')->name('dev.signature.')->group(function () {
-        Route::get('test-canvas', function () {
-            return view('digital-signature.dev.test-canvas');
-        })->name('test.canvas');
+// if (app()->environment('local', 'staging')) {
+//     Route::prefix('dev/signature')->name('dev.signature.')->group(function () {
+//         Route::get('test-canvas', function () {
+//             return view('digital-signature.dev.test-canvas');
+//         })->name('test.canvas');
 
-        Route::get('test-verification/{token}', [VerificationController::class, 'testVerification'])
-            ->name('test.verification');
+//         Route::get('test-verification/{token}', [VerificationController::class, 'testVerification'])
+//             ->name('test.verification');
 
-        Route::post('generate-test-data', [DigitalSignatureController::class, 'generateTestData'])
-            ->name('generate.test.data');
+//         Route::post('generate-test-data', [DigitalSignatureController::class, 'generateTestData'])
+//             ->name('generate.test.data');
 
-        // Test routes for UI components
-        Route::get('test/layout', function () {
-            return view('digital-signature.layouts.app');
-        })->name('test.layout');
+//         // Test routes for UI components
+//         Route::get('test/layout', function () {
+//             return view('digital-signature.layouts.app');
+//         })->name('test.layout');
 
-        Route::get('test/admin-dashboard', function () {
-            $stats = [
-                'total_signatures' => 10,
-                'active_signatures' => 8,
-                'expired_signatures' => 2,
-                'total_documents_signed' => 25,
-                'pending_signatures' => 5,
-                'verified_signatures' => 20
-            ];
-            $recentSignatures = collect();
-            $expiringSignatures = collect();
-            $verificationStats = ['verification_rate' => 85, 'total_signatures' => 10, 'verified_signatures' => 8, 'period_days' => 30];
+//         Route::get('test/admin-dashboard', function () {
+//             $stats = [
+//                 'total_signatures' => 10,
+//                 'active_signatures' => 8,
+//                 'expired_signatures' => 2,
+//                 'total_documents_signed' => 25,
+//                 'pending_signatures' => 5,
+//                 'verified_signatures' => 20
+//             ];
+//             $recentSignatures = collect();
+//             $expiringSignatures = collect();
+//             $verificationStats = ['verification_rate' => 85, 'total_signatures' => 10, 'verified_signatures' => 8, 'period_days' => 30];
 
-            return view('digital-signature.admin.dashboard', compact('stats', 'recentSignatures', 'expiringSignatures', 'verificationStats'));
-        })->name('test.admin.dashboard');
+//             return view('digital-signature.admin.dashboard', compact('stats', 'recentSignatures', 'expiringSignatures', 'verificationStats'));
+//         })->name('test.admin.dashboard');
 
-        Route::get('test/user-form', function () {
-            $hasApprovalRequests = false;
-            $recentRequests = collect();
-            return view('digital-signature.user.approval-request', compact('hasApprovalRequests', 'recentRequests'));
-        })->name('test.user.form');
+//         Route::get('test/user-form', function () {
+//             $hasApprovalRequests = false;
+//             $recentRequests = collect();
+//             return view('digital-signature.user.approval-request', compact('hasApprovalRequests', 'recentRequests'));
+//         })->name('test.user.form');
 
-        Route::get('test/user-status', function () {
-            $approvalRequests = collect();
-            return view('digital-signature.user.status', compact('approvalRequests'));
-        })->name('test.user.status');
-    });
-}
+//         Route::get('test/user-status', function () {
+//             $approvalRequests = collect();
+//             return view('digital-signature.user.status', compact('approvalRequests'));
+//         })->name('test.user.status');
+//     });
+// }
 
 // ===================================================================
 // ROUTE MODEL BINDINGS

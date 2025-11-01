@@ -16,6 +16,7 @@ class DigitalSignatureService
     /**
      * Generate RSA key pair dengan enhanced security
      */
+    //! DIPAKAI DI CREATEDIGITALSIGNATUREFORDOCUMENT METHOD
     public function generateKeyPair($keyLength = 2048, $algorithm = 'RSA-SHA256')
     {
         try {
@@ -70,6 +71,7 @@ class DigitalSignatureService
      * @param int $validityYears Default 3 years for document signatures
      * @return DigitalSignature
      */
+    //! DIPAKAI DI SignDocumentWithUniqueKey METHOD
     public function createDigitalSignatureForDocument(DocumentSignature $documentSignature, $validityYears = 3)
     {
         try {
@@ -138,6 +140,7 @@ class DigitalSignatureService
      * REFACTORED: Create CMS signature untuk dokumen
      * Can accept either DigitalSignature instance or ID
      */
+    //! DIPAKAI DI SignDocumentWithUniqueKey METHOD
     public function createCMSSignature($documentPath, $digitalSignature)
     {
         try {
@@ -296,6 +299,7 @@ class DigitalSignatureService
      * @param string $finalPdfPath Path to PDF with embedded QR
      * @return DocumentSignature
      */
+    //! DIPAKAI DI CONTROLLER DIGITALSIGNATURE PROCESSDOCUMENTSIGNING METHOD
     public function signDocumentWithUniqueKey(DocumentSignature $documentSignature, $finalPdfPath)
     {
         try {
@@ -324,7 +328,6 @@ class DigitalSignatureService
                 'signature_value' => $signatureData['signature_value'],
                 'cms_signature' => $signatureData['cms_signature'],
                 'signed_at' => $signatureData['signed_at'],
-                // 'signed_by' => Auth::guard('kaprodi')->id(),
                 'signed_by' => $approvalRequest->approved_by,
                 'signature_status' => DocumentSignature::STATUS_VERIFIED,
                 'signature_metadata' => $signatureData['metadata'],
@@ -380,6 +383,7 @@ class DigitalSignatureService
     /**
      * Generate self-signed certificate for the public key
      */
+    //! DIPAKAI DI GenerateKeyPair METHOD
     private function generateSelfSignedCertificate($privateKey, $publicKeyDetails)
     {
         try {
@@ -433,6 +437,7 @@ class DigitalSignatureService
     /**
      * Generate fingerprint dari public key
      */
+    //! DIPAKAI DI GenerateKeyPair METHOD
     private function generateFingerprint($publicKey)
     {
         return strtoupper(chunk_split(hash('sha256', $publicKey), 2, ':'));

@@ -17,13 +17,13 @@
                     <i class="fas fa-file-signature me-3"></i>
                     Document Signatures Management
                 </h1>
-                <p class="mb-0 opacity-75">Monitor and verify digitally signed documents</p>
+                <p class="mb-0 opacity-75">Monitor digitally signed documents</p>
             </div>
             <div class="col-lg-4 text-end">
                 <div class="btn-group">
-                    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#batchVerifyModal">
+                    {{-- <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#batchVerifyModal">
                         <i class="fas fa-check-double me-1"></i> Batch Verify
-                    </button>
+                    </button> --}}
                     <a href="{{ route('admin.signature.documents.export') }}" class="btn btn-success">
                         <i class="fas fa-download me-1"></i> Export
                     </a>
@@ -52,12 +52,12 @@
                 <div class="text-muted">Verified</div>
             </div>
         </div>
-        <div class="col-md-2-4">
+        {{-- <div class="col-md-2-4">
             <div class="stats-card">
                 <div class="stats-number text-danger">{{ $statusCounts['rejected'] }}</div>
                 <div class="text-muted">Rejected</div>
             </div>
-        </div>
+        </div> --}}
         <div class="col-md-2-4">
             <div class="stats-card">
                 <div class="stats-number text-secondary">{{ $statusCounts['invalid'] }}</div>
@@ -68,8 +68,8 @@
 
     <style>
         .col-md-2-4 {
-            flex: 0 0 20%;
-            max-width: 20%;
+            flex: 0 0 25%;
+            max-width: 25%;
         }
         @media (max-width: 768px) {
             .col-md-2-4 {
@@ -95,7 +95,7 @@
                         <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
                         <option value="signed" {{ request('status') == 'signed' ? 'selected' : '' }}>Signed</option>
                         <option value="verified" {{ request('status') == 'verified' ? 'selected' : '' }}>Verified</option>
-                        <option value="rejected" {{ request('status') == 'rejected' ? 'selected' : '' }}>Rejected</option>
+                        {{-- <option value="rejected" {{ request('status') == 'rejected' ? 'selected' : '' }}>Rejected</option> --}}
                         <option value="invalid" {{ request('status') == 'invalid' ? 'selected' : '' }}>Invalid</option>
                     </select>
                 </div>

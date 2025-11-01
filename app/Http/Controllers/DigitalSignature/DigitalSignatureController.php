@@ -8,8 +8,6 @@ use App\Services\QRCodeService;
 use App\Models\DigitalSignature;
 use App\Models\DocumentSignature;
 use App\Models\SignatureAuditLog;
-// REMOVED: SignatureTemplate - no longer using signature templates
-// use App\Models\SignatureTemplate;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
@@ -42,6 +40,7 @@ class DigitalSignatureController extends Controller
     /**
      * Admin dashboard untuk digital signature management
      */
+    //! DIPAKAI DI ROUTE web.php
     public function adminDashboard()
     {
         try {
@@ -55,7 +54,7 @@ class DigitalSignatureController extends Controller
                 // NEW: Approval Request stats
                 'pending_approvals' => ApprovalRequest::where('status', ApprovalRequest::STATUS_PENDING)->count(),
                 // 'need_verification' => DocumentSignature::where('signature_status', DocumentSignature::STATUS_SIGNED)->count(),
-                'rejected_signatures' => DocumentSignature::where('signature_status', DocumentSignature::STATUS_REJECTED)->count(),
+                // 'rejected_signatures' => DocumentSignature::where('signature_status', DocumentSignature::STATUS_REJECTED)->count(),
             ];
 
 
@@ -102,60 +101,6 @@ class DigitalSignatureController extends Controller
             return back()->with('error', 'Failed to load dashboard data');
         }
     }
-
-    /**
-     * DEPRECATED: Key management interface
-     * Keys are now auto-generated per document, no manual management needed
-     */
-    // public function keyManagement()
-    // {
-    //     try {
-    //         $signatures = DigitalSignature::with('documentSignature')
-    //             ->orderBy('created_at', 'desc')
-    //             ->paginate(15);
-
-    //         return view('digital-signature.admin.key-management.index', compact('signatures'));
-
-    //     } catch (\Exception $e) {
-    //         Log::error('Key management error: ' . $e->getMessage());
-    //         return back()->with('error', 'Failed to load key management data');
-    //     }
-    // }
-
-    /**
-     * DEPRECATED: Create new digital signature key
-     * Keys are now auto-generated during document signing
-     */
-    // public function createSignatureKey(Request $request)
-    // {
-    //     return back()->with('error', 'Manual key creation is deprecated. Keys are auto-generated per document.');
-    // }
-
-    /**
-     * DEPRECATED: View signature key details
-     * Keys are now auto-generated per document
-     */
-    // public function viewSignatureKey($id)
-    // {
-    //     try {
-    //         $signature = DigitalSignature::with('documentSignature')->findOrFail($id);
-
-    //         return view('digital-signature.admin.key-management.show', compact('signature'));
-
-    //     } catch (\Exception $e) {
-    //         Log::error('View signature key error: ' . $e->getMessage());
-    //         return back()->with('error', 'Signature key not found');
-    //     }
-    // }
-
-    /**
-     * DEPRECATED: Revoke signature key
-     * Keys are now auto-generated per document and expire with document signature
-     */
-    // public function revokeSignatureKey(Request $request, $id)
-    // {
-    //     return back()->with('error', 'Manual key revocation is deprecated. Keys are auto-generated per document.');
-    // }
 
     /**
      * REFACTORED: Document signing interface untuk user
@@ -217,6 +162,7 @@ class DigitalSignatureController extends Controller
      * REFACTORED: Process document signing with QR drag & drop
      * Flow: Save QR positioning → Embed QR → Auto-generate key → Sign document
      */
+    //! DIPAKAI DI ROUTE web.php
     public function processDocumentSigning(Request $request, $approvalRequestId)
     {
         $startTime = microtime(true); // Track signing duration
@@ -497,109 +443,109 @@ class DigitalSignatureController extends Controller
     /**
      * Verification tools untuk admin
      */
-    public function verificationTools()
-    {
-        try {
-            $recentVerifications = DocumentSignature::with(['approvalRequest', 'signer'])
-                ->where('signature_status', DocumentSignature::STATUS_VERIFIED)
-                ->latest('verified_at')
-                ->limit(20)
-                ->get();
+    // public function verificationTools()
+    // {
+    //     try {
+    //         $recentVerifications = DocumentSignature::with(['approvalRequest', 'signer'])
+    //             ->where('signature_status', DocumentSignature::STATUS_VERIFIED)
+    //             ->latest('verified_at')
+    //             ->limit(20)
+    //             ->get();
 
-            $verificationStats = $this->verificationService->getVerificationStatistics();
+    //         $verificationStats = $this->verificationService->getVerificationStatistics();
 
-            return view('digital-signature.admin.verification-tools', compact(
-                'recentVerifications',
-                'verificationStats'
-            ));
+    //         return view('digital-signature.admin.verification-tools', compact(
+    //             'recentVerifications',
+    //             'verificationStats'
+    //         ));
 
-        } catch (\Exception $e) {
-            Log::error('Verification tools error: ' . $e->getMessage());
-            return back()->with('error', 'Failed to load verification tools');
-        }
-    }
+    //     } catch (\Exception $e) {
+    //         Log::error('Verification tools error: ' . $e->getMessage());
+    //         return back()->with('error', 'Failed to load verification tools');
+    //     }
+    // }
 
     /**
      * Manual verification oleh admin
      */
-    public function manualVerification(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'document_signature_id' => 'required|exists:document_signatures,id'
-        ]);
+    // public function manualVerification(Request $request)
+    // {
+    //     $validator = Validator::make($request->all(), [
+    //         'document_signature_id' => 'required|exists:document_signatures,id'
+    //     ]);
 
-        if ($validator->fails()) {
-            return back()->withErrors($validator);
-        }
+    //     if ($validator->fails()) {
+    //         return back()->withErrors($validator);
+    //     }
 
-        try {
-            $verificationResult = $this->verificationService->verifyById($request->document_signature_id);
+    //     try {
+    //         $verificationResult = $this->verificationService->verifyById($request->document_signature_id);
 
-            if ($verificationResult['is_valid']) {
-                // Update status jika valid
-                $documentSignature = DocumentSignature::findOrFail($request->document_signature_id);
-                $documentSignature->update([
-                    'signature_status' => DocumentSignature::STATUS_VERIFIED,
-                    'verified_at' => now(),
-                    'verified_by' => Auth::id()
-                ]);
+    //         if ($verificationResult['is_valid']) {
+    //             // Update status jika valid
+    //             $documentSignature = DocumentSignature::findOrFail($request->document_signature_id);
+    //             $documentSignature->update([
+    //                 'signature_status' => DocumentSignature::STATUS_VERIFIED,
+    //                 'verified_at' => now(),
+    //                 'verified_by' => Auth::id()
+    //             ]);
 
-                return back()->with('success', 'Document signature verified successfully');
-            } else {
-                return back()->with('error', 'Verification failed: ' . $verificationResult['message']);
-            }
+    //             return back()->with('success', 'Document signature verified successfully');
+    //         } else {
+    //             return back()->with('error', 'Verification failed: ' . $verificationResult['message']);
+    //         }
 
-        } catch (\Exception $e) {
-            Log::error('Manual verification failed: ' . $e->getMessage());
-            return back()->with('error', 'Verification process failed');
-        }
-    }
+    //     } catch (\Exception $e) {
+    //         Log::error('Manual verification failed: ' . $e->getMessage());
+    //         return back()->with('error', 'Verification process failed');
+    //     }
+    // }
 
     /**
      * Export signature statistics
      */
-    public function exportStatistics(Request $request)
-    {
-        try {
-            $period = $request->get('period', 30);
-            $format = $request->get('format', 'json');
+    // public function exportStatistics(Request $request)
+    // {
+    //     try {
+    //         $period = $request->get('period', 30);
+    //         $format = $request->get('format', 'json');
 
-            $stats = $this->verificationService->getVerificationStatistics($period);
+    //         $stats = $this->verificationService->getVerificationStatistics($period);
 
-            // Add detailed signature data
-            $signatures = DigitalSignature::with(['creator', 'documentSignatures'])
-                ->where('created_at', '>=', now()->subDays($period))
-                ->get();
+    //         // Add detailed signature data
+    //         $signatures = DigitalSignature::with(['creator', 'documentSignatures'])
+    //             ->where('created_at', '>=', now()->subDays($period))
+    //             ->get();
 
-            $exportData = [
-                'period' => $period,
-                'generated_at' => now(),
-                'statistics' => $stats,
-                'signatures' => $signatures->map(function ($signature) {
-                    return [
-                        'id' => $signature->id,
-                        'signature_id' => $signature->signature_id,
-                        'algorithm' => $signature->algorithm,
-                        'status' => $signature->status,
-                        'created_at' => $signature->created_at,
-                        'valid_until' => $signature->valid_until,
-                        'documents_signed' => $signature->documentSignatures->count(),
-                        'creator' => $signature->creator->name ?? 'Unknown'
-                    ];
-                })
-            ];
+    //         $exportData = [
+    //             'period' => $period,
+    //             'generated_at' => now(),
+    //             'statistics' => $stats,
+    //             'signatures' => $signatures->map(function ($signature) {
+    //                 return [
+    //                     'id' => $signature->id,
+    //                     'signature_id' => $signature->signature_id,
+    //                     'algorithm' => $signature->algorithm,
+    //                     'status' => $signature->status,
+    //                     'created_at' => $signature->created_at,
+    //                     'valid_until' => $signature->valid_until,
+    //                     'documents_signed' => $signature->documentSignatures->count(),
+    //                     'creator' => $signature->creator->name ?? 'Unknown'
+    //                 ];
+    //             })
+    //         ];
 
-            if ($format === 'csv') {
-                return $this->exportToCSV($exportData);
-            }
+    //         if ($format === 'csv') {
+    //             return $this->exportToCSV($exportData);
+    //         }
 
-            return response()->json($exportData);
+    //         return response()->json($exportData);
 
-        } catch (\Exception $e) {
-            Log::error('Export statistics failed: ' . $e->getMessage());
-            return response()->json(['error' => 'Export failed'], 500);
-        }
-    }
+    //     } catch (\Exception $e) {
+    //         Log::error('Export statistics failed: ' . $e->getMessage());
+    //         return response()->json(['error' => 'Export failed'], 500);
+    //     }
+    // }
 
     /**
      * Generate test signature untuk development
@@ -631,47 +577,47 @@ class DigitalSignatureController extends Controller
     /**
      * Export data to CSV format
      */
-    private function exportToCSV($data)
-    {
-        $filename = 'signature_statistics_' . date('Y-m-d_H-i-s') . '.csv';
+    // private function exportToCSV($data)
+    // {
+    //     $filename = 'signature_statistics_' . date('Y-m-d_H-i-s') . '.csv';
 
-        $headers = [
-            'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"'
-        ];
+    //     $headers = [
+    //         'Content-Type' => 'text/csv',
+    //         'Content-Disposition' => 'attachment; filename="' . $filename . '"'
+    //     ];
 
-        $callback = function() use ($data) {
-            $handle = fopen('php://output', 'w');
+    //     $callback = function() use ($data) {
+    //         $handle = fopen('php://output', 'w');
 
-            // CSV headers
-            fputcsv($handle, [
-                'Signature ID',
-                'Algorithm',
-                'Status',
-                'Created At',
-                'Valid Until',
-                'Documents Signed',
-                'Creator'
-            ]);
+    //         // CSV headers
+    //         fputcsv($handle, [
+    //             'Signature ID',
+    //             'Algorithm',
+    //             'Status',
+    //             'Created At',
+    //             'Valid Until',
+    //             'Documents Signed',
+    //             'Creator'
+    //         ]);
 
-            // CSV data
-            foreach ($data['signatures'] as $signature) {
-                fputcsv($handle, [
-                    $signature['signature_id'],
-                    $signature['algorithm'],
-                    $signature['status'],
-                    $signature['created_at'],
-                    $signature['valid_until'],
-                    $signature['documents_signed'],
-                    $signature['creator']
-                ]);
-            }
+    //         // CSV data
+    //         foreach ($data['signatures'] as $signature) {
+    //             fputcsv($handle, [
+    //                 $signature['signature_id'],
+    //                 $signature['algorithm'],
+    //                 $signature['status'],
+    //                 $signature['created_at'],
+    //                 $signature['valid_until'],
+    //                 $signature['documents_signed'],
+    //                 $signature['creator']
+    //             ]);
+    //         }
 
-            fclose($handle);
-        };
+    //         fclose($handle);
+    //     };
 
-        return response()->stream($callback, 200, $headers);
-    }
+    //     return response()->stream($callback, 200, $headers);
+    // }
 
     /**
      * DEPRECATED: Get available signature templates untuk user signing

@@ -15,7 +15,6 @@ class ApprovalRequest extends Model
 
     protected $fillable = [
         'user_id',
-        // 'nomor',
         'document_name',
         'document_path',
         'signed_document_path',
@@ -31,12 +30,7 @@ class ApprovalRequest extends Model
         'approval_notes',
         'rejection_reason',
         'document_type',
-        // 'priority',
         'workflow_metadata',
-        // 'department',
-        // 'deadline',
-        // 'revision_count',
-        // 'admin_notes'
     ];
 
     protected $casts = [
@@ -44,7 +38,6 @@ class ApprovalRequest extends Model
         'rejected_at' => 'datetime',
         'user_signed_at' => 'datetime',
         'sign_approved_at' => 'datetime',
-        // 'deadline' => 'datetime',
         'workflow_metadata' => 'array',
     ];
 
@@ -54,13 +47,7 @@ class ApprovalRequest extends Model
     const STATUS_USER_SIGNED = 'user_signed';
     const STATUS_SIGN_APPROVED = 'sign_approved';
     const STATUS_REJECTED = 'rejected';
-    const STATUS_CANCELLED = 'cancelled';
-
-    // Priority constants
-    // const PRIORITY_LOW = 'low';
-    // const PRIORITY_NORMAL = 'normal';
-    // const PRIORITY_HIGH = 'high';
-    // const PRIORITY_URGENT = 'urgent';
+    // const STATUS_CANCELLED = 'cancelled';
 
     /**
      * Boot method untuk auto-generate nomor
@@ -69,34 +56,19 @@ class ApprovalRequest extends Model
     {
         parent::boot();
 
-        static::creating(function ($model) {
-            // Generate nomor otomatis saat create
-            // $lastNumber = DB::table('approval_requests')->max('nomor');
-
-            // if ($lastNumber) {
-            //     $newNumber = str_pad(intval($lastNumber) + 1, 3, '0', STR_PAD_LEFT);
-            // } else {
-            //     $newNumber = '001';
-            // }
-
-            // $model->nomor = $newNumber;
-
-            // Set default values
-            // if (empty($model->priority)) {
-            //     $model->priority = self::PRIORITY_NORMAL;
-            // }
-
-            // if (empty($model->department) && $model->user) {
-            //     $model->department = 'Teknik Informatika'; // Default department
-            // }
-        });
+        // static::creating(function ($model) {
+        //     // Auto-generate nomor jika belum diisi
+        //     if (empty($model->nomor)) {
+        //         $currentYear = now()->year;
+        //         $countThisYear = self::whereYear('created_at', $currentYear)->count() + 1;
+        //         $model->nomor = str_pad($countThisYear, 4, '0', STR_PAD_LEFT);
+        //     }
+        // });
 
         static::created(function ($model) {
             // Log audit trail untuk request creation with standardized metadata
             $metadata = SignatureAuditLog::createMetadata([
                 'document_name' => $model->document_name,
-                // 'nomor' => $model->nomor,
-                // 'priority' => $model->priority,
                 'requester' => $model->user->name ?? 'Unknown',
                 'document_type' => $model->document_type ?? 'general',
             ]);
@@ -144,17 +116,17 @@ class ApprovalRequest extends Model
         return $this->belongsTo(Kaprodi::class, 'rejected_by');
     }
 
-    // public function digitalSignature()
-    // {
-    //     return $this->hasOneThrough(
-    //         DigitalSignature::class,
-    //         DocumentSignature::class,
-    //         'approval_request_id', // Foreign key on DocumentSignature table
-    //         'id',                 // Foreign key on DigitalSignature table
-    //         'id',                 // Local key on ApprovalRequest table
-    //         'digital_signature_id'// Local key on DocumentSignature table
-    //     );
-    // }
+    public function digitalSignature()
+    {
+        return $this->hasOneThrough(
+            DigitalSignature::class,
+            DocumentSignature::class,
+            'approval_request_id', // Foreign key on DocumentSignature table
+            'id',                 // Foreign key on DigitalSignature table
+            'id',                 // Local key on ApprovalRequest table
+            'digital_signature_id'// Local key on DocumentSignature table
+        );
+    }
 
     /**
      * Relasi ke DocumentSignature
@@ -194,6 +166,7 @@ class ApprovalRequest extends Model
     /**
      * Check apakah bisa ditandatangani user
      */
+    //! DIPAKAI DI CONTROLLER DIGITAL SIGNATURE
     public function canBeSignedByUser()
     {
         return $this->status === self::STATUS_APPROVED;
@@ -208,32 +181,9 @@ class ApprovalRequest extends Model
     }
 
     /**
-     * Check apakah mendekati deadline
-     */
-    // public function isNearDeadline($days = 3)
-    // {
-    //     if (!$this->deadline) {
-    //         return false;
-    //     }
-
-    //     return $this->deadline <= now()->addDays($days) && !$this->isCompleted();
-    // }
-
-    /**
-     * Check apakah sudah melewati deadline
-     */
-    // public function isOverdue()
-    // {
-    //     if (!$this->deadline) {
-    //         return false;
-    //     }
-
-    //     return $this->deadline < now() && !$this->isCompleted();
-    // }
-
-    /**
      * Approve dokumen (admin/kaprodi)
      */
+    //! DIPAKAI DI CONTROLLER
     public function approveApprovalRequest($approverId, $notes = null)
     {
         $oldStatus = $this->status;
@@ -258,6 +208,7 @@ class ApprovalRequest extends Model
     /**
      * Reject dokumen
      */
+    //! DIPAKAI DI CONTROLLER ApprovalRequestController method reject
     public function reject($reason = null, $rejectedBy = null)
     {
         $oldStatus = $this->status;
@@ -277,6 +228,7 @@ class ApprovalRequest extends Model
     /**
      * Mark sebagai sudah ditandatangani user
      */
+    //! DIPAKAI DI CONTROLLER DIGITAL SIGNATURE
     public function markUserSigned($signPath)
     {
         $oldStatus = $this->status;
@@ -321,24 +273,25 @@ class ApprovalRequest extends Model
     /**
      * Cancel approval request
      */
-    public function cancel($reason = null)
-    {
-        $oldStatus = $this->status;
+    // public function cancel($reason = null)
+    // {
+    //     $oldStatus = $this->status;
 
-        $this->update([
-            'status' => self::STATUS_CANCELLED,
-            'rejection_reason' => $reason
-        ]);
+    //     $this->update([
+    //         'status' => self::STATUS_CANCELLED,
+    //         'rejection_reason' => $reason
+    //     ]);
 
-        // Log audit
-        $this->logStatusChange('cancelled', $oldStatus, self::STATUS_CANCELLED,
-            'Approval request has been cancelled', ['reason' => $reason]);
-    }
+    //     // Log audit
+    //     $this->logStatusChange('cancelled', $oldStatus, self::STATUS_CANCELLED,
+    //         'Approval request has been cancelled', ['reason' => $reason]);
+    // }
 
     /**
      * REFACTORED: Create DocumentSignature record with temporary QR code
      * Digital signature key will be auto-generated during signing (not now)
      */
+    //! DIPAKAI DI APPROVE METHOD
     private function createDocumentSignature()
     {
         if ($this->documentSignature) {
@@ -351,7 +304,7 @@ class ApprovalRequest extends Model
             $documentSignature = DocumentSignature::create([
                 'approval_request_id' => $this->id,
                 // 'digital_signature_id' => null, // Will be auto-generated during signing
-                'document_hash' => null, // Will be generated during signing
+                // 'document_hash' => null, // Will be generated during signing
                 'signature_status' => DocumentSignature::STATUS_PENDING
             ]);
 
@@ -398,7 +351,7 @@ class ApprovalRequest extends Model
             self::STATUS_USER_SIGNED => 'Sudah Ditandatangani - Menunggu Verifikasi',
             self::STATUS_SIGN_APPROVED => 'Selesai - Tanda Tangan Terverifikasi',
             self::STATUS_REJECTED => 'Ditolak',
-            self::STATUS_CANCELLED => 'Dibatalkan'
+            // self::STATUS_CANCELLED => 'Dibatalkan'
         ];
 
         return $labels[$this->status] ?? 'Status Tidak Dikenal';
@@ -415,41 +368,11 @@ class ApprovalRequest extends Model
             self::STATUS_USER_SIGNED => 'badge-primary',
             self::STATUS_SIGN_APPROVED => 'badge-success',
             self::STATUS_REJECTED => 'badge-danger',
-            self::STATUS_CANCELLED => 'badge-secondary'
+            // self::STATUS_CANCELLED => 'badge-secondary'
         ];
 
         return $classes[$this->status] ?? 'badge-secondary';
     }
-
-    /**
-     * Get priority label
-     */
-    // public function getPriorityLabelAttribute()
-    // {
-    //     $labels = [
-    //         self::PRIORITY_LOW => 'Rendah',
-    //         self::PRIORITY_NORMAL => 'Normal',
-    //         self::PRIORITY_HIGH => 'Tinggi',
-    //         self::PRIORITY_URGENT => 'Mendesak'
-    //     ];
-
-    //     return $labels[$this->priority] ?? 'Normal';
-    // }
-
-    /**
-     * Get priority badge class
-     */
-    // public function getPriorityBadgeClassAttribute()
-    // {
-    //     $classes = [
-    //         self::PRIORITY_LOW => 'badge-light',
-    //         self::PRIORITY_NORMAL => 'badge-secondary',
-    //         self::PRIORITY_HIGH => 'badge-warning',
-    //         self::PRIORITY_URGENT => 'badge-danger'
-    //     ];
-
-    //     return $classes[$this->priority] ?? 'badge-secondary';
-    // }
 
     /**
      * Generate nomor surat lengkap
@@ -471,7 +394,7 @@ class ApprovalRequest extends Model
             self::STATUS_USER_SIGNED => 80,
             self::STATUS_SIGN_APPROVED => 100,
             self::STATUS_REJECTED => 0,
-            self::STATUS_CANCELLED => 0
+            // self::STATUS_CANCELLED => 0
         ];
 
         return $progress[$this->status] ?? 0;
@@ -488,52 +411,11 @@ class ApprovalRequest extends Model
             self::STATUS_USER_SIGNED => 'Menunggu verifikasi tanda tangan',
             self::STATUS_SIGN_APPROVED => 'Proses selesai',
             self::STATUS_REJECTED => 'Dokumen ditolak',
-            self::STATUS_CANCELLED => 'Dokumen dibatalkan'
+            // self::STATUS_CANCELLED => 'Dokumen dibatalkan'
         ];
 
         return $actions[$this->status] ?? 'Status tidak dikenal';
     }
-
-    /**
-     * Increment revision count
-     */
-    // public function incrementRevision($notes = null)
-    // {
-    //     $this->increment('revision_count');
-
-    //     if ($notes) {
-    //         $this->update(['admin_notes' => $notes]);
-    //     }
-
-    //     $this->logStatusChange('revision_requested', null, null,
-    //         'Document revision requested', ['revision_count' => $this->revision_count, 'notes' => $notes]);
-    // }
-
-    /**
-     * Set priority
-     */
-    // public function setPriority($priority, $reason = null)
-    // {
-    //     $oldPriority = $this->priority;
-    //     $this->update(['priority' => $priority]);
-
-    //     $this->logStatusChange('priority_changed', $oldPriority, $priority,
-    //         'Document priority has been changed', ['reason' => $reason]);
-    // }
-
-    /**
-     * Set deadline
-     */
-    // public function setDeadline($deadline, $reason = null)
-    // {
-    //     $oldDeadline = $this->deadline;
-    //     $this->update(['deadline' => $deadline]);
-
-    //     $this->logStatusChange('deadline_set',
-    //         $oldDeadline ? $oldDeadline->toDateString() : null,
-    //         $deadline->toDateString(),
-    //         'Document deadline has been set', ['reason' => $reason]);
-    // }
 
     /**
      * Log status change untuk audit trail with standardized metadata
@@ -592,36 +474,8 @@ class ApprovalRequest extends Model
         return $query->where('status', self::STATUS_SIGN_APPROVED);
     }
 
-    // public function scopeByPriority($query, $priority)
-    // {
-    //     return $query->where('priority', $priority);
-    // }
-
-    // public function scopeHighPriority($query)
-    // {
-    //     return $query->whereIn('priority', [self::PRIORITY_HIGH, self::PRIORITY_URGENT]);
-    // }
-
-    // public function scopeOverdue($query)
-    // {
-    //     return $query->where('deadline', '<', now())
-    //                 ->whereNotIn('status', [self::STATUS_SIGN_APPROVED, self::STATUS_REJECTED, self::STATUS_CANCELLED]);
-    // }
-
-    // public function scopeNearDeadline($query, $days = 3)
-    // {
-    //     return $query->where('deadline', '<=', now()->addDays($days))
-    //                 ->where('deadline', '>=', now())
-    //                 ->whereNotIn('status', [self::STATUS_SIGN_APPROVED, self::STATUS_REJECTED, self::STATUS_CANCELLED]);
-    // }
-
     public function scopeByUser($query, $userId)
     {
         return $query->where('user_id', $userId);
     }
-
-    // public function scopeByDepartment($query, $department)
-    // {
-    //     return $query->where('department', $department);
-    // }
 }

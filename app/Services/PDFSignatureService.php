@@ -33,6 +33,7 @@ class PDFSignatureService
      * @return string - Path to final PDF with embedded QR (storage path)
      * @throws Exception
      */
+    //! DIPAKAI DI CONTROLLER DIGITALSIGNATURE PROCESSDOCUMENTSIGNING METHOD
     public function embedQRCodeIntoPDF(
         string $originalPdfPath,
         string $qrCodePath,
@@ -209,6 +210,7 @@ class PDFSignatureService
      * @param array|null $canvasDimensions - ['width' => pixel, 'height' => pixel]
      * @return void
      */
+    //! DIPAKAI DI EMBEDQRCODEINTOPDF METHOD
     private function addQRCodeToPage(
         TCPDF $pdf,
         string $qrCodePath,
@@ -329,6 +331,7 @@ class PDFSignatureService
      * @param string|null $qrCodePath
      * @return void
      */
+    //! DIPAKAI DI EMBEDQRCODEINTOPDF METHOD
     public function cleanupTempFiles(?string $qrCodePath = null): void
     {
         // Clean up QR code if provided
@@ -363,6 +366,14 @@ class PDFSignatureService
         $this->tempFilesToClean = [];
     }
 
+    /**
+     * Detect PDF version from file header
+     *
+     * @param string $pdfPath - Absolute path to PDF file
+     * @return string - PDF version (e.g., '1.4', '1.5', etc.)
+     * @throws Exception
+     */
+    //! DIPAKAI DI EMBEDQRCODEINTOPDF METHOD
     private function detectPdfVersion(string $pdfPath): string
     {
         if (!file_exists($pdfPath)) {
@@ -402,6 +413,7 @@ class PDFSignatureService
      * @return string - Absolute path to converted PDF (temp file)
      * @throws Exception
      */
+    //! DIPAKAI DI EMBEDQRCODEINTOPDF METHOD
     private function convertPdfTo14(string $inputPath): string
     {
         try {

@@ -12,11 +12,6 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('approval_requests', function (Blueprint $table) {
-            // Tambahkan kolom nomor jika belum ada
-            // if (!Schema::hasColumn('approval_requests', 'nomor')) {
-            //     $table->string('nomor')->nullable()->after('user_id');
-            // }
-
             // Update status enum untuk menambahkan status baru
             $table->dropColumn('status'); // Drop existing status column
         });
@@ -29,7 +24,6 @@ return new class extends Migration
                 'user_signed',       // User sudah tanda tangan, menunggu approve sign
                 'sign_approved',     // Tanda tangan sudah diapprove, dokumen final
                 'rejected',          // Ditolak
-                // 'cancelled'          // Dibatalkan
             ])->default('pending')->after('notes');
 
             // Tambahkan kolom baru untuk digital signature workflow
@@ -45,12 +39,7 @@ return new class extends Migration
 
             // Kolom tambahan untuk workflow
             $table->string('document_type')->nullable()->after('rejection_reason'); // Jenis dokumen
-            // $table->string('priority')->default('normal')->after('document_type'); // Prioritas (low, normal, high, urgent)
             $table->json('workflow_metadata')->nullable()->after('document_type'); // Metadata workflow
-            // $table->string('department')->nullable()->after('workflow_metadata'); // Departemen pemohon
-            // $table->timestamp('deadline')->nullable()->after('department'); // Deadline penyelesaian
-            // $table->integer('revision_count')->default(0)->after('deadline'); // Jumlah revisi
-            // $table->text('admin_notes')->nullable()->after('deadline'); // Catatan admin
 
             // Foreign key constraints
             $table->foreign('approved_by')->references('id')->on('kaprodis')->onDelete('set null');
@@ -62,8 +51,6 @@ return new class extends Migration
             $table->index(['user_id', 'status']);
             $table->index(['approved_by', 'approved_at']);
             $table->index(['rejected_by', 'rejected_at']);
-            // $table->index(['priority', 'deadline']);
-            // $table->index('nomor');
         });
     }
 
@@ -81,8 +68,6 @@ return new class extends Migration
             $table->dropIndex(['status', 'created_at']);
             $table->dropIndex(['user_id', 'status']);
             $table->dropIndex(['approved_by', 'approved_at']);
-            // $table->dropIndex(['priority', 'deadline']);
-            // $table->dropIndex(['nomor']);
 
             // Drop new columns
             $table->dropColumn([
@@ -94,12 +79,7 @@ return new class extends Migration
                 'approval_notes',
                 'rejection_reason',
                 'document_type',
-                // 'priority',
                 'workflow_metadata',
-                // 'department',
-                // 'deadline',
-                // 'revision_count',
-                // 'admin_notes'
             ]);
 
             // Restore original status enum

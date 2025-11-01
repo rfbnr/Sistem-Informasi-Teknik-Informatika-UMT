@@ -262,19 +262,19 @@
                                     {{ $request->document_type ? $request->document_type : 'N/A' }}
                                 </span>
                                 <div class="document-meta">
-                                    <div class="meta-item">
+                                    {{-- <div class="meta-item">
                                         <i class="fas fa-hashtag"></i>
                                         {{ $request->full_document_number }}
-                                    </div>
+                                    </div> --}}
                                     <div class="meta-item">
                                         <i class="fas fa-calendar"></i>
                                         {{ $request->created_at->format('d M Y') }}
                                     </div>
-                                    @if($request->priority !== 'normal')
+                                    {{-- @if($request->priority !== 'normal')
                                     <span class="priority-badge priority-{{ $request->priority }}">
                                         {{ ucfirst($request->priority) }}
                                     </span>
-                                    @endif
+                                    @endif --}}
                                 </div>
                             </div>
                             <span class="status-badge status-{{ str_replace(' ', '_', strtolower($request->status)) }}">

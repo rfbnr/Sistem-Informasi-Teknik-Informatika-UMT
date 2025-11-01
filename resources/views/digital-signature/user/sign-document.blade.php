@@ -696,7 +696,7 @@
         </div>
 
         <!-- Keyboard Shortcuts -->
-        <div class="keyboard-shortcuts">
+        {{-- <div class="keyboard-shortcuts">
             <h6><i class="fas fa-keyboard me-2"></i>Keyboard Shortcuts</h6>
             <div class="shortcut-list">
                 <div class="shortcut-item">
@@ -720,7 +720,7 @@
                     <span>Remove QR</span>
                 </div>
             </div>
-        </div>
+        </div> --}}
     </div>
 
     <!-- Document Information & PDF Preview -->
@@ -983,7 +983,7 @@ document.addEventListener('DOMContentLoaded', function() {
     showGuideIfFirstTime();
 
     // Setup keyboard shortcuts
-    setupKeyboardShortcuts();
+    // setupKeyboardShortcuts();
 });
 
 // ==================== VISUAL GUIDE ====================

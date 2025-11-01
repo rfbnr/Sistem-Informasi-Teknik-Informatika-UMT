@@ -34,17 +34,10 @@ class DocumentSignature extends Model
         'qr_positioning_data', // RENAMED: from positioning_data
         'final_pdf_path',
         'verification_token',
-        // 'verified_at',
-        // 'verified_by',
-        // 'rejected_at',
-        // 'rejected_by',
-        // 'rejection_reason'
     ];
 
     protected $casts = [
         'signed_at' => 'datetime',
-        // 'verified_at' => 'datetime',
-        // 'rejected_at' => 'datetime',
         'signature_metadata' => 'array',
         'qr_positioning_data' => 'array', // RENAMED: from positioning_data
     ];
@@ -53,7 +46,7 @@ class DocumentSignature extends Model
     const STATUS_PENDING = 'pending';
     const STATUS_SIGNED = 'signed';
     const STATUS_VERIFIED = 'verified';
-    const STATUS_REJECTED = 'rejected';
+    // const STATUS_REJECTED = 'rejected';
     const STATUS_INVALID = 'invalid';
 
     public static function boot()
@@ -61,12 +54,6 @@ class DocumentSignature extends Model
         parent::boot();
 
         static::creating(function ($model) {
-            // Generate verification URL
-            // if (empty($model->verification_url)) {
-            //     $encryptedId = Crypt::encryptString($model->approval_request_id . '|' . time());
-            //     $model->verification_url = route('signature.verify', ['token' => $encryptedId]);
-            // }
-
             // Generate verification token
             if (empty($model->verification_token)) {
                 $model->verification_token = Str::random(64);
@@ -122,20 +109,12 @@ class DocumentSignature extends Model
     }
 
     /**
-     * Relasi ke User (verifier)
-     */
-    // public function verifier()
-    // {
-    //     return $this->belongsTo(Kaprodi::class, 'verified_by');
-    // }
-
-    /**
      * Relasi ke Kaprodi (rejector)
      */
-    public function rejector()
-    {
-        return $this->belongsTo(Kaprodi::class, 'rejected_by');
-    }
+    // public function rejector()
+    // {
+    //     return $this->belongsTo(Kaprodi::class, 'rejected_by');
+    // }
 
     /**
      * Relasi ke SignatureAuditLog
@@ -290,6 +269,7 @@ class DocumentSignature extends Model
     /**
      * Check if signature is valid
      */
+    //! DIPAKAI
     public function isValid()
     {
         return $this->signature_status === self::STATUS_VERIFIED &&
@@ -299,40 +279,41 @@ class DocumentSignature extends Model
     /**
      * Reject signature (placement or quality issues)
      */
-    public function rejectSignature($reason, $rejectedBy = null)
-    {
-        $oldStatus = $this->signature_status;
-        $this->signature_status = self::STATUS_REJECTED;
-        $this->rejected_at = now();
-        $this->rejected_by = $rejectedBy ?? Auth::id();
-        $this->rejection_reason = $reason;
-        $this->save();
+    // public function rejectSignature($reason, $rejectedBy = null)
+    // {
+    //     $oldStatus = $this->signature_status;
+    //     $this->signature_status = self::STATUS_REJECTED;
+    //     $this->rejected_at = now();
+    //     $this->rejected_by = $rejectedBy ?? Auth::id();
+    //     $this->rejection_reason = $reason;
+    //     $this->save();
 
-        // Also reject the approval request
-        if ($this->approvalRequest) {
-            $this->approvalRequest->reject($reason, $rejectedBy ?? Auth::id());
-        }
+    //     // Also reject the approval request
+    //     if ($this->approvalRequest) {
+    //         $this->approvalRequest->reject($reason, $rejectedBy ?? Auth::id());
+    //     }
 
-        $this->logAudit('signature_rejected', $oldStatus, self::STATUS_REJECTED,
-            'Document signature has been rejected. Reason: ' . $reason);
+    //     $this->logAudit('signature_rejected', $oldStatus, self::STATUS_REJECTED,
+    //         'Document signature has been rejected. Reason: ' . $reason);
 
-        // Send notification to student about signature rejection
-        if ($this->approvalRequest && $this->approvalRequest->user) {
-            \Illuminate\Support\Facades\Mail::to($this->approvalRequest->user->email)->send(
-                new \App\Mail\DocumentSignatureRejectedByKaprodiNotification(
-                    $this->approvalRequest,
-                    $this,
-                    $reason
-                )
-            );
-        }
+    //     // Send notification to student about signature rejection
+    //     if ($this->approvalRequest && $this->approvalRequest->user) {
+    //         \Illuminate\Support\Facades\Mail::to($this->approvalRequest->user->email)->send(
+    //             new \App\Mail\DocumentSignatureRejectedByKaprodiNotification(
+    //                 $this->approvalRequest,
+    //                 $this,
+    //                 $reason
+    //             )
+    //         );
+    //     }
 
-        return true;
-    }
+    //     return true;
+    // }
 
     /**
      * Invalidate signature
      */
+    //! DIPAKAI DI CONTROLLER DocumentSignatureController method invalidate
     public function invalidate($reason = null)
     {
         $oldStatus = $this->signature_status;
@@ -367,6 +348,7 @@ class DocumentSignature extends Model
     /**
      * Get signature info untuk verification display
      */
+    //! DIPAKAI DI DocumentSignatureController method show and quickPreview
     public function getSignatureInfo()
     {
         return [
@@ -382,7 +364,7 @@ class DocumentSignature extends Model
             'algorithm' => $this->digitalSignature->algorithm,
             'key_length' => $this->digitalSignature->key_length,
             'public_key_fingerprint' => $this->digitalSignature->getPublicKeyFingerprint(),
-            // 'verification_count' => $this->verificationLogs()->count(),
+            'verification_count' => $this->verificationLogs()->count(),
             // 'last_verified' => $this->verificationLogs()->latest('verified_at')->first()?->verified_at
         ];
     }
@@ -390,13 +372,14 @@ class DocumentSignature extends Model
     /**
      * Get status label untuk display
      */
+    //! DIPAKAI
     public function getStatusLabel()
     {
         $labels = [
             self::STATUS_PENDING => 'Menunggu Tanda Tangan',
             self::STATUS_SIGNED => 'Sudah Ditandatangani',
             self::STATUS_VERIFIED => 'Terverifikasi',
-            self::STATUS_REJECTED => 'Ditolak',
+            // self::STATUS_REJECTED => 'Ditolak',
             self::STATUS_INVALID => 'Tidak Valid'
         ];
 
@@ -412,7 +395,7 @@ class DocumentSignature extends Model
             self::STATUS_PENDING => 'badge-warning',
             self::STATUS_SIGNED => 'badge-info',
             self::STATUS_VERIFIED => 'badge-success',
-            self::STATUS_REJECTED => 'badge-danger',
+            // self::STATUS_REJECTED => 'badge-danger',
             self::STATUS_INVALID => 'badge-secondary'
         ];
 
@@ -423,6 +406,7 @@ class DocumentSignature extends Model
      * NEW: Generate temporary QR code for drag & drop positioning
      * Called when Kaprodi approves document
      */
+    //! DIPAKAI DI APPROVALREQUEST MODEL
     public function generateTemporaryQRCode()
     {
         try {
@@ -482,6 +466,7 @@ class DocumentSignature extends Model
     /**
      * NEW: Save QR positioning data from user drag & drop
      */
+    //! DIPAKAI DI CONTROLLER DIGITALSIGNATURE
     public function saveQRPositioning($positioningData)
     {
         try {

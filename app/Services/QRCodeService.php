@@ -25,6 +25,7 @@ class QRCodeService
     /**
      * Generate QR Code untuk verification URL
      */
+    //! DIPAKAI DI CONTROLLER DIGITALSIGNATURE
     public function generateVerificationQR($documentSignatureId, $options = [])
     {
         try {
@@ -175,46 +176,11 @@ class QRCodeService
      * 2. Create short code mapping (improved usability)
      * 3. Return short code for QR/URL
      */
+    //! DIPAKAI DI GENERATEVERIFICATIONQR METHOD
     private function createEncryptedVerificationData($documentSignature)
     {
-        // ═══════════════════════════════════════════════════════════════════
-        // STEP 0: Get DigitalSignature & Calculate Dynamic Expiration
-        // ═══════════════════════════════════════════════════════════════════
-        // $digitalSignature = $documentSignature->digitalSignature;
-
-        // if (!$digitalSignature) {
-        //     Log::error('Digital signature not found for document signature', [
-        //         'document_signature_id' => $documentSignature->id
-        //     ]);
-        //     throw new \Exception('Digital signature not found. Cannot create verification QR code.');
-        // }
-
-        // // Validate digital signature status
-        // if ($digitalSignature->status === 'revoked') {
-        //     Log::warning('Attempting to create QR for revoked digital signature', [
-        //         'digital_signature_id' => $digitalSignature->id,
-        //         'revoked_at' => $digitalSignature->revoked_at,
-        //         'revocation_reason' => $digitalSignature->revocation_reason
-        //     ]);
-        //     throw new \Exception('Cannot create QR code: Digital signature has been revoked.');
-        // }
-
-        // if ($digitalSignature->valid_until < now()) {
-        //     Log::warning('Attempting to create QR for expired digital signature', [
-        //         'digital_signature_id' => $digitalSignature->id,
-        //         'expired_at' => $digitalSignature->valid_until
-        //     ]);
-        //     throw new \Exception('Cannot create QR code: Digital signature has expired.');
-        // }
-
-        // Calculate dynamic expiration: minimum of signature validity or 5 years
-        // $signatureExpiry = $digitalSignature->valid_until;
         $defaultExpiry = now()->addYears(3);
 
-        // Use the earlier date (minimum)
-        // $expiresAt = $signatureExpiry < $defaultExpiry
-        //     ? $signatureExpiry
-        //     : $defaultExpiry;
         $expiresAt = $defaultExpiry;
 
         // Ensure expiration is not in the past
@@ -237,7 +203,7 @@ class QRCodeService
         ]);
 
         // ═══════════════════════════════════════════════════════════════════
-        // STEP 1: Create full encrypted payload with DYNAMIC expiration
+        // STEP 1: Create full encrypted payload with static expiration
         // ═══════════════════════════════════════════════════════════════════
         $verificationData = [
             'document_signature_id' => $documentSignature->id,
@@ -387,6 +353,7 @@ class QRCodeService
     /**
      * Save QR code image
      */
+    //! DIPAKAI DI GENERATEVERIFICATIONQR METHOD
     private function saveQRCodeImage($imageData, $documentSignatureId)
     {
         $directory = 'qrcodes/document-signatures';

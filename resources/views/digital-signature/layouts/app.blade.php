@@ -140,6 +140,8 @@
         .alert {
             border-radius: 1rem;
             border: none;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: opacity 0.5s ease;
         }
 
         .table {
@@ -169,6 +171,70 @@
             .main-content {
                 margin: 0.5rem;
                 padding: 1rem;
+            }
+        }
+
+        /* Always visible info box */
+        .info-box {
+            display: flex;
+            background: white;
+            border-radius: 0.5rem;
+            padding: 1.25rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            border-left: 4px solid;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .info-box:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.12);
+        }
+
+        .info-box-primary {
+            border-left-color: #0d6efd;
+            background: linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%);
+        }
+
+        .info-box-icon {
+            flex-shrink: 0;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+            margin-right: 1rem;
+            box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
+        }
+
+        .info-box-content {
+            flex-grow: 1;
+        }
+
+        .info-box-content h6 {
+            color: #0d6efd;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .info-box-content p {
+            color: #495057;
+            line-height: 1.6;
+            margin-bottom: 0;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .info-box {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .info-box-icon {
+                margin: 0 auto 1rem;
             }
         }
     </style>
@@ -286,9 +352,9 @@
         });
 
         // Auto-hide alerts after 5 seconds
-        setTimeout(function() {
-            $('.alert').fadeOut('slow');
-        }, 5000);
+        // setTimeout(function() {
+        //     $('.alert').fadeOut('slow');
+        // }, 5000);
 
         // CSRF token setup for AJAX
         $.ajaxSetup({

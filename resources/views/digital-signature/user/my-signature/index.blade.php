@@ -37,7 +37,7 @@
 
     <!-- Statistics -->
     <div class="row mb-4">
-        <div class="col-md-2">
+        <div class="col-md-3">
             <div class="stats-card">
                 <div class="stats-number text-primary">{{ $statistics['total'] ?? 0 }}</div>
                 <div class="text-muted">Total</div>
@@ -49,18 +49,18 @@
                 <div class="text-muted">Verified</div>
             </div>
         </div>
-        <div class="col-md-2">
+        <div class="col-md-3">
             <div class="stats-card">
                 <div class="stats-number text-info">{{ $statistics['pending'] ?? 0 }}</div>
                 <div class="text-muted">Pending</div>
             </div>
         </div>
-        <div class="col-md-2">
+        {{-- <div class="col-md-2">
             <div class="stats-card">
                 <div class="stats-number text-danger">{{ $statistics['rejected'] ?? 0 }}</div>
                 <div class="text-muted">Rejected</div>
             </div>
-        </div>
+        </div> --}}
         <div class="col-md-3">
             <div class="stats-card">
                 <div class="stats-number text-warning">{{ $statistics['this_month'] ?? 0 }}</div>
@@ -84,7 +84,7 @@
                         <option value="signed" {{ request('status') == 'signed' ? 'selected' : '' }}>Signed</option>
                         <option value="verified" {{ request('status') == 'verified' ? 'selected' : '' }}>Verified</option>
                         <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
-                        <option value="rejected" {{ request('status') == 'rejected' ? 'selected' : '' }}>Rejected</option>
+                        {{-- <option value="rejected" {{ request('status') == 'rejected' ? 'selected' : '' }}>Rejected</option> --}}
                     </select>
                 </div>
                 <div class="col-md-3">

@@ -314,7 +314,7 @@
 @include('digital-signature.admin.approval-requests.partials.view-document-modal')
 @include('digital-signature.admin.approval-requests.partials.approve-modal')
 @include('digital-signature.admin.approval-requests.partials.reject-modal')
-@include('digital-signature.admin.approval-requests.partials.approve-signature-modal')
+{{-- @include('digital-signature.admin.approval-requests.partials.approve-signature-modal') --}}
 
 <!-- Bulk Approve Modal -->
 <div class="modal fade" id="bulkApproveModal" tabindex="-1">
@@ -412,33 +412,33 @@ function showApproveSignatureModal(id, documentName) {
 }
 
 // Perform Approve Signature
-function performApproveSignature() {
-    const requestId = document.getElementById('approveSignatureRequestId').value;
-    const notes = document.getElementById('approve_signature_notes').value;
+// function performApproveSignature() {
+//     const requestId = document.getElementById('approveSignatureRequestId').value;
+//     const notes = document.getElementById('approve_signature_notes').value;
 
-    fetch(`/admin/signature/approval-requests/${requestId}/approve-signature`, {
-        method: 'POST',
-        headers: {
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ approval_notes: notes })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success || !data.error) {
-            showAlert('success', 'Signature approved successfully!');
-            setTimeout(() => location.reload(), 1500);
-        } else {
-            showAlert('danger', data.message || 'Failed to approve signature');
-        }
-        bootstrap.Modal.getInstance(document.getElementById('approveSignatureModal')).hide();
-    })
-    .catch(error => {
-        showAlert('danger', 'An error occurred while approving the signature');
-        console.error('Error:', error);
-    });
-}
+//     fetch(`/admin/signature/approval-requests/${requestId}/approve-signature`, {
+//         method: 'POST',
+//         headers: {
+//             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+//             'Content-Type': 'application/json'
+//         },
+//         body: JSON.stringify({ approval_notes: notes })
+//     })
+//     .then(response => response.json())
+//     .then(data => {
+//         if (data.success || !data.error) {
+//             showAlert('success', 'Signature approved successfully!');
+//             setTimeout(() => location.reload(), 1500);
+//         } else {
+//             showAlert('danger', data.message || 'Failed to approve signature');
+//         }
+//         bootstrap.Modal.getInstance(document.getElementById('approveSignatureModal')).hide();
+//     })
+//     .catch(error => {
+//         showAlert('danger', 'An error occurred while approving the signature');
+//         console.error('Error:', error);
+//     });
+// }
 
 // Perform Bulk Approve
 function performBulkApprove() {

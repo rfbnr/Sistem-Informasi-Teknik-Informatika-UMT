@@ -35,6 +35,7 @@ class DocumentSignatureController extends Controller
     /**
      * Display list of document signatures for admin
      */
+    //! DIPAKAI DI ROUTE admin.signature.documents.index
     public function index(Request $request)
     {
         try {
@@ -64,9 +65,10 @@ class DocumentSignatureController extends Controller
 
             $statusCounts = [
                 'pending' => DocumentSignature::where('signature_status', DocumentSignature::STATUS_PENDING)->count(),
-                'signed' => DocumentSignature::where('signature_status', DocumentSignature::STATUS_SIGNED)->count(),
+                // 'signed' => DocumentSignature::where('signature_status', DocumentSignature::STATUS_SIGNED)->count(),
+                'signed' => DocumentSignature::where('signature_status', DocumentSignature::STATUS_VERIFIED)->count(),
                 'verified' => DocumentSignature::where('signature_status', DocumentSignature::STATUS_VERIFIED)->count(),
-                'rejected' => DocumentSignature::where('signature_status', DocumentSignature::STATUS_REJECTED)->count(),
+                // 'rejected' => DocumentSignature::where('signature_status', DocumentSignature::STATUS_REJECTED)->count(),
                 'invalid' => DocumentSignature::where('signature_status', DocumentSignature::STATUS_INVALID)->count(),
             ];
 
@@ -84,6 +86,7 @@ class DocumentSignatureController extends Controller
     /**
      * Show specific document signature details
      */
+    //! DIPAKAI DI ROUTE admin.signature.documents.show
     public function show($id)
     {
         try {
@@ -284,6 +287,7 @@ class DocumentSignatureController extends Controller
     /**
      * Invalidate document signature
      */
+    //! DIPAKAI DI ROUTE admin.signature.documents.invalidate
     public function invalidate(Request $request, $id)
     {
         $validator = Validator::make($request->all(), [
@@ -405,6 +409,7 @@ class DocumentSignatureController extends Controller
     //     }
     // }
 
+    //! DIPAKAI DI ROUTE admin.signature.documents.download, user.signature.documents.download
     public function downloadSignedDocument($id)
     {
         try {
@@ -570,6 +575,7 @@ class DocumentSignatureController extends Controller
     //         return back()->with('error', 'Failed to view document');
     //     }
     // }
+    //! DIPAKAI DI ROUTE admin.signature.documents.view, user.signature.documents.view
     public function viewSignedDocument($id)
     {
         try {
@@ -639,6 +645,7 @@ class DocumentSignatureController extends Controller
     /**
      * Download QR code
      */
+    //! DIPAKAI DI ROUTE admin.signature.documents.qr.download, user.signature.documents.qr.download
     public function downloadQRCode($id)
     {
         try {
@@ -708,6 +715,7 @@ class DocumentSignatureController extends Controller
      * @param Request $request
      * @return \Illuminate\View\View
      */
+    //! DIPAKAI DI ROUTE user.signature.documents.index
     public function userSignatures(Request $request)
     {
         try {
@@ -720,7 +728,7 @@ class DocumentSignatureController extends Controller
                     'digitalSignature',
                     'signer',
                     // 'verifier',
-                    'rejector'
+                    // 'rejector'
                 ])
                 ->whereHas('approvalRequest', function($q) use ($user) {
                     $q->where('user_id', $user->id);
@@ -770,7 +778,7 @@ class DocumentSignatureController extends Controller
 
                 'pending' => (clone $baseQuery)->whereIn('signature_status', ['pending', 'signed'])->count(),
 
-                'rejected' => (clone $baseQuery)->where('signature_status', 'rejected')->count(),
+                // 'rejected' => (clone $baseQuery)->where('signature_status', 'rejected')->count(),
 
                 'this_month' => (clone $baseQuery)
                     ->whereMonth('created_at', now()->month)
@@ -804,6 +812,7 @@ class DocumentSignatureController extends Controller
      * @param int $id - DocumentSignature ID
      * @return \Illuminate\View\View
      */
+    //! DIPAKAI DI ROUTE user.signature.documents.show
     public function userSignatureDetails($id)
     {
         try {
@@ -818,7 +827,7 @@ class DocumentSignatureController extends Controller
                     'digitalSignature',       // Crypto info
                     'signer',                 // Who signed (if signed_by exists)
                     // 'verifier',               // Who verified (if verified_by exists)
-                    'rejector'                // Who rejected (if rejected_by exists)
+                    // 'rejector'                // Who rejected (if rejected_by exists)
                 ])
                 ->findOrFail($id);
 
@@ -902,6 +911,7 @@ class DocumentSignatureController extends Controller
     /**
      * Export document signatures
      */
+    //! DIPAKAI DI ROUTE admin.signature.documents.export
     public function export(Request $request)
     {
         try {
@@ -941,102 +951,103 @@ class DocumentSignatureController extends Controller
     /**
      * Batch verify multiple document signatures
      */
-    public function batchVerify(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'signature_ids' => 'required|array',
-            'signature_ids.*' => 'exists:document_signatures,id'
-        ]);
+    // public function batchVerify(Request $request)
+    // {
+    //     $validator = Validator::make($request->all(), [
+    //         'signature_ids' => 'required|array',
+    //         'signature_ids.*' => 'exists:document_signatures,id'
+    //     ]);
 
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 400);
-        }
+    //     if ($validator->fails()) {
+    //         return response()->json(['errors' => $validator->errors()], 400);
+    //     }
 
-        try {
-            $results = [];
-            $successCount = 0;
-            $failureCount = 0;
+    //     try {
+    //         $results = [];
+    //         $successCount = 0;
+    //         $failureCount = 0;
 
-            foreach ($request->signature_ids as $id) {
-                try {
-                    $verificationResult = $this->verificationService->verifyById($id);
+    //         foreach ($request->signature_ids as $id) {
+    //             try {
+    //                 $verificationResult = $this->verificationService->verifyById($id);
 
-                    if ($verificationResult['is_valid']) {
-                        $documentSignature = DocumentSignature::findOrFail($id);
-                        $documentSignature->update([
-                            'signature_status' => DocumentSignature::STATUS_VERIFIED,
-                            'verified_at' => now(),
-                            'verified_by' => Auth::id()
-                        ]);
-                        $successCount++;
-                        $results[$id] = ['status' => 'success', 'message' => 'Verified successfully'];
-                    } else {
-                        $failureCount++;
-                        $results[$id] = ['status' => 'failed', 'message' => $verificationResult['message']];
-                    }
-                } catch (\Exception $e) {
-                    $failureCount++;
-                    $results[$id] = ['status' => 'error', 'message' => $e->getMessage()];
-                }
-            }
+    //                 if ($verificationResult['is_valid']) {
+    //                     $documentSignature = DocumentSignature::findOrFail($id);
+    //                     $documentSignature->update([
+    //                         'signature_status' => DocumentSignature::STATUS_VERIFIED,
+    //                         'verified_at' => now(),
+    //                         'verified_by' => Auth::id()
+    //                     ]);
+    //                     $successCount++;
+    //                     $results[$id] = ['status' => 'success', 'message' => 'Verified successfully'];
+    //                 } else {
+    //                     $failureCount++;
+    //                     $results[$id] = ['status' => 'failed', 'message' => $verificationResult['message']];
+    //                 }
+    //             } catch (\Exception $e) {
+    //                 $failureCount++;
+    //                 $results[$id] = ['status' => 'error', 'message' => $e->getMessage()];
+    //             }
+    //         }
 
-            Log::info('Batch verification completed', [
-                'total_processed' => count($request->signature_ids),
-                'success_count' => $successCount,
-                'failure_count' => $failureCount,
-                'verified_by' => Auth::id()
-            ]);
+    //         Log::info('Batch verification completed', [
+    //             'total_processed' => count($request->signature_ids),
+    //             'success_count' => $successCount,
+    //             'failure_count' => $failureCount,
+    //             'verified_by' => Auth::id()
+    //         ]);
 
-            return response()->json([
-                'success' => true,
-                'message' => "Batch verification completed. {$successCount} verified, {$failureCount} failed.",
-                'results' => $results,
-                'summary' => [
-                    'total' => count($request->signature_ids),
-                    'success' => $successCount,
-                    'failure' => $failureCount
-                ]
-            ]);
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => "Batch verification completed. {$successCount} verified, {$failureCount} failed.",
+    //             'results' => $results,
+    //             'summary' => [
+    //                 'total' => count($request->signature_ids),
+    //                 'success' => $successCount,
+    //                 'failure' => $failureCount
+    //             ]
+    //         ]);
 
-        } catch (\Exception $e) {
-            Log::error('Batch verification error: ' . $e->getMessage());
-            return response()->json(['error' => 'Batch verification failed'], 500);
-        }
-    }
+    //     } catch (\Exception $e) {
+    //         Log::error('Batch verification error: ' . $e->getMessage());
+    //         return response()->json(['error' => 'Batch verification failed'], 500);
+    //     }
+    // }
 
     /**
      * Get signature statistics
      */
-    public function getStatistics()
-    {
-        try {
-            $stats = [
-                'total_signatures' => DocumentSignature::count(),
-                'by_status' => [
-                    'pending' => DocumentSignature::where('signature_status', DocumentSignature::STATUS_PENDING)->count(),
-                    'signed' => DocumentSignature::where('signature_status', DocumentSignature::STATUS_SIGNED)->count(),
-                    'verified' => DocumentSignature::where('signature_status', DocumentSignature::STATUS_VERIFIED)->count(),
-                    'invalid' => DocumentSignature::where('signature_status', DocumentSignature::STATUS_INVALID)->count(),
-                ],
-                'recent_activity' => [
-                    'today' => DocumentSignature::whereDate('signed_at', today())->count(),
-                    'this_week' => DocumentSignature::where('signed_at', '>=', now()->startOfWeek())->count(),
-                    'this_month' => DocumentSignature::where('signed_at', '>=', now()->startOfMonth())->count(),
-                ],
-                'verification_rate' => $this->calculateVerificationRate()
-            ];
+    // public function getStatistics()
+    // {
+    //     try {
+    //         $stats = [
+    //             'total_signatures' => DocumentSignature::count(),
+    //             'by_status' => [
+    //                 'pending' => DocumentSignature::where('signature_status', DocumentSignature::STATUS_PENDING)->count(),
+    //                 'signed' => DocumentSignature::where('signature_status', DocumentSignature::STATUS_SIGNED)->count(),
+    //                 'verified' => DocumentSignature::where('signature_status', DocumentSignature::STATUS_VERIFIED)->count(),
+    //                 'invalid' => DocumentSignature::where('signature_status', DocumentSignature::STATUS_INVALID)->count(),
+    //             ],
+    //             'recent_activity' => [
+    //                 'today' => DocumentSignature::whereDate('signed_at', today())->count(),
+    //                 'this_week' => DocumentSignature::where('signed_at', '>=', now()->startOfWeek())->count(),
+    //                 'this_month' => DocumentSignature::where('signed_at', '>=', now()->startOfMonth())->count(),
+    //             ],
+    //             'verification_rate' => $this->calculateVerificationRate()
+    //         ];
 
-            return response()->json($stats);
+    //         return response()->json($stats);
 
-        } catch (\Exception $e) {
-            Log::error('Get statistics error: ' . $e->getMessage());
-            return response()->json(['error' => 'Failed to get statistics'], 500);
-        }
-    }
+    //     } catch (\Exception $e) {
+    //         Log::error('Get statistics error: ' . $e->getMessage());
+    //         return response()->json(['error' => 'Failed to get statistics'], 500);
+    //     }
+    // }
 
     /**
      * Export to CSV format
      */
+    //! DIPAKAI DI METHOD export
     private function exportToCSV($documentSignatures)
     {
         $filename = 'document_signatures_' . date('Y-m-d_H-i-s') . '.csv';
@@ -1082,6 +1093,7 @@ class DocumentSignatureController extends Controller
     /**
      * Export to JSON format
      */
+    //! DIPAKAI DI METHOD export
     private function exportToJSON($documentSignatures)
     {
         $data = $documentSignatures->map(function ($signature) {
@@ -1109,15 +1121,15 @@ class DocumentSignatureController extends Controller
     /**
      * Calculate verification rate
      */
-    private function calculateVerificationRate()
-    {
-        $totalSigned = DocumentSignature::whereIn('signature_status', [
-            DocumentSignature::STATUS_SIGNED,
-            DocumentSignature::STATUS_VERIFIED
-        ])->count();
+    // private function calculateVerificationRate()
+    // {
+    //     $totalSigned = DocumentSignature::whereIn('signature_status', [
+    //         DocumentSignature::STATUS_SIGNED,
+    //         DocumentSignature::STATUS_VERIFIED
+    //     ])->count();
 
-        $verified = DocumentSignature::where('signature_status', DocumentSignature::STATUS_VERIFIED)->count();
+    //     $verified = DocumentSignature::where('signature_status', DocumentSignature::STATUS_VERIFIED)->count();
 
-        return $totalSigned > 0 ? round(($verified / $totalSigned) * 100, 2) : 0;
-    }
+    //     return $totalSigned > 0 ? round(($verified / $totalSigned) * 100, 2) : 0;
+    // }
 }

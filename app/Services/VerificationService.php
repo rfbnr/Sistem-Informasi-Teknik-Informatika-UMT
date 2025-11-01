@@ -64,6 +64,7 @@ class VerificationService
     /**
      * Verify document signature by ID
      */
+    //! DIPAKAI DI CONTROLLER DocumentSignatureController method show, quickPreview, DI CONTROLLER ApprovalRequestController method show
     public function verifyById($documentSignatureId)
     {
         $startTime = microtime(true); // Track verification duration
@@ -88,6 +89,7 @@ class VerificationService
     /**
      * Perform comprehensive verification
      */
+    //! DIPAKAI DI verifyByToken DAN verifyById
     private function performComprehensiveVerification($documentSignature)
     {
         $checks = [];
@@ -579,6 +581,7 @@ class VerificationService
     /**
      * Get verification statistics
      */
+    //! DIPAKAI DI CONTROLLER DigitalSignatureController method adminDashboard
     public function getVerificationStatistics($period = 30)
     {
         try {

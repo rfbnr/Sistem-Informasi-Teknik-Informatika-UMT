@@ -74,29 +74,6 @@
                         </div>
                     </div>
 
-                    {{-- <div class="row mb-3">
-                        <div class="col-md-6">
-                            <strong>Document Type:</strong><br>
-                            @if($documentSignature->approvalRequest->document_type)
-                                <span class="badge bg-secondary">
-                                    {{ $documentSignature->approvalRequest->document_type }}
-                                </span>
-                            @else
-                                <span class="text-muted">Not specified</span>
-                            @endif
-                        </div>
-                        <div class="col-md-6">
-                            <strong>Priority:</strong><br>
-                            <span class="priority-badge priority-{{ $documentSignature->approvalRequest->priority }}">
-                                {{ ucfirst($documentSignature->approvalRequest->priority) }}
-                            </span>
-                        </div>
-                        <div class="col-md-4">
-                            <strong>Department:</strong><br>
-                            {{ $documentSignature->approvalRequest->department ?? 'N/A' }}
-                        </div>
-                    </div> --}}
-
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <strong>Submission Date:</strong><br>
@@ -467,7 +444,7 @@
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
-                        @if($documentSignature->signature_status === 'signed')
+                        {{-- @if($documentSignature->signature_status === 'signed')
                             <button class="btn btn-success" onclick="verifySignature()">
                                 <i class="fas fa-check me-2"></i> Verify Signature
                             </button>
@@ -475,7 +452,7 @@
                             <button class="btn btn-danger" onclick="rejectSignature({{ $documentSignature->id }})">
                                 <i class="fas fa-times me-2"></i> Reject Signature
                             </button>
-                        @endif
+                        @endif --}}
 
                         <a href="{{ route('admin.signature.documents.download', $documentSignature->id) }}" class="btn btn-info">
                             <i class="fas fa-download me-2"></i> Download Document
@@ -485,10 +462,10 @@
                             <a href="{{ route('admin.signature.documents.qr.download', $documentSignature->id) }}" class="btn btn-outline-secondary">
                                 <i class="fas fa-qrcode me-2"></i> Download QR Code
                             </a>
-                        @else
+                        {{-- @else
                             <button class="btn btn-outline-secondary" onclick="regenerateQR()">
                                 <i class="fas fa-qrcode me-2"></i> Generate QR Code
-                            </button>
+                            </button> --}}
                         @endif
 
                         @if(in_array($documentSignature->signature_status, ['signed', 'verified']))
@@ -698,51 +675,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-function verifySignature() {
-    if (confirm('Verify this document signature?')) {
-        fetch('{{ route("admin.signature.documents.verify", $documentSignature->id) }}', {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            console.log(data);
-            if (data.success) {
-                alert('Signature verified successfully!');
-                location.reload();
-            } else {
-                alert('Verification failed: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error during verification:', error);
-            alert('An error occurred during verification.');
-        });
-    }
-}
-
-function regenerateQR() {
-    if (confirm('Generate QR code for this document?')) {
-        fetch('{{ route("admin.signature.documents.qr.regenerate", $documentSignature->id) }}', {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert('QR code generated successfully!');
-                location.reload();
-            } else {
-                alert('QR generation failed');
-            }
-        });
-    }
-}
-
 const documentPaths = {
     original: @json($documentSignature->approvalRequest->document_path ? Storage::url($documentSignature->approvalRequest->document_path) : null),
     signed: @json(
@@ -816,72 +748,6 @@ function previewDocument(type) {
     }, 3000);
 }
 
-function rejectSignature(id) {
-    const modal = document.getElementById('rejectModal');
-    const form = document.getElementById('rejectForm');
-
-    // Set form action dynamically
-    form.action = `/admin/signature/documents/${id}/reject`;
-
-    // Clear previous input
-    document.getElementById('reject_reason').value = '';
-
-    // Show modal
-    new bootstrap.Modal(modal).show();
-
-    // Handle form submission
-    form.onsubmit = function(e) {
-        e.preventDefault();
-
-        const reason = document.getElementById('reject_reason').value;
-        const submitBtn = form.querySelector('button[type="submit"]');
-        const originalBtnHtml = submitBtn.innerHTML;
-
-        console.log('Submitting rejection with reason:', reason);
-        console.log('Form action URL:', form.action);
-        console.log('CSRF Token:', document.querySelector('meta[name="csrf-token"]').content);
-        console.log('Request Body:', JSON.stringify({ reason: reason }));
-
-        // Show loading
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Rejecting...';
-
-        fetch(form.action, {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({ reason: reason })
-        })
-        .then(response => {
-            console.log('Response status:', response.status);
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.success) {
-                alert('✅ ' + data.message);
-                bootstrap.Modal.getInstance(modal).hide();
-                location.reload();
-            } else {
-                alert('❌ Rejection failed: ' + (data.message || 'Unknown error'));
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = originalBtnHtml;
-            }
-        })
-        .catch(error => {
-            console.error('Rejection error:', error);
-            alert('❌ Network error: Failed to reject signature. Please try again.');
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = originalBtnHtml;
-        });
-    };
-}
-
 function setRejectReason(reason) {
     document.getElementById('reject_reason').value = reason;
 }
@@ -892,9 +758,31 @@ function quickRejectFromModal(id) {
     bootstrap.Modal.getInstance(document.getElementById('quickPreviewModal')).hide();
 
     // Small delay then open reject modal
-    setTimeout(() => {
-        rejectSignature(id);
-    }, 300);
+
 }
 </script>
 @endpush
+
+{{--
+
+// function regenerateQR() {
+//     if (confirm('Generate QR code for this document?')) {
+//         fetch('{{ route("admin.signature.documents.qr.regenerate", $documentSignature->id) }}', {
+//             method: 'POST',
+//             headers: {
+//                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+//             }
+//         })
+//         .then(response => response.json())
+//         .then(data => {
+//             if (data.success) {
+//                 alert('QR code generated successfully!');
+//                 location.reload();
+//             } else {
+//                 alert('QR generation failed');
+//             }
+//         });
+//     }
+// }
+
+--}}

@@ -253,15 +253,16 @@ class ReportAnalyticsController extends Controller
             ->groupBy('rejection_reason')
             ->get();
 
-        $signatureRejections = DocumentSignature::select('rejection_reason', DB::raw('count(*) as count'))
-            ->where('signature_status', DocumentSignature::STATUS_REJECTED)
-            ->whereBetween('created_at', [$start, $end])
-            ->whereNotNull('rejection_reason')
-            ->groupBy('rejection_reason')
-            ->get();
+        // $signatureRejections = DocumentSignature::select('rejection_reason', DB::raw('count(*) as count'))
+        //     ->where('signature_status', DocumentSignature::STATUS_REJECTED)
+        //     ->whereBetween('created_at', [$start, $end])
+        //     ->whereNotNull('rejection_reason')
+        //     ->groupBy('rejection_reason')
+        //     ->get();
 
         // Merge and aggregate
-        $merged = $approvalRejections->concat($signatureRejections);
+        // $merged = $approvalRejections->concat($signatureRejections);
+        $merged = $approvalRejections->concat($approvalRejections);
 
         // Group by similar reasons and sum counts
         $grouped = [];
@@ -348,35 +349,35 @@ class ReportAnalyticsController extends Controller
             });
 
         // Recent Rejections
-        $recentRejections = DocumentSignature::with('rejector:id,name', 'approvalRequest:id,document_name')
-            ->where('signature_status', DocumentSignature::STATUS_REJECTED)
-            ->whereNotNull('rejected_at')
-            ->latest('rejected_at')
-            ->limit($limit)
-            ->get()
-            ->map(function ($item) {
-                $description = $item->rejector
-                    ? "{$item->rejector->name} rejected signature"
-                    : "Signature rejected";
+        // $recentRejections = DocumentSignature::with('rejector:id,name', 'approvalRequest:id,document_name')
+        //     ->where('signature_status', DocumentSignature::STATUS_REJECTED)
+        //     ->whereNotNull('rejected_at')
+        //     ->latest('rejected_at')
+        //     ->limit($limit)
+        //     ->get()
+        //     ->map(function ($item) {
+        //         $description = $item->rejector
+        //             ? "{$item->rejector->name} rejected signature"
+        //             : "Signature rejected";
 
-                if ($item->approvalRequest) {
-                    $description .= " for {$item->approvalRequest->document_name}";
-                }
+        //         if ($item->approvalRequest) {
+        //             $description .= " for {$item->approvalRequest->document_name}";
+        //         }
 
-                return [
-                    'type' => 'signature_rejection',
-                    'icon' => 'fa-times-circle',
-                    'color' => 'danger',
-                    'title' => 'Signature Rejected',
-                    'description' => $description,
-                    'timestamp' => $item->rejected_at,
-                ];
-            });
+        //         return [
+        //             'type' => 'signature_rejection',
+        //             'icon' => 'fa-times-circle',
+        //             'color' => 'danger',
+        //             'title' => 'Signature Rejected',
+        //             'description' => $description,
+        //             'timestamp' => $item->rejected_at,
+        //         ];
+        //     });
 
         // Merge and sort by timestamp
         $activities = $recentApprovals
             ->merge($recentSignatures)
-            ->merge($recentRejections)
+            // ->merge($recentRejections)
             ->sortByDesc('timestamp')
             ->take($limit);
 

@@ -59,6 +59,7 @@ class VerificationCodeMapping extends Model
      * @param int $length Length of each segment (default: 4)
      * @return string
      */
+    //! DIPAKAI DI CREATEMAPPING METHOD
     public static function generateShortCode($length = 4)
     {
         $maxAttempts = 10;
@@ -97,6 +98,7 @@ class VerificationCodeMapping extends Model
      * @param \Carbon\Carbon|int|null $expiresAt Expiration date (Carbon instance, years as int, or null for default)
      * @return self
      */
+    //! DIPAKAI DI QRCODESERVICE
     public static function createMapping($encryptedPayload, $documentSignatureId, $expiresAt = null)
     {
         $shortCode = self::generateShortCode();

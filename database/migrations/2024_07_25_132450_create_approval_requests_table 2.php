@@ -16,8 +16,6 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id');
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-            // $table->foreignId('kaprodi_id');
-            // $table->foreign('kaprodi_id')->references('id')->on('kaprodis')->onDelete('cascade');
             $table->string('document_name');
             $table->string('document_path');
             $table->string('signed_document_path')->nullable();

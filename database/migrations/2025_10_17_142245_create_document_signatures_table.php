@@ -24,19 +24,15 @@ return new class extends Migration
             $table->text('cms_signature')->nullable(); // CMS signature format
             $table->timestamp('signed_at')->nullable(); // Waktu penandatanganan
             $table->foreignId('signed_by')->nullable(); // Kaprodi yang menandatangani
-            $table->enum('signature_status', ['pending', 'signed', 'verified', 'invalid', 'rejected'])->default('pending');
-            // $table->string('canvas_data_path')->nullable(); // Path canvas data untuk signature
+            $table->enum('signature_status', ['pending', 'signed', 'verified', 'invalid'])->default('pending');
             $table->json('qr_positioning_data')->nullable(); // Data posisi barcode signature
             $table->string('final_pdf_path')->nullable(); // Path PDF final yang sudah ditandatangani
             $table->text('verification_token')->nullable(); // Token untuk verifikasi publik
-            // $table->timestamp('verified_at')->nullable(); // Waktu verifikasi
-            // $table->foreignId('verified_by')->nullable(); // Yang melakukan verifikasi
             $table->timestamps();
 
             $table->foreign('approval_request_id')->references('id')->on('approval_requests')->onDelete('cascade');
             // $table->foreign('digital_signature_id')->references('id')->on('digital_signatures')->onDelete('cascade');
             $table->foreign('signed_by')->references('id')->on('kaprodis')->onDelete('cascade');
-            // $table->foreign('verified_by')->references('id')->on('kaprodis')->onDelete('set null');
 
             $table->index(['document_hash', 'signature_status']);
             // $table->index('verification_url');
