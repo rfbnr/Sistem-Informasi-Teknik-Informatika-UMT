@@ -164,15 +164,15 @@
         </div>
 
         <div class="col-lg-3 col-md-4 mb-3">
-            <div class="card border-danger">
+            <div class="card border-warning">
                 <div class="card-body text-center">
-                    <div class="h2 text-danger mb-2">{{ $statistics['signature_rejection_rate'] }}%</div>
-                    <div class="text-muted small">Signature Rejection</div>
+                    <div class="h2 text-warning mb-2">{{ $statistics['signature_invalid_rate'] }}%</div>
+                    <div class="text-muted small">Invalid Signatures</div>
                     <div class="progress mt-3" style="height: 6px;">
-                        <div class="progress-bar bg-danger" style="width: {{ $statistics['signature_rejection_rate'] }}%"></div>
+                        <div class="progress-bar bg-warning" style="width: {{ $statistics['signature_invalid_rate'] }}%"></div>
                     </div>
                     <small class="text-muted d-block mt-2">
-                        {{ $statistics['documents_rejected'] }} rejected
+                        {{ $statistics['documents_invalid'] }} marked invalid
                     </small>
                 </div>
             </div>
@@ -536,7 +536,7 @@
                                 <tr>
                                     <td><code>{{ Str::limit($signature->signature_id, 20) }}</code></td>
                                     <td><span class="badge bg-info">{{ $signature->algorithm }}</span></td>
-                                    <td>{{ $signature->creator->name ?? 'System' }}</td>
+                                    <td>System Generated</td>
                                     <td>{{ $signature->valid_until->format('d M Y') }}</td>
                                     <td>
                                         <span class="badge bg-warning">
@@ -763,49 +763,6 @@ new Chart(statusCtx, {
         plugins: {
             legend: {
                 position: 'bottom',
-            }
-        }
-    }
-});
-
-// Priority Chart
-const priorityCtx = document.getElementById('priorityChart').getContext('2d');
-new Chart(priorityCtx, {
-    type: 'bar',
-    data: {
-        labels: @json($priorityDistribution->pluck('priority')),
-        datasets: [{
-            label: 'Requests',
-            data: @json($priorityDistribution->pluck('total')),
-            backgroundColor: [
-                'rgba(76, 175, 80, 0.7)',
-                'rgba(54, 162, 235, 0.7)',
-                'rgba(255, 152, 0, 0.7)',
-                'rgba(244, 67, 54, 0.7)'
-            ],
-            borderColor: [
-                'rgba(76, 175, 80, 1)',
-                'rgba(54, 162, 235, 1)',
-                'rgba(255, 152, 0, 1)',
-                'rgba(244, 67, 54, 1)'
-            ],
-            borderWidth: 2
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: true,
-        plugins: {
-            legend: {
-                display: false
-            }
-        },
-        scales: {
-            y: {
-                beginAtZero: true,
-                ticks: {
-                    stepSize: 1
-                }
             }
         }
     }

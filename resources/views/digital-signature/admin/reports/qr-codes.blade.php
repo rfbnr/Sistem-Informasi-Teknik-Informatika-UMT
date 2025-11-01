@@ -174,7 +174,7 @@
                                     @if($qr->documentSignature && $qr->documentSignature->approvalRequest)
                                         <div>{{ Str::limit($qr->documentSignature->approvalRequest->document_name, 30) }}</div>
                                         <small class="text-muted">
-                                            {{ $qr->documentSignature->approvalRequest->full_document_number }}
+                                            {{ $qr->documentSignature->approvalRequest->document_type ?? 'General' }}
                                         </small>
                                     @else
                                         <span class="text-muted">N/A</span>

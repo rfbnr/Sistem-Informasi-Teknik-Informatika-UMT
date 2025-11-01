@@ -427,69 +427,6 @@
             </div>
         </div>
 
-        <!-- Priority Distribution -->
-        <div class="distribution-section">
-            <div class="distribution-title">⚡ PRIORITY DISTRIBUTION</div>
-            <div class="distribution-grid">
-                <div class="distribution-item">
-                    <div class="distribution-bar">
-                        @php
-                            $maxPriority = max(array_values($priorityDistribution));
-                            $lowHeight = $maxPriority > 0 ? ($priorityDistribution['low'] / $maxPriority * 100) : 0;
-                        @endphp
-                        <div class="bar-container">
-                            <div class="bar-fill" style="height: {{ $lowHeight }}%; background: #1cc88a;">
-                                {{ $priorityDistribution['low'] }}
-                            </div>
-                        </div>
-                        <div class="bar-label">Low Priority</div>
-                        <div class="bar-count">{{ $priorityDistribution['low'] }} requests</div>
-                    </div>
-                </div>
-                <div class="distribution-item">
-                    <div class="distribution-bar">
-                        @php
-                            $normalHeight = $maxPriority > 0 ? ($priorityDistribution['normal'] / $maxPriority * 100) : 0;
-                        @endphp
-                        <div class="bar-container">
-                            <div class="bar-fill" style="height: {{ $normalHeight }}%; background: #36b9cc;">
-                                {{ $priorityDistribution['normal'] }}
-                            </div>
-                        </div>
-                        <div class="bar-label">Normal</div>
-                        <div class="bar-count">{{ $priorityDistribution['normal'] }} requests</div>
-                    </div>
-                </div>
-                <div class="distribution-item">
-                    <div class="distribution-bar">
-                        @php
-                            $highHeight = $maxPriority > 0 ? ($priorityDistribution['high'] / $maxPriority * 100) : 0;
-                        @endphp
-                        <div class="bar-container">
-                            <div class="bar-fill" style="height: {{ $highHeight }}%; background: #f6c23e;">
-                                {{ $priorityDistribution['high'] }}
-                            </div>
-                        </div>
-                        <div class="bar-label">High Priority</div>
-                        <div class="bar-count">{{ $priorityDistribution['high'] }} requests</div>
-                    </div>
-                </div>
-                <div class="distribution-item">
-                    <div class="distribution-bar">
-                        @php
-                            $urgentHeight = $maxPriority > 0 ? ($priorityDistribution['urgent'] / $maxPriority * 100) : 0;
-                        @endphp
-                        <div class="bar-container">
-                            <div class="bar-fill" style="height: {{ $urgentHeight }}%; background: #e74a3b;">
-                                {{ $priorityDistribution['urgent'] }}
-                            </div>
-                        </div>
-                        <div class="bar-label">Urgent</div>
-                        <div class="bar-count">{{ $priorityDistribution['urgent'] }} requests</div>
-                    </div>
-                </div>
-            </div>
-        </div>
 
         <!-- Detailed Data Table -->
         <div class="section-title">📑 DETAILED APPROVAL REQUESTS</div>
@@ -498,12 +435,11 @@
             <thead>
                 <tr>
                     <th style="width: 3%;">No</th>
-                    <th style="width: 10%;">Document No</th>
-                    <th style="width: 15%;">Document Name</th>
-                    <th style="width: 10%;">Submitter</th>
-                    <th style="width: 7%;">NIM</th>
-                    <th style="width: 7%;">Priority</th>
-                    <th style="width: 9%;">Status</th>
+                    <th style="width: 18%;">Document Name</th>
+                    <th style="width: 10%;">Type</th>
+                    <th style="width: 12%;">Submitter</th>
+                    <th style="width: 8%;">NIM</th>
+                    <th style="width: 10%;">Status</th>
                     <th style="width: 10%;">Submitted</th>
                     <th style="width: 10%;">Signed</th>
                     <th style="width: 8%;">Processing</th>
@@ -514,15 +450,10 @@
                 @foreach($data as $index => $item)
                 <tr>
                     <td class="text-center">{{ $index + 1 }}</td>
-                    <td><small>{{ $item->full_document_number ?? 'N/A' }}</small></td>
-                    <td class="truncate" title="{{ $item->document_name }}">{{ \Str::limit($item->document_name, 30) }}</td>
+                    <td class="truncate" title="{{ $item->document_name }}">{{ \Str::limit($item->document_name, 35) }}</td>
+                    <td><small>{{ $item->document_type ?? 'General' }}</small></td>
                     <td>{{ $item->user->name ?? 'N/A' }}</td>
                     <td><small>{{ $item->user->NIM ?? 'N/A' }}</small></td>
-                    <td class="text-center">
-                        <span class="priority-{{ $item->priority }}">
-                            <strong>{{ strtoupper($item->priority) }}</strong>
-                        </span>
-                    </td>
                     <td>
                         @if($item->status == 'sign_approved')
                             <span class="badge badge-success">Completed</span>

@@ -64,14 +64,14 @@
                 </div>
                 <div class="card-body">
                     <div class="row text-center">
-                        <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="col-lg-2 col-md-4 mb-3">
                             <div class="p-3 border rounded">
                                 <div class="h2 text-primary">{{ $metrics['approval_speed']['average'] }}</div>
                                 <div class="text-muted">Average Time</div>
                                 <small class="text-muted">From submission to approval</small>
                             </div>
                         </div>
-                        <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="col-lg-2 col-md-4 mb-3">
                             <div class="p-3 border rounded">
                                 <div class="h2 text-success">{{ $metrics['approval_speed']['fastest'] }}</div>
                                 <div class="text-muted">Fastest Approval</div>
@@ -80,7 +80,7 @@
                                 </small>
                             </div>
                         </div>
-                        <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="col-lg-2 col-md-4 mb-3">
                             <div class="p-3 border rounded">
                                 <div class="h2 text-danger">{{ $metrics['approval_speed']['slowest'] }}</div>
                                 <div class="text-muted">Slowest Approval</div>
@@ -89,11 +89,18 @@
                                 </small>
                             </div>
                         </div>
-                        <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="col-lg-2 col-md-4 mb-3">
                             <div class="p-3 border rounded">
                                 <div class="h2 text-info">{{ $metrics['approval_speed']['median'] }}</div>
                                 <div class="text-muted">Median Time</div>
                                 <small class="text-muted">Middle value</small>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 col-md-8 mb-3">
+                            <div class="p-3 bg-light rounded">
+                                <div class="h4 text-secondary">{{ $metrics['approval_speed']['total_approved'] }}</div>
+                                <div class="text-muted">Total Approved Requests</div>
+                                <small class="text-muted">Based on actual data</small>
                             </div>
                         </div>
                     </div>
@@ -182,30 +189,37 @@
                 </div>
                 <div class="card-body">
                     <div class="row text-center mb-4">
-                        <div class="col-6">
+                        <div class="col-md-3">
                             <div class="p-3 bg-light rounded">
                                 <div class="h2 text-info">{{ $metrics['completion_trend']['this_month'] }}%</div>
                                 <div class="text-muted">This Month</div>
+                                <small class="text-muted">
+                                    {{ $metrics['completion_trend']['this_month_completed'] }}/{{ $metrics['completion_trend']['this_month_total'] }}
+                                </small>
                             </div>
                         </div>
-                        <div class="col-6">
+                        <div class="col-md-3">
                             <div class="p-3 bg-light rounded">
                                 <div class="h2 text-secondary">{{ $metrics['completion_trend']['last_month'] }}%</div>
                                 <div class="text-muted">Last Month</div>
+                                <small class="text-muted">
+                                    {{ $metrics['completion_trend']['last_month_completed'] }}/{{ $metrics['completion_trend']['last_month_total'] }}
+                                </small>
                             </div>
                         </div>
-                    </div>
-
-                    <div class="text-center mb-4">
-                        <div class="display-4 text-{{ strpos($metrics['completion_trend']['trend'], '+') !== false ? 'success' : 'danger' }}">
-                            {{ $metrics['completion_trend']['trend'] }}
-                        </div>
-                        <div class="text-muted">
-                            @if(strpos($metrics['completion_trend']['trend'], '+') !== false)
-                                <i class="fas fa-arrow-up text-success"></i> Improvement
-                            @else
-                                <i class="fas fa-arrow-down text-danger"></i> Decline
-                            @endif
+                        <div class="col-md-6">
+                            <div class="p-3 bg-{{ strpos($metrics['completion_trend']['trend'], '+') !== false ? 'success' : 'warning' }}-subtle rounded">
+                                <div class="display-4 text-{{ strpos($metrics['completion_trend']['trend'], '+') !== false ? 'success' : 'warning' }}">
+                                    {{ $metrics['completion_trend']['trend'] }}
+                                </div>
+                                <div class="text-muted">
+                                    @if(strpos($metrics['completion_trend']['trend'], '+') !== false)
+                                        <i class="fas fa-arrow-up text-success"></i> Trend Improvement
+                                    @else
+                                        <i class="fas fa-arrow-down text-warning"></i> Trend Change
+                                    @endif
+                                </div>
+                            </div>
                         </div>
                     </div>
 

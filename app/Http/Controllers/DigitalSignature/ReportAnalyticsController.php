@@ -61,8 +61,6 @@ class ReportAnalyticsController extends Controller
                 ->whereBetween('created_at', [$start, $end])->count(),
             'documents_verified' => DocumentSignature::where('signature_status', 'verified')
                 ->whereBetween('created_at', [$start, $end])->count(),
-            'documents_rejected' => DocumentSignature::where('signature_status', 'rejected')
-                ->whereBetween('created_at', [$start, $end])->count(),
             'documents_invalid' => DocumentSignature::where('signature_status', 'invalid')
                 ->whereBetween('created_at', [$start, $end])->count(),
 
@@ -87,10 +85,10 @@ class ReportAnalyticsController extends Controller
             ? round(($statistics['approval_rejected'] / $totalRequests) * 100, 2)
             : 0;
 
-        // Document Signature Rejection Rate
+        // Document Signature Invalid Rate (replaced rejection which doesn't exist)
         $totalDocSignatures = $statistics['total_document_signatures'];
-        $statistics['signature_rejection_rate'] = $totalDocSignatures > 0
-            ? round(($statistics['documents_rejected'] / $totalDocSignatures) * 100, 2)
+        $statistics['signature_invalid_rate'] = $totalDocSignatures > 0
+            ? round(($statistics['documents_invalid'] / $totalDocSignatures) * 100, 2)
             : 0;
 
         // Average Processing Time
@@ -101,9 +99,6 @@ class ReportAnalyticsController extends Controller
 
         // Document Type Distribution
         $documentTypeDistribution = $this->getDocumentTypeDistribution($start, $end);
-
-        // Priority Distribution
-        $priorityDistribution = $this->getPriorityDistribution($start, $end);
 
         // Top Users Statistics
         $topUsers = $this->getTopUsers($start, $end);
@@ -129,7 +124,6 @@ class ReportAnalyticsController extends Controller
             'statistics',
             'timelineData',
             'documentTypeDistribution',
-            'priorityDistribution',
             'topUsers',
             'topRejectionReasons',
             'recentActivity',
@@ -215,16 +209,6 @@ class ReportAnalyticsController extends Controller
             ->get();
     }
 
-    /**
-     * Get priority distribution
-     */
-    private function getPriorityDistribution($start, $end)
-    {
-        return ApprovalRequest::select('priority', DB::raw('count(*) as total'))
-            ->whereBetween('created_at', [$start, $end])
-            ->groupBy('priority')
-            ->get();
-    }
 
     /**
      * Get top users by submission count
@@ -242,46 +226,29 @@ class ReportAnalyticsController extends Controller
 
     /**
      * Get top rejection reasons analytics
+     * Only from ApprovalRequest (DocumentSignature doesn't have rejection fields)
      */
     private function getTopRejectionReasons($start, $end)
     {
-        // Get rejection reasons from both ApprovalRequest and DocumentSignature
+        // Get rejection reasons from ApprovalRequest only
         $approvalRejections = ApprovalRequest::select('rejection_reason', DB::raw('count(*) as count'))
             ->where('status', ApprovalRequest::STATUS_REJECTED)
             ->whereBetween('created_at', [$start, $end])
             ->whereNotNull('rejection_reason')
+            ->where('rejection_reason', '!=', '')
             ->groupBy('rejection_reason')
+            ->orderByDesc('count')
+            ->limit(10)
             ->get();
 
-        // $signatureRejections = DocumentSignature::select('rejection_reason', DB::raw('count(*) as count'))
-        //     ->where('signature_status', DocumentSignature::STATUS_REJECTED)
-        //     ->whereBetween('created_at', [$start, $end])
-        //     ->whereNotNull('rejection_reason')
-        //     ->groupBy('rejection_reason')
-        //     ->get();
-
-        // Merge and aggregate
-        // $merged = $approvalRejections->concat($signatureRejections);
-        $merged = $approvalRejections->concat($approvalRejections);
-
-        // Group by similar reasons and sum counts
-        $grouped = [];
-        foreach ($merged as $item) {
-            $reason = $item->rejection_reason;
-            if (!isset($grouped[$reason])) {
-                $grouped[$reason] = 0;
-            }
-            $grouped[$reason] += $item->count;
-        }
-
-        // Convert to collection and sort
-        $result = collect($grouped)->map(function($count, $reason) {
+        // Add category to each rejection reason
+        $result = $approvalRejections->map(function($item) {
             return (object)[
-                'rejection_reason' => $reason,
-                'count' => $count,
-                'category' => $this->categorizeRejectionReason($reason)
+                'rejection_reason' => $item->rejection_reason,
+                'count' => $item->count,
+                'category' => $this->categorizeRejectionReason($item->rejection_reason)
             ];
-        })->sortByDesc('count')->take(10)->values();
+        });
 
         return $result;
     }
@@ -418,12 +385,13 @@ class ReportAnalyticsController extends Controller
         $start = Carbon::parse($startDate)->startOfDay();
         $end = Carbon::parse($endDate)->endOfDay();
 
-        // Get all data with relationships
+        // Get all data with relationships (removed non-existent rejector relationship)
         $approvalRequests = ApprovalRequest::with([
                 'user',
                 'approver',
+                'rejector',
                 'documentSignature.digitalSignature',
-                'documentSignature.rejector'
+                'documentSignature.signer'
             ])
             ->whereBetween('created_at', [$start, $end])
             ->orderBy('created_at', 'desc')
@@ -485,16 +453,15 @@ class ReportAnalyticsController extends Controller
             fputcsv($file, ['DETAILED APPROVAL REQUESTS']);
             fputcsv($file, [
                 'No',
-                'Document Number',
                 'Document Name',
                 'Document Type',
                 'Submitter Name',
                 'Submitter NIM',
-                'Priority',
                 'Status',
                 'Submitted At',
                 'Approved At',
                 'Signed At',
+                'Final Approval At',
                 'Processing Time (hours)',
                 'Approver',
                 'Digital Signature ID',
@@ -512,30 +479,30 @@ class ReportAnalyticsController extends Controller
                     ? $item->created_at->diffInHours($item->sign_approved_at)
                     : 'N/A';
 
+                // Rejection data only from ApprovalRequest (not DocumentSignature)
                 $rejectedAt = 'N/A';
                 $rejectedBy = 'N/A';
                 $rejectionReason = 'N/A';
 
-                if ($item->documentSignature && $item->documentSignature->signature_status === 'rejected') {
-                    $rejectedAt = $item->documentSignature->rejected_at
-                        ? $item->documentSignature->rejected_at->format('Y-m-d H:i:s')
+                if ($item->status === ApprovalRequest::STATUS_REJECTED) {
+                    $rejectedAt = $item->rejected_at
+                        ? $item->rejected_at->format('Y-m-d H:i:s')
                         : 'N/A';
-                    $rejectedBy = $item->documentSignature->rejector->name ?? 'N/A';
-                    $rejectionReason = $item->documentSignature->rejection_reason ?? 'N/A';
+                    $rejectedBy = $item->rejector->name ?? 'N/A';
+                    $rejectionReason = $item->rejection_reason ?? 'N/A';
                 }
 
                 fputcsv($file, [
                     $no++,
-                    $item->full_document_number ?? 'N/A',
                     $item->document_name ?? 'N/A',
-                    $item->document_type ?? 'N/A',
+                    $item->document_type ?? 'General',
                     $item->user->name ?? 'N/A',
                     $item->user->NIM ?? 'N/A',
-                    ucfirst($item->priority),
-                    $item->status_label ?? 'N/A',
+                    $item->status_label,
                     $item->created_at->format('Y-m-d H:i:s'),
                     $item->approved_at ? $item->approved_at->format('Y-m-d H:i:s') : 'Not yet approved',
-                    $item->sign_approved_at ? $item->sign_approved_at->format('Y-m-d H:i:s') : 'Not yet signed',
+                    $item->user_signed_at ? $item->user_signed_at->format('Y-m-d H:i:s') : 'Not yet signed',
+                    $item->sign_approved_at ? $item->sign_approved_at->format('Y-m-d H:i:s') : 'Not yet final approved',
                     $processingTime,
                     $item->approver->name ?? 'N/A',
                     $item->documentSignature->digitalSignature->signature_id ?? 'N/A',
@@ -571,13 +538,6 @@ class ReportAnalyticsController extends Controller
             'rejected' => $data->where('status', ApprovalRequest::STATUS_REJECTED)->count(),
         ];
 
-        $priorityDistribution = [
-            'low' => $data->where('priority', 'low')->count(),
-            'normal' => $data->where('priority', 'normal')->count(),
-            'high' => $data->where('priority', 'high')->count(),
-            'urgent' => $data->where('priority', 'urgent')->count(),
-        ];
-
         // Prepare data for PDF
         $pdfData = [
             'title' => 'Digital Signature System Report',
@@ -587,7 +547,6 @@ class ReportAnalyticsController extends Controller
             'generatedBy' => auth('kaprodi')->user()->name ?? 'Administrator',
             'statistics' => $statistics,
             'statusDistribution' => $statusDistribution,
-            'priorityDistribution' => $priorityDistribution,
             'data' => $data,
         ];
 
@@ -651,17 +610,65 @@ class ReportAnalyticsController extends Controller
     }
 
     /**
-     * Calculate approval speed metrics
+     * Calculate approval speed metrics (REAL calculation based on actual data)
      */
     private function getApprovalSpeedMetrics($period)
     {
-        // Implementation for approval speed calculation
+        // Get all approved requests with both created_at and approved_at
+        $approvedRequests = ApprovalRequest::whereIn('status', [
+                ApprovalRequest::STATUS_APPROVED,
+                ApprovalRequest::STATUS_USER_SIGNED,
+                ApprovalRequest::STATUS_SIGN_APPROVED
+            ])
+            ->whereNotNull('approved_at')
+            ->get();
+
+        if ($approvedRequests->count() === 0) {
+            return [
+                'average' => '0 hours',
+                'fastest' => 'N/A',
+                'slowest' => 'N/A',
+                'median' => 'N/A',
+                'total_approved' => 0
+            ];
+        }
+
+        // Calculate time differences in hours
+        $timeToApproval = $approvedRequests->map(function($request) {
+            return $request->created_at->diffInHours($request->approved_at);
+        })->sort()->values();
+
+        $avgHours = $timeToApproval->average();
+        $fastestHours = $timeToApproval->min();
+        $slowestHours = $timeToApproval->max();
+        $medianHours = $timeToApproval->median();
+
         return [
-            'average' => '2.5 days',
-            'fastest' => '4 hours',
-            'slowest' => '7 days',
-            'median' => '2 days'
+            'average' => $this->formatHours($avgHours),
+            'fastest' => $this->formatHours($fastestHours),
+            'slowest' => $this->formatHours($slowestHours),
+            'median' => $this->formatHours($medianHours),
+            'total_approved' => $approvedRequests->count()
         ];
+    }
+
+    /**
+     * Format hours into readable string
+     */
+    private function formatHours($hours)
+    {
+        if ($hours < 1) {
+            return round($hours * 60) . ' minutes';
+        }
+
+        $days = floor($hours / 24);
+        $remainingHours = round($hours % 24);
+
+        if ($days > 0) {
+            return $days . ' days ' . $remainingHours . ' hours';
+        }
+
+        return round($hours) . ' hours';
     }
 
     /**
@@ -683,15 +690,42 @@ class ReportAnalyticsController extends Controller
     }
 
     /**
-     * Get completion trend metrics
+     * Get completion trend metrics (REAL calculation)
      */
     private function getCompletionTrendMetrics($period)
     {
-        // Implementation for completion trend
+        // Calculate completion rate for this month
+        $thisMonthStart = now()->startOfMonth();
+        $thisMonthEnd = now()->endOfMonth();
+
+        $thisMonthTotal = ApprovalRequest::whereBetween('created_at', [$thisMonthStart, $thisMonthEnd])->count();
+        $thisMonthCompleted = ApprovalRequest::where('status', ApprovalRequest::STATUS_SIGN_APPROVED)
+            ->whereBetween('created_at', [$thisMonthStart, $thisMonthEnd])->count();
+
+        $thisMonthRate = $thisMonthTotal > 0 ? round(($thisMonthCompleted / $thisMonthTotal) * 100, 1) : 0;
+
+        // Calculate completion rate for last month
+        $lastMonthStart = now()->subMonth()->startOfMonth();
+        $lastMonthEnd = now()->subMonth()->endOfMonth();
+
+        $lastMonthTotal = ApprovalRequest::whereBetween('created_at', [$lastMonthStart, $lastMonthEnd])->count();
+        $lastMonthCompleted = ApprovalRequest::where('status', ApprovalRequest::STATUS_SIGN_APPROVED)
+            ->whereBetween('created_at', [$lastMonthStart, $lastMonthEnd])->count();
+
+        $lastMonthRate = $lastMonthTotal > 0 ? round(($lastMonthCompleted / $lastMonthTotal) * 100, 1) : 0;
+
+        // Calculate trend
+        $trendDiff = $thisMonthRate - $lastMonthRate;
+        $trendFormatted = $trendDiff > 0 ? "+{$trendDiff}%" : "{$trendDiff}%";
+
         return [
-            'this_month' => 85,
-            'last_month' => 78,
-            'trend' => '+7%'
+            'this_month' => $thisMonthRate,
+            'last_month' => $lastMonthRate,
+            'trend' => $trendFormatted,
+            'this_month_total' => $thisMonthTotal,
+            'this_month_completed' => $thisMonthCompleted,
+            'last_month_total' => $lastMonthTotal,
+            'last_month_completed' => $lastMonthCompleted
         ];
     }
 }
