@@ -1,53 +1,31 @@
 {{-- resources/views/digital-signature/user/sign-document.blade.php --}}
-{{-- MODERN UI: QR Code Drag & Drop with Split Screen Layout --}}
+{{-- REFACTORED: QR Code Drag & Drop with Instant Preview (No API) & Full Responsive --}}
 @extends('user.layouts.app')
 
 @section('title', 'Digital Document Signing - QR Drag & Drop')
 
 @push('styles')
 <style>
-/* ========== MODERN VARIABLES ========== */
-:root {
-    --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    --success-gradient: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-    --danger-gradient: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
-    --card-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-    --card-shadow-hover: 0 15px 50px rgba(0, 0, 0, 0.15);
-}
-
 /* ========== GENERAL LAYOUT ========== */
 .signing-container {
-    max-width: 1600px;
+    max-width: 1400px;
     margin: 0 auto;
-    padding: 1.5rem;
+    padding: 2rem;
 }
 
-/* ========== MODERN STEPS INDICATOR ========== */
+/* ========== SIGNING STEPS INDICATOR ========== */
 .signing-steps {
-    background: var(--primary-gradient);
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
     color: white;
-    border-radius: 1.5rem;
-    padding: 2rem;
+    border-radius: 1rem;
+    padding: 1.5rem;
     margin-bottom: 2rem;
-    box-shadow: var(--card-shadow);
 }
 
 .step-indicator {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 1.5rem;
-    position: relative;
-}
-
-.step-indicator::before {
-    content: '';
-    position: absolute;
-    top: 20px;
-    left: 10%;
-    right: 10%;
-    height: 2px;
-    background: rgba(255, 255, 255, 0.3);
-    z-index: 0;
+    margin-bottom: 1rem;
 }
 
 .step-item {
@@ -56,12 +34,11 @@
     align-items: center;
     flex: 1;
     position: relative;
-    z-index: 1;
 }
 
 .step-number {
-    width: 45px;
-    height: 45px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.2);
     display: flex;
@@ -69,280 +46,212 @@
     justify-content: center;
     margin-bottom: 0.5rem;
     font-weight: bold;
-    font-size: 18px;
-    transition: all 0.3s ease;
 }
 
 .step-number.active {
-    background: white;
+    background: rgba(255, 255, 255, 1);
     color: #667eea;
-    box-shadow: 0 4px 15px rgba(255, 255, 255, 0.4);
 }
 
 .step-number.completed {
-    background: var(--success-gradient);
+    background: #28a745;
     color: white;
 }
 
-/* ========== SPLIT SCREEN WORKSPACE (DESKTOP) ========== */
-.signing-workspace {
-    display: grid;
-    grid-template-columns: 400px 1fr;
-    gap: 1.5rem;
-    margin-bottom: 2rem;
-    min-height: 70vh;
-}
-
-/* ========== QR CODE SECTION (LEFT PANEL) ========== */
-.qr-panel {
+/* ========== QR CODE SECTION ========== */
+.qr-code-section {
     background: white;
-    border-radius: 1.5rem;
-    box-shadow: var(--card-shadow);
-    padding: 1.5rem;
-    display: flex;
-    flex-direction: column;
-    position: sticky;
-    top: 1.5rem;
-    height: fit-content;
-    max-height: calc(100vh - 200px);
-    overflow-y: auto;
+    border-radius: 1rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+    margin-bottom: 2rem;
 }
 
-.qr-panel-header {
+.qr-section-header {
     display: flex;
     align-items: center;
     margin-bottom: 1.5rem;
-    padding-bottom: 1rem;
-    border-bottom: 2px solid #f0f0f0;
 }
 
-.qr-icon {
+.qr-icon-wrapper {
     width: 50px;
     height: 50px;
-    background: var(--success-gradient);
-    border-radius: 15px;
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
     margin-right: 1rem;
+    flex-shrink: 0;
 }
 
-.qr-icon i {
+.qr-icon-wrapper i {
     color: white;
-    font-size: 22px;
+    font-size: 20px;
 }
 
-.qr-panel-title h5 {
-    margin: 0;
+.qr-section-title h4 {
+    margin: 0 0 0.25rem 0;
     font-size: 18px;
-    font-weight: 700;
-    color: #2d3748;
+    font-weight: 600;
+    color: #333;
 }
 
-.qr-panel-title p {
+.qr-section-title p {
     margin: 0;
-    font-size: 13px;
-    color: #718096;
+    font-size: 14px;
+    color: #666;
 }
 
 .qr-code-wrapper {
-    background: linear-gradient(135deg, #f6f8fb 0%, #e9f0f5 100%);
-    border-radius: 1rem;
-    padding: 1.5rem;
-    border: 2px dashed #11998e;
-    margin-bottom: 1.5rem;
-    text-align: center;
-    transition: all 0.3s ease;
-}
-
-.qr-code-wrapper:hover {
-    border-color: #38ef7d;
-    box-shadow: 0 8px 25px rgba(17, 153, 142, 0.15);
-}
-
-.qr-auto-placement {
-    /* margin-top: 1.5rem;
-    text-align: center; */
-    margin-top: 1.5rem;
-    text-align: center;
-}
-
-.qr-auto-placement .btn {
-    width: 100%;
-}
-
-.qr-auto-placement:hover .btn {
-    box-shadow: var(--card-shadow-hover);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    background: #f8f9fa;
+    border-radius: 0.75rem;
+    border: 2px dashed #28a745;
 }
 
 .qr-code-item {
     background: white;
-    border: 3px solid #11998e;
-    border-radius: 1rem;
-    padding: 1rem;
+    border: 2px solid #28a745;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
     cursor: grab;
     transition: all 0.3s ease;
-    display: inline-block;
+    text-align: center;
+    max-width: 300px;
 }
 
 .qr-code-item:hover {
-    box-shadow: 0 10px 30px rgba(17, 153, 142, 0.25);
-    transform: translateY(-5px) scale(1.02);
-}
-
-.qr-code-item.dragging {
-    opacity: 0.7;
-    cursor: grabbing;
-    transform: scale(0.95);
-}
-
-.qr-code-preview-img {
-    width: 180px;
-    height: 180px;
-    object-fit: contain;
-    margin-bottom: 0.75rem;
-}
-
-.qr-info h6 {
-    font-size: 15px;
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-    color: #2d3748;
-}
-
-.qr-info p {
-    font-size: 13px;
-    color: #718096;
-    margin: 0;
-}
-
-/* QR SIZE PRESETS */
-.qr-size-presets {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-}
-
-.qr-size-btn {
-    padding: 0.75rem 0.5rem;
-    border: 2px solid #e2e8f0;
-    background: white;
-    border-radius: 0.75rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    font-size: 13px;
-    font-weight: 600;
-    text-align: center;
-}
-
-.qr-size-btn:hover {
-    border-color: #11998e;
-    background: #f0fdf4;
+    box-shadow: 0 6px 16px rgba(40, 167, 69, 0.3);
     transform: translateY(-2px);
 }
 
-.qr-size-btn.active {
-    background: var(--success-gradient);
-    color: white;
-    border-color: transparent;
-    box-shadow: 0 4px 15px rgba(17, 153, 142, 0.3);
+.qr-code-item.dragging {
+    opacity: 0.5;
+    cursor: grabbing;
 }
 
-/* QR CONTROLS */
-.qr-controls {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
+.qr-code-preview-img {
+    width: 200px;
+    height: 200px;
+    object-fit: contain;
+    margin-bottom: 1rem;
+}
+
+.qr-info h6 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #333;
+}
+
+.qr-info p {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 0;
+}
+
+/* ========== QR SIZE PRESETS ========== */
+.qr-size-presets {
+    display: flex;
     gap: 0.5rem;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
 }
 
-.qr-control-btn {
-    padding: 0.75rem;
-    border: 1px solid #e2e8f0;
+.qr-size-btn {
+    padding: 0.6rem 1.2rem;
+    border: 2px solid #dee2e6;
     background: white;
-    border-radius: 0.75rem;
+    border-radius: 0.5rem;
     cursor: pointer;
-    transition: all 0.3s ease;
-    font-size: 13px;
+    transition: all 0.2s ease;
+    font-size: 14px;
     font-weight: 500;
     display: flex;
     align-items: center;
-    justify-content: center;
+    gap: 0.5rem;
+}
+
+.qr-size-btn:hover {
+    border-color: #28a745;
+    background: #f8f9fa;
+}
+
+.qr-size-btn.active {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    border-color: #28a745;
+}
+
+/* ========== QR CONTROL BUTTONS ========== */
+.qr-controls {
+    margin-top: 1rem;
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.qr-control-btn {
+    padding: 0.5rem 1rem;
+    border: 1px solid #dee2e6;
+    background: white;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
     gap: 0.5rem;
 }
 
 .qr-control-btn:hover:not(:disabled) {
-    background: #f7fafc;
-    border-color: #11998e;
-    transform: translateY(-2px);
+    background: #f8f9fa;
+    border-color: #28a745;
 }
 
 .qr-control-btn:disabled {
-    opacity: 0.4;
+    opacity: 0.5;
     cursor: not-allowed;
 }
 
-/* ========== PDF PREVIEW SECTION (RIGHT PANEL) ========== */
-.pdf-panel {
-    background: white;
-    border-radius: 1.5rem;
-    box-shadow: var(--card-shadow);
-    padding: 1.5rem;
-    display: flex;
-    flex-direction: column;
-}
-
-.pdf-panel-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-    padding-bottom: 1rem;
-    border-bottom: 2px solid #f0f0f0;
-}
-
-.pdf-info h5 {
-    margin: 0;
-    font-size: 16px;
-    font-weight: 700;
-    color: #2d3748;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.pdf-badge {
-    background: var(--success-gradient);
-    color: white;
-    padding: 0.35rem 0.75rem;
-    border-radius: 0.5rem;
+.qr-control-btn i {
     font-size: 12px;
-    font-weight: 600;
+}
+
+/* ========== PDF PREVIEW CONTAINER ========== */
+.pdf-preview-section {
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+    margin-bottom: 2rem;
 }
 
 .pdf-preview-wrapper {
     position: relative;
-    border: 2px solid #e2e8f0;
-    border-radius: 1rem;
-    background: #f7fafc;
+    border: 2px solid #dee2e6;
+    border-radius: 0.75rem;
+    background: #f8f9fa;
     overflow: auto;
-    flex: 1;
-    min-height: 500px;
-    max-height: calc(100vh - 350px);
+    max-height: 800px;
     transition: all 0.3s ease;
 }
 
 .pdf-preview-wrapper.drop-zone-active {
-    border-color: #38ef7d;
-    background: rgba(17, 153, 142, 0.05);
-    box-shadow: 0 0 0 4px rgba(17, 153, 142, 0.1);
+    border-color: #28a745;
+    background: rgba(40, 167, 69, 0.05);
+    box-shadow: 0 0 0 4px rgba(40, 167, 69, 0.1);
 }
 
 #pdfCanvas {
     display: block;
     margin: 0 auto;
     background: white;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 #qrOverlay {
@@ -356,19 +265,24 @@
 
 .placed-qr {
     position: absolute;
-    border: 3px dashed #11998e;
-    background: rgba(17, 153, 142, 0.1);
+    border: 2px dashed #28a745;
+    background: rgba(40, 167, 69, 0.1);
     cursor: move;
     pointer-events: all;
-    border-radius: 0.5rem;
+    border-radius: 0.25rem;
     z-index: 10;
     transition: all 0.2s ease;
 }
 
 .placed-qr:hover {
-    border-color: #38ef7d;
-    background: rgba(17, 153, 142, 0.2);
-    box-shadow: 0 0 20px rgba(17, 153, 142, 0.3);
+    border-color: #218838;
+    background: rgba(40, 167, 69, 0.2);
+}
+
+.placed-qr.selected {
+    border-color: #28a745;
+    border-width: 3px;
+    box-shadow: 0 0 15px rgba(40, 167, 69, 0.5);
 }
 
 .placed-qr img {
@@ -380,107 +294,96 @@
 
 .qr-handles {
     position: absolute;
-    width: 14px;
-    height: 14px;
-    background: #11998e;
-    border: 3px solid white;
+    width: 12px;
+    height: 12px;
+    background: #28a745;
+    border: 2px solid white;
     border-radius: 50%;
     cursor: nwse-resize;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
 .handle-se {
-    bottom: -7px;
-    right: -7px;
+    bottom: -6px;
+    right: -6px;
+    cursor: nwse-resize;
 }
 
 .delete-qr-btn {
     position: absolute;
-    top: -15px;
-    right: -15px;
-    width: 32px;
-    height: 32px;
-    background: var(--danger-gradient);
+    top: -12px;
+    right: -12px;
+    width: 28px;
+    height: 28px;
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
     color: white;
-    border: 3px solid white;
+    border: 2px solid white;
     border-radius: 50%;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 18px;
+    font-size: 16px;
     font-weight: bold;
-    box-shadow: 0 4px 12px rgba(235, 51, 73, 0.4);
-    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(220, 53, 69, 0.4);
+    transition: all 0.2s ease;
 }
 
 .delete-qr-btn:hover {
-    transform: scale(1.15) rotate(90deg);
+    background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+    transform: scale(1.1);
 }
 
-/* PAGE NAVIGATION */
+/* ========== PAGE NAVIGATION ========== */
 .page-navigation {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 1rem;
-    margin-top: 1rem;
+    margin-top: 1.5rem;
     padding: 1rem;
-    background: linear-gradient(135deg, #f6f8fb 0%, #e9f0f5 100%);
-    border-radius: 1rem;
+    background: #f8f9fa;
+    border-radius: 0.75rem;
 }
 
 .page-navigation button {
-    padding: 0.75rem 1.5rem;
-    border: 2px solid #e2e8f0;
+    padding: 0.6rem 1.2rem;
+    border: 1px solid #dee2e6;
     background: white;
-    border-radius: 0.75rem;
+    border-radius: 0.5rem;
     cursor: pointer;
-    transition: all 0.3s ease;
-    font-weight: 600;
+    transition: all 0.2s ease;
+    font-weight: 500;
 }
 
 .page-navigation button:hover:not(:disabled) {
-    background: var(--success-gradient);
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
     color: white;
-    border-color: transparent;
-    transform: translateY(-2px);
+    border-color: #28a745;
 }
 
 .page-navigation button:disabled {
-    opacity: 0.4;
+    opacity: 0.5;
     cursor: not-allowed;
 }
 
 .page-info {
-    font-weight: 700;
-    color: #2d3748;
+    font-weight: 600;
+    color: #333;
     font-size: 15px;
 }
 
 /* ========== SIGNING CONTROLS (STICKY BOTTOM) ========== */
 .signing-controls {
     position: sticky;
-    bottom: 1.5rem;
+    bottom: 2rem;
+    margin: 0 2rem 2rem 2rem;
     background: white;
-    border-radius: 1.5rem;
-    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.15);
+    border-radius: 1rem;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
     padding: 1.5rem;
-    border: 2px solid #e2e8f0;
+    border: 1px solid #dee2e6;
     z-index: 100;
-    margin: 0 -0.5rem;
-}
-
-.signing-controls .form-check-label {
-    font-weight: 600;
-    color: #2d3748;
-}
-
-.signing-controls small {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-top: 0.5rem;
 }
 
 /* ========== LOADING OVERLAY ========== */
@@ -490,7 +393,7 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.85);
+    background: rgba(0, 0, 0, 0.7);
     display: none;
     align-items: center;
     justify-content: center;
@@ -503,20 +406,20 @@
 
 .loading-content {
     background: white;
-    padding: 3rem;
-    border-radius: 1.5rem;
+    padding: 2.5rem;
+    border-radius: 1rem;
     text-align: center;
     max-width: 400px;
 }
 
 .spinner {
-    border: 5px solid #f3f3f3;
-    border-top: 5px solid #11998e;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #28a745;
     border-radius: 50%;
-    width: 60px;
-    height: 60px;
+    width: 50px;
+    height: 50px;
     animation: spin 1s linear infinite;
-    margin: 0 auto 1.5rem;
+    margin: 0 auto 1rem;
 }
 
 @keyframes spin {
@@ -524,14 +427,14 @@
     100% { transform: rotate(360deg); }
 }
 
-/* ========== PREVIEW MODAL (ENHANCED) ========== */
+/* ========== PREVIEW MODAL ========== */
 .preview-modal {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.9);
+    background: rgba(0, 0, 0, 0.85);
     z-index: 10000;
     display: none;
     align-items: center;
@@ -541,143 +444,65 @@
 
 .preview-modal.active {
     display: flex;
-    animation: fadeIn 0.3s ease;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
 }
 
 .preview-modal-content {
     background: white;
-    border-radius: 1.5rem;
-    max-width: 1200px;
+    border-radius: 1rem;
+    max-width: 1000px;
     width: 100%;
-    max-height: 95vh;
+    max-height: 90vh;
     overflow: auto;
     padding: 2rem;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
-}
-
-.preview-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-    padding-bottom: 1rem;
-    border-bottom: 2px solid #e2e8f0;
-}
-
-.preview-header h4 {
-    margin: 0;
-    font-size: 20px;
-    font-weight: 700;
-    color: #2d3748;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
 }
 
 .preview-canvas-wrapper {
-    border: 2px solid #e2e8f0;
-    border-radius: 1rem;
-    background: #f7fafc;
-    padding: 1.5rem;
-    margin: 1.5rem 0;
+    border: 2px solid #dee2e6;
+    border-radius: 0.75rem;
+    background: #f8f9fa;
+    padding: 1rem;
+    margin: 1rem 0;
     text-align: center;
 }
 
 #previewCanvas {
     max-width: 100%;
     height: auto;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
-    border-radius: 0.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.preview-actions {
-    display: flex;
-    gap: 1rem;
-    justify-content: flex-end;
-    margin-top: 1.5rem;
-}
-
-/* ========== VISUAL GUIDE (FIRST TIME) ========== */
-.visual-guide-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.75);
-    z-index: 9999;
-    display: none;
-    margin: 0 auto;
-}
-
-.visual-guide-overlay.active {
-    display: block;
-    animation: fadeIn 0.3s ease;
-}
-
+/* ========== VISUAL GUIDE ========== */
 .visual-guide {
     position: fixed;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     background: white;
-    border-radius: 1.5rem;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
-    padding: 2.5rem;
-    max-width: 550px;
-    width: 90%;
+    border-radius: 1rem;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    padding: 2rem;
+    max-width: 500px;
     z-index: 10000;
     display: none;
 }
 
 .visual-guide.active {
     display: block;
-    animation: slideUp 0.4s ease;
 }
 
-@keyframes slideUp {
-    from {
-        opacity: 0;
-        transform: translate(-50%, -40%);
-    }
-    to {
-        opacity: 1;
-        transform: translate(-50%, -50%);
-    }
+.visual-guide-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+    display: none;
 }
 
-.guide-header {
-    display: flex;
-    align-items: center;
-    margin-bottom: 2rem;
-}
-
-.guide-icon {
-    width: 60px;
-    height: 60px;
-    background: var(--primary-gradient);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-right: 1rem;
-}
-
-.guide-icon i {
-    color: white;
-    font-size: 28px;
-}
-
-.guide-header h4 {
-    margin: 0;
-    font-size: 22px;
-    font-weight: 700;
-    color: #2d3748;
+.visual-guide-overlay.active {
+    display: block;
 }
 
 .guide-step {
@@ -688,9 +513,9 @@
 }
 
 .guide-step-number {
-    width: 35px;
-    height: 35px;
-    background: var(--success-gradient);
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
     color: white;
     border-radius: 50%;
     display: flex;
@@ -698,159 +523,94 @@
     justify-content: center;
     font-weight: bold;
     flex-shrink: 0;
-    font-size: 16px;
 }
 
 .guide-step-content h6 {
     margin: 0 0 0.5rem 0;
-    color: #2d3748;
-    font-weight: 600;
+    color: #333;
 }
 
 .guide-step-content p {
     margin: 0;
-    color: #718096;
+    color: #666;
     font-size: 14px;
-    line-height: 1.6;
 }
 
-.guide-footer {
-    margin-top: 2rem;
-    padding-top: 1.5rem;
-    border-top: 2px solid #e2e8f0;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-/* ========== RESPONSIVE OPTIMIZATION ========== */
-
-/* Tablet and smaller desktops */
-@media (max-width: 992px) {
-    .signing-workspace {
-        grid-template-columns: 1fr;
-        gap: 1.25rem;
-    }
-
-    .qr-panel {
-        position: relative;
-        top: 0;
-        max-height: none;
-        width: 100%;
-    }
-
-    .pdf-preview-wrapper {
-        min-height: 400px;
-        max-height: 500px;
-    }
-
-    .pdf-panel {
-        padding: 1.25rem;
-    }
-
-    /* .delete-qr-btn {
-    position: absolute;
-    top: -15px;
-    right: -15px;
-    width: 32px;
-    height: 32px;
-    background: var(--danger-gradient);
-    color: white;
-    border: 3px solid white;
-    border-radius: 50%;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    font-weight: bold;
-    box-shadow: 0 4px 12px rgba(235, 51, 73, 0.4);
-    transition: all 0.3s ease;
-}
-
-    .delete-qr-btn:hover {
-        transform: scale(1.15) rotate(90deg);
-    } */
-}
-
-/* Mobile view adjustments */
+/* ========== RESPONSIVE ========== */
 @media (max-width: 768px) {
     .signing-container {
         padding: 1rem;
     }
 
     .signing-steps {
-        padding: 1.25rem;
+        padding: 1rem;
     }
 
-    /* Stack steps vertically */
     .step-indicator {
         flex-direction: column;
-        gap: 1rem;
-        align-items: flex-start;
-    }
-
-    .step-indicator::before {
-        display: none;
+        gap: 0.75rem;
     }
 
     .step-item {
         flex-direction: row;
-        gap: 0.75rem;
         justify-content: flex-start;
+        gap: 0.75rem;
     }
 
-    .qr-panel {
-        margin-bottom: 1rem;
+    .step-number {
+        width: 35px;
+        height: 35px;
+        margin-bottom: 0;
     }
 
-    .qr-code-preview-img {
-        width: 120px;
-        height: 120px;
+    .qr-code-section {
+        padding: 1.5rem;
+    }
+
+    .qr-section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .qr-icon-wrapper {
+        margin-right: 0;
     }
 
     .qr-code-wrapper {
-        padding: 1rem;
+        padding: 1.5rem;
     }
 
-    .qr-size-presets {
-        grid-template-columns: repeat(3, 1fr);
-        gap: 0.4rem;
+    .qr-code-item {
+        max-width: 100%;
     }
 
-    .qr-size-btn {
-        padding: 0.6rem;
-        font-size: 12px;
+    .qr-code-preview-img {
+        width: 150px;
+        height: 150px;
     }
 
-    /* PDF area fit to screen width */
+    .qr-size-presets,
+    .qr-controls {
+        justify-content: center;
+    }
+
+    .pdf-preview-section {
+        padding: 1.5rem;
+    }
+
     .pdf-preview-wrapper {
-        min-height: 400px;
-        max-height: 70vh;
-        border-width: 1.5px;
+        max-height: 500px;
     }
 
-    #pdfCanvas {
-        width: 100% !important;
-        /* height: auto !important; */
-        display: block;
-        margin: 0 auto;
-        /* Preserve aspect ratio */
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-
-    }
-
-    /* Sticky bottom bar adjustments */
     .signing-controls {
         position: fixed;
         bottom: 0;
         left: 0;
         right: 0;
         margin: 0;
-        border-radius: 1.5rem 1.5rem 0 0;
-        padding: 1.25rem 1rem;
-        box-shadow: 0 -5px 25px rgba(0, 0, 0, 0.15);
-        border: none;
+        border-radius: 1rem 1rem 0 0;
+        padding: 1rem;
     }
 
     .signing-controls .d-flex {
@@ -858,87 +618,35 @@
         gap: 1rem;
     }
 
+    .signing-controls .d-flex > div:first-child {
+        order: 2;
+    }
+
+    .signing-controls .d-flex > div:last-child {
+        order: 1;
+    }
+
     .signing-controls button {
         width: 100%;
-        font-size: 14px;
-        padding: 0.75rem;
     }
 
-    /* Navigation buttons */
-    .page-navigation {
-        flex-direction: column;
-        gap: 0.75rem;
-    }
-
-    .page-navigation button {
-        width: 100%;
-        padding: 0.75rem;
-    }
-
-    .page-info {
-        font-size: 14px;
-    }
-
-    /* Modal fix */
     .preview-modal {
-        padding: 0.75rem;
-    }
-
-    .preview-modal-content {
-        padding: 1.25rem;
-        max-height: 90vh;
-    }
-}
-
-/* Extra small mobile screens (≤576px) */
-@media (max-width: 576px) {
-    .signing-container {
-        padding: 0.75rem;
-    }
-
-    .qr-panel {
         padding: 1rem;
     }
 
-    .qr-code-preview-img {
-        width: 100px;
-        height: 100px;
-    }
-
-    .qr-info h6 {
-        font-size: 13px;
-    }
-
-    .qr-info p {
-        font-size: 12px;
-    }
-
-    .pdf-preview-wrapper {
-        min-height: 350px;
-    }
-
-    .signing-controls small {
-        font-size: 12px;
-        line-height: 1.4;
-    }
-
-    .step-number {
-        width: 38px;
-        height: 38px;
-        font-size: 16px;
-    }
-
-    .guide-step-content p {
-        font-size: 13px;
+    .preview-modal-content {
+        padding: 1.5rem;
     }
 }
 
 /* Touch device optimizations */
 @media (hover: none) and (pointer: coarse) {
     .qr-handles {
-        width: 20px;
-        height: 20px;
-        border: 1px solid white;
+        width: 24px;
+        height: 24px;
+        background: #28a745;
+        border: 3px solid white;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }
 
     .handle-se {
@@ -947,12 +655,20 @@
     }
 
     .delete-qr-btn {
-        width: 20px;
-        height: 20px;
-        top: -12px;
-        right: -12px;
-        font-size: 12px;
-        box-shadow: 0 1px 4px rgba(235, 51, 73, 0.4);
+        width: 36px;
+        height: 36px;
+        top: -18px;
+        right: -18px;
+        font-size: 20px;
+    }
+
+    .qr-code-item,
+    .placed-qr {
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        -webkit-touch-callout: none;
     }
 }
 </style>
@@ -961,16 +677,16 @@
 @section('content')
 <!-- Section Header -->
 <section id="header-section">
-    <h1>Digital Document Signing</h1>
+    <h1>Signing Digital Document</h1>
 </section>
 
 <div class="signing-container">
-    <!-- Modern Steps Indicator -->
+    <!-- Signing Steps Indicator -->
     <div class="signing-steps">
         <div class="step-indicator">
             <div class="step-item">
                 <div class="step-number completed">1</div>
-                <small>Document Uploaded</small>
+                <small>Document Review</small>
             </div>
             <div class="step-item">
                 <div class="step-number active">2</div>
@@ -978,120 +694,126 @@
             </div>
             <div class="step-item">
                 <div class="step-number">3</div>
-                <small>Sign Document</small>
+                <small>Complete Signing</small>
             </div>
         </div>
-        <h5 class="mb-1">Step 2: Position QR Code on Document</h5>
-        <p class="mb-0 opacity-75">Drag the QR code to your desired position on the document preview</p>
+        <h5 class="mb-0">Step 2: Position QR Code on Document</h5>
+        <p class="mb-0 opacity-75">Drag and drop the QR code to your desired position on the document</p>
     </div>
 
-    <!-- Split Screen Workspace -->
-    <div class="signing-workspace">
-        <!-- LEFT PANEL: QR Code Controls -->
-        <div class="qr-panel">
-            <div class="qr-panel-header">
-                <div class="qr-icon">
-                    <i class="fas fa-qrcode"></i>
-                </div>
-                <div class="qr-panel-title">
-                    <h5>Verification QR Code</h5>
-                    <p>Drag to document →</p>
-                </div>
+    <!-- QR Code Section -->
+    <div class="qr-code-section">
+        <div class="qr-section-header">
+            <div class="qr-icon-wrapper">
+                <i class="fas fa-qrcode"></i>
             </div>
-
-            <div class="qr-code-wrapper" id="qrCodeWrapper">
-                @if($documentSignature && $documentSignature->temporary_qr_code_path)
-                    <div class="qr-code-item" id="qrCodeItem" draggable="true">
-                        <img src="{{ Storage::url($documentSignature->temporary_qr_code_path) }}"
-                             alt="Verification QR Code"
-                             class="qr-code-preview-img"
-                             id="qrCodeImage">
-                        <div class="qr-info">
-                            <h6><i class="fas fa-qrcode me-2"></i>Drag & Drop</h6>
-                            <p>Place on document</p>
-                        </div>
-                    </div>
-                    {{-- Auto Place QR Code --}}
-                    <div class="qr-auto-placement">
-                        <button class="btn btn-primary" id="autoPlaceQRBtn" onclick="placeQROnPDF()">
-                            <i class="fas fa-check-circle me-2"></i>
-                            Place QR Code Automatically
-                        </button>
-                    </div>
-                @else
-                    <div class="alert alert-warning mb-0">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        QR code not found
-                    </div>
-                @endif
-            </div>
-
-            <!-- QR Size Presets -->
-            <div class="qr-size-presets">
-                <button class="qr-size-btn" onclick="setQRSize('small')">
-                    <i class="fas fa-compress-alt d-block mb-1"></i>
-                    <small>Small</small>
-                </button>
-                <button class="qr-size-btn active" onclick="setQRSize('medium')">
-                    <i class="fas fa-expand-alt d-block mb-1"></i>
-                    <small>Medium</small>
-                </button>
-                <button class="qr-size-btn" onclick="setQRSize('large')">
-                    <i class="fas fa-expand d-block mb-1"></i>
-                    <small>Large</small>
-                </button>
-            </div>
-
-            <!-- QR Controls -->
-            <div class="qr-controls">
-                <button class="qr-control-btn" id="resetQRBtn" onclick="resetQRPosition()" disabled>
-                    <i class="fas fa-redo"></i> Reset
-                </button>
-                <button class="qr-control-btn" id="undoBtn" onclick="undo()" disabled>
-                    <i class="fas fa-undo"></i> Undo
-                </button>
-                <button class="qr-control-btn" id="redoBtn" onclick="redo()" disabled>
-                    <i class="fas fa-redo"></i> Redo
-                </button>
-                <button class="qr-control-btn" onclick="showGuide()">
-                    <i class="fas fa-question-circle"></i> Help
-                </button>
+            <div class="qr-section-title">
+                <h4>Verification QR Code</h4>
+                <p>Drag this QR code to the document below to position it</p>
             </div>
         </div>
 
-        <!-- RIGHT PANEL: PDF Preview -->
-        <div class="pdf-panel">
-            <div class="pdf-panel-header">
-                <div class="pdf-info">
-                    <h5>
-                        <i class="fas fa-file-pdf text-danger"></i>
-                        {{ $approvalRequest->document_name }}
-                    </h5>
-                    <small class="text-muted">{{ $approvalRequest->full_document_number }}</small>
+        <div class="qr-code-wrapper" id="qrCodeWrapper">
+            @if($documentSignature && $documentSignature->temporary_qr_code_path)
+                <div class="qr-code-item" id="qrCodeItem" draggable="true">
+                    <img src="{{ Storage::url($documentSignature->temporary_qr_code_path) }}"
+                         alt="Verification QR Code"
+                         class="qr-code-preview-img"
+                         id="qrCodeImage">
+                    <div class="qr-info">
+                        <h6><i class="fas fa-qrcode me-2"></i>Document Verification QR</h6>
+                        <p>Drag this QR code to your preferred position on the PDF document</p>
+                    </div>
                 </div>
-                <span class="pdf-badge">
-                    <i class="fas fa-check-circle me-1"></i>Approved
-                </span>
-            </div>
-
-            <!-- PDF Preview with QR Overlay -->
-            <div class="pdf-preview-wrapper" id="pdfPreviewWrapper">
-                <canvas id="pdfCanvas"></canvas>
-                <div id="qrOverlay"></div>
-            </div>
-
-            <!-- Page Navigation -->
-            <div class="page-navigation">
-                <button id="prevPageBtn" onclick="previousPage()">
-                    <i class="fas fa-chevron-left"></i>
-                </button>
-                <div class="page-info">
-                    Page <span id="currentPage">1</span> of <span id="totalPages">1</span>
+            @else
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Temporary QR code not found. Please contact administrator.
                 </div>
-                <button id="nextPageBtn" onclick="nextPage()">
-                    <i class="fas fa-chevron-right"></i>
-                </button>
+            @endif
+        </div>
+
+        <!-- QR Size Presets & Controls -->
+        <div class="qr-size-presets">
+            <button class="qr-size-btn" onclick="setQRSize('small')">
+                <i class="fas fa-compress-alt"></i> Small (80x80)
+            </button>
+            <button class="qr-size-btn active" onclick="setQRSize('medium')">
+                <i class="fas fa-expand-alt"></i> Medium (100x100)
+            </button>
+            <button class="qr-size-btn" onclick="setQRSize('large')">
+                <i class="fas fa-expand"></i> Large (150x150)
+            </button>
+        </div>
+
+        <!-- QR Control Buttons -->
+        <div class="qr-controls">
+            <button class="qr-control-btn" id="resetQRBtn" onclick="resetQRPosition()" disabled>
+                <i class="fas fa-redo"></i> Reset Position
+            </button>
+            <button class="qr-control-btn" id="undoBtn" onclick="undo()" disabled>
+                <i class="fas fa-undo"></i> Undo
+            </button>
+            <button class="qr-control-btn" id="redoBtn" onclick="redo()" disabled>
+                <i class="fas fa-redo"></i> Redo
+            </button>
+            <button class="qr-control-btn" onclick="showGuide()">
+                <i class="fas fa-question-circle"></i> Help
+            </button>
+        </div>
+    </div>
+
+    <!-- Document Information & PDF Preview -->
+    <div class="pdf-preview-section">
+        <div class="mb-3">
+            <h4 class="mb-3">
+                <i class="fas fa-file-alt text-primary me-2"></i>
+                {{ $approvalRequest->document_name }}
+            </h4>
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="row">
+                        <div class="col-sm-6 mb-2">
+                            <strong>Document Number:</strong><br>
+                            <span class="text-muted">{{ $approvalRequest->full_document_number }}</span>
+                        </div>
+                        <div class="col-sm-6 mb-2">
+                            <strong>Document Type:</strong><br>
+                            <span class="text-muted">{{ $approvalRequest->document_type ?? 'N/A' }}</span>
+                        </div>
+                        <div class="col-sm-6 mb-2">
+                            <strong>Submitted:</strong><br>
+                            <span class="text-muted">{{ $approvalRequest->created_at->format('d M Y H:i') }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="bg-success text-white rounded p-3">
+                        <i class="fas fa-check-circle fa-2x mb-2"></i>
+                        <div><strong>Approved</strong></div>
+                        <small>Ready for signing</small>
+                    </div>
+                </div>
             </div>
+        </div>
+
+        <!-- PDF Preview with QR Overlay -->
+        <div class="pdf-preview-wrapper" id="pdfPreviewWrapper">
+            <canvas id="pdfCanvas"></canvas>
+            <div id="qrOverlay"></div>
+        </div>
+
+        <!-- Page Navigation -->
+        <div class="page-navigation">
+            <button id="prevPageBtn" onclick="previousPage()">
+                <i class="fas fa-chevron-left"></i> <span class="btn-text">Previous</span>
+            </button>
+            <div class="page-info">
+                Page <span id="currentPage">1</span> of <span id="totalPages">1</span>
+            </div>
+            <button id="nextPageBtn" onclick="nextPage()">
+                <span class="btn-text">Next</span> <i class="fas fa-chevron-right"></i>
+            </button>
         </div>
     </div>
 </div>
@@ -1103,20 +825,23 @@
             <div class="form-check">
                 <input class="form-check-input" type="checkbox" id="confirmSignature">
                 <label class="form-check-label" for="confirmSignature">
-                    I confirm the QR code placement is correct
+                    I confirm that the QR code position is correct and I authorize this document
                 </label>
             </div>
             <small class="text-muted">
-                <i class="fas fa-shield-alt"></i>
-                Document will be cryptographically secured with RSA-2048 encryption
+                <i class="fas fa-shield-alt me-1"></i>
+                This signature will be legally binding and cryptographically secured with a unique key
             </small>
         </div>
         <div class="d-flex gap-2">
             <button class="btn btn-outline-secondary" onclick="goBack()">
                 <i class="fas fa-arrow-left me-1"></i> Back
             </button>
-            <button class="btn btn-primary" id="previewSignBtn" onclick="showPreviewBeforeSign()" disabled>
-                <i class="fas fa-eye me-1"></i> Preview & Sign
+            <button class="btn btn-warning" id="previewBtn" onclick="showPreview()" disabled>
+                <i class="fas fa-eye me-1"></i> Preview
+            </button>
+            <button class="btn btn-success" id="signBtn" onclick="confirmAndSign()" disabled>
+                <i class="fas fa-signature me-1"></i> Sign Document
             </button>
         </div>
     </div>
@@ -1127,26 +852,21 @@
     <div class="loading-content">
         <div class="spinner"></div>
         <h5>Processing Digital Signature...</h5>
-        <p class="text-muted mb-0">Generating unique encryption key</p>
-        <p class="text-muted"><small>Please wait...</small></p>
+        <p class="text-muted mb-0">Generating unique encryption key and signing your document</p>
+        <p class="text-muted"><small>Please wait, this may take a moment...</small></p>
     </div>
 </div>
 
-<!-- Visual Guide (First Time) -->
+<!-- Visual Guide / Tutorial -->
 <div class="visual-guide-overlay" id="visualGuideOverlay" onclick="hideGuide()"></div>
 <div class="visual-guide" id="visualGuide">
-    <div class="guide-header">
-        <div class="guide-icon">
-            <i class="fas fa-lightbulb"></i>
-        </div>
-        <h4>How to Sign Your Document</h4>
-    </div>
+    <h4 class="mb-3"><i class="fas fa-info-circle me-2 text-success"></i>How to Sign Your Document</h4>
 
     <div class="guide-step">
         <div class="guide-step-number">1</div>
         <div class="guide-step-content">
             <h6>Drag the QR Code</h6>
-            <p>Click and drag the QR code from the left panel onto your PDF document preview on the right.</p>
+            <p>Click and drag the QR code from the box above onto your PDF document at your desired position.</p>
         </div>
     </div>
 
@@ -1154,15 +874,15 @@
         <div class="guide-step-number">2</div>
         <div class="guide-step-content">
             <h6>Adjust Size & Position</h6>
-            <p>Use the size buttons (Small/Medium/Large) to resize, or drag the corner handle. Move it to the perfect spot.</p>
+            <p>Use the size presets (Small/Medium/Large) or drag the corner handle to resize. You can also move it to precise positions.</p>
         </div>
     </div>
 
     <div class="guide-step">
         <div class="guide-step-number">3</div>
         <div class="guide-step-content">
-            <h6>Preview Before Signing</h6>
-            <p>Click "Preview & Sign" to see the final document with QR code embedded. You must confirm the preview before signing.</p>
+            <h6>Preview Your Signature</h6>
+            <p>Click the "Preview" button to see how your document will look after signing (instant preview, no loading!).</p>
         </div>
     </div>
 
@@ -1170,42 +890,39 @@
         <div class="guide-step-number">4</div>
         <div class="guide-step-content">
             <h6>Sign the Document</h6>
-            <p>After reviewing the preview, click "Confirm & Sign Document" to finalize. A unique encryption key will be generated.</p>
+            <p>Check the confirmation box and click "Sign Document". A unique encryption key will be generated automatically.</p>
         </div>
     </div>
 
     <div class="alert alert-info mt-3 mb-0">
-        <i class="fas fa-info-circle me-2"></i>
-        <strong>Tip:</strong> The QR code and PDF are side-by-side for easy drag & drop!
+        <i class="fas fa-lightbulb me-2"></i>
+        <strong>Pro Tip:</strong> Use Undo/Redo buttons to adjust your changes!
     </div>
 
-    <div class="guide-footer">
-        <label class="form-check-label">
+    <div class="mt-3 text-end">
+        <button class="btn btn-success" onclick="hideGuide()">
+            <i class="fas fa-check me-1"></i> Got it!
+        </button>
+        <label class="form-check-label ms-3">
             <input type="checkbox" class="form-check-input" id="dontShowAgain">
             Don't show this again
         </label>
-        <button class="btn btn-primary" onclick="hideGuide()">
-            <i class="fas fa-check me-1"></i> Got it!
-        </button>
     </div>
 </div>
 
-<!-- Preview Modal (ENHANCED - REQUIRED BEFORE SIGNING) -->
+<!-- Preview Modal (INSTANT - No API Call) -->
 <div class="preview-modal" id="previewModal" onclick="hidePreview(event)">
     <div class="preview-modal-content" onclick="event.stopPropagation()">
-        <div class="preview-header">
-            <h4>
-                <i class="fas fa-eye text-primary"></i>
-                Final Document Preview
-            </h4>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 class="mb-0"><i class="fas fa-eye me-2 text-success"></i>Document Preview</h4>
             <button class="btn btn-sm btn-outline-secondary" onclick="hidePreview()">
                 <i class="fas fa-times"></i>
             </button>
         </div>
 
-        <div class="alert alert-warning">
-            <i class="fas fa-exclamation-triangle me-2"></i>
-            <strong>Important:</strong> Please review the document carefully before signing. The QR code will be permanently embedded at the selected position.
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>
+            This is how your document will appear after signing. The QR code will be embedded at the position you selected.
         </div>
 
         <div class="preview-canvas-wrapper">
@@ -1222,12 +939,10 @@
             </ul>
         </div>
 
-        <div class="preview-actions">
-            <button class="btn btn-secondary" onclick="hidePreview()">
-                <i class="fas fa-times me-1"></i> Cancel
-            </button>
-            <button class="btn btn-success btn-lg" onclick="confirmAndSign()">
-                <i class="fas fa-signature me-1"></i> Confirm & Sign Document
+        <div class="text-end mt-3">
+            <button class="btn btn-secondary" onclick="hidePreview()">Close</button>
+            <button class="btn btn-success" onclick="hidePreview(); confirmAndSign();">
+                <i class="fas fa-signature me-1"></i> Proceed to Sign
             </button>
         </div>
     </div>
@@ -1255,38 +970,54 @@ let qrCodeImageSrc = "{{ $documentSignature && $documentSignature->temporary_qr_
 const approvalRequestId = {{ $approvalRequest->id }};
 const documentPath = "{{ Storage::url($approvalRequest->document_path) }}";
 
-// Touch support
+// Touch support variables
 let isTouchDevice = false;
 let touchStartX = 0;
 let touchStartY = 0;
 let isDraggingQR = false;
 
-// Undo/Redo
+// Undo/Redo history
 let qrHistory = [];
 let historyIndex = -1;
 const MAX_HISTORY = 50;
 
-// QR sizes
+// QR size presets
 const QR_SIZES = {
-    small: { width: 60, height: 60 },
+    small: { width: 80, height: 80 },
     medium: { width: 100, height: 100 },
     large: { width: 150, height: 150 }
 };
 
 let currentQRSize = 'medium';
 
+// ==================== UTILITY FUNCTIONS ====================
+function detectTouchDevice() {
+    isTouchDevice = ('ontouchstart' in window) ||
+                    (navigator.maxTouchPoints > 0) ||
+                    (navigator.msMaxTouchPoints > 0);
+    console.log('Touch device detected:', isTouchDevice);
+    return isTouchDevice;
+}
+
 // ==================== INITIALIZATION ====================
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Initializing modern QR signing interface...');
+    console.log('Initializing QR code signing interface...');
 
-    isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-    console.log('Touch device:', isTouchDevice);
+    detectTouchDevice();
 
+    // Initialize PDF.js worker
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
+    // Load PDF document
     loadPDF();
+
+    // Setup drag & drop for QR code
     setupQRDragDrop();
+
+    // Setup event listeners
     setupEventListeners();
+
+    // Show guide for first-time users
     showGuideIfFirstTime();
 });
 
@@ -1294,7 +1025,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function showGuideIfFirstTime() {
     const hasSeenGuide = localStorage.getItem('qr_signing_guide_seen');
     if (!hasSeenGuide) {
-        setTimeout(() => showGuide(), 800);
+        setTimeout(() => showGuide(), 500);
     }
 }
 
@@ -1307,7 +1038,8 @@ function hideGuide() {
     document.getElementById('visualGuideOverlay').classList.remove('active');
     document.getElementById('visualGuide').classList.remove('active');
 
-    if (document.getElementById('dontShowAgain').checked) {
+    const dontShowAgain = document.getElementById('dontShowAgain').checked;
+    if (dontShowAgain) {
         localStorage.setItem('qr_signing_guide_seen', 'true');
     }
 }
@@ -1316,12 +1048,17 @@ function hideGuide() {
 async function loadPDF() {
     try {
         console.log('Loading PDF:', documentPath);
+
         const loadingTask = pdfjsLib.getDocument(documentPath);
         pdfDocument = await loadingTask.promise;
         totalPages = pdfDocument.numPages;
+
         document.getElementById('totalPages').textContent = totalPages;
-        console.log(`PDF loaded: ${totalPages} pages`);
+
+        console.log(`PDF loaded successfully. Total pages: ${totalPages}`);
+
         renderPage(currentPage);
+
     } catch (error) {
         console.error('Error loading PDF:', error);
         alert('Failed to load PDF document. Please try again.');
@@ -1337,26 +1074,25 @@ async function renderPage(pageNumber) {
     pageRendering = true;
 
     try {
-        const page = await pdfDocument.getPage(pageNumber);
-        // const viewport = page.getViewport({ scale: 1.2 });
+        console.log(`Rendering page ${pageNumber}...`);
 
-        // responsive scaling for better fit desktop and mobile
-        const container = document.getElementById('pdfPreviewWrapper');
-        const containerWidth = container.clientWidth;
-        const scale = containerWidth / page.getViewport({ scale: 1 }).width;
-        const viewport = page.getViewport({ scale: scale });
+        const page = await pdfDocument.getPage(pageNumber);
+        const viewport = page.getViewport({ scale: 1.2 });
 
         canvas.height = viewport.height;
         canvas.width = viewport.width;
 
+        // Adjust overlay size
         const overlay = document.getElementById('qrOverlay');
         overlay.style.width = viewport.width + 'px';
         overlay.style.height = viewport.height + 'px';
 
-        await page.render({
+        const renderContext = {
             canvasContext: ctx,
             viewport: viewport
-        }).promise;
+        };
+
+        await page.render(renderContext).promise;
 
         pageRendering = false;
 
@@ -1365,7 +1101,10 @@ async function renderPage(pageNumber) {
             pageNumPending = null;
         }
 
+        console.log(`Page ${pageNumber} rendered successfully`);
+
         updatePageNavigation();
+
     } catch (error) {
         console.error('Error rendering page:', error);
         pageRendering = false;
@@ -1390,24 +1129,30 @@ function nextPage() {
     renderPage(currentPage);
 }
 
-// ==================== QR DRAG & DROP ====================
+// ==================== QR CODE DRAG & DROP ====================
 function setupQRDragDrop() {
     const qrCodeItem = document.getElementById('qrCodeItem');
     const pdfWrapper = document.getElementById('pdfPreviewWrapper');
 
-    if (!qrCodeItem) return;
+    if (!qrCodeItem) {
+        console.error('QR code item not found');
+        return;
+    }
 
+    // Desktop drag events
     if (!isTouchDevice) {
         qrCodeItem.addEventListener('dragstart', handleQRDragStart);
         qrCodeItem.addEventListener('dragend', handleQRDragEnd);
     }
 
+    // Touch events for mobile
     if (isTouchDevice) {
         qrCodeItem.addEventListener('touchstart', handleQRTouchStart, { passive: false });
         qrCodeItem.addEventListener('touchmove', handleQRTouchMove, { passive: false });
         qrCodeItem.addEventListener('touchend', handleQRTouchEnd, { passive: false });
     }
 
+    // PDF drop zone events
     pdfWrapper.addEventListener('dragover', handlePDFDragOver);
     pdfWrapper.addEventListener('dragleave', handlePDFDragLeave);
     pdfWrapper.addEventListener('drop', handlePDFDrop);
@@ -1417,10 +1162,12 @@ function handleQRDragStart(e) {
     e.target.classList.add('dragging');
     e.dataTransfer.effectAllowed = 'copy';
     e.dataTransfer.setData('qrcode', 'true');
+    console.log('QR drag started');
 }
 
 function handleQRDragEnd(e) {
     e.target.classList.remove('dragging');
+    console.log('QR drag ended');
 }
 
 function handleQRTouchStart(e) {
@@ -1428,26 +1175,34 @@ function handleQRTouchStart(e) {
     touchStartX = e.touches[0].clientX;
     touchStartY = e.touches[0].clientY;
     e.currentTarget.classList.add('dragging');
+    console.log('QR touch start');
 }
 
 function handleQRTouchMove(e) {
     if (!isDraggingQR) return;
+
     e.preventDefault();
 
     const touch = e.touches[0];
-    const canvasRect = canvas.getBoundingClientRect();
-    const pdfWrapper = document.getElementById('pdfPreviewWrapper');
+    const moveX = Math.abs(touch.clientX - touchStartX);
+    const moveY = Math.abs(touch.clientY - touchStartY);
 
-    if (touch.clientX >= canvasRect.left && touch.clientX <= canvasRect.right &&
-        touch.clientY >= canvasRect.top && touch.clientY <= canvasRect.bottom) {
-        pdfWrapper.classList.add('drop-zone-active');
-    } else {
-        pdfWrapper.classList.remove('drop-zone-active');
+    if (moveX > 10 || moveY > 10) {
+        const canvasRect = canvas.getBoundingClientRect();
+        const pdfWrapper = document.getElementById('pdfPreviewWrapper');
+
+        if (touch.clientX >= canvasRect.left && touch.clientX <= canvasRect.right &&
+            touch.clientY >= canvasRect.top && touch.clientY <= canvasRect.bottom) {
+            pdfWrapper.classList.add('drop-zone-active');
+        } else {
+            pdfWrapper.classList.remove('drop-zone-active');
+        }
     }
 }
 
 function handleQRTouchEnd(e) {
     if (!isDraggingQR) return;
+
     e.preventDefault();
 
     const touch = e.changedTouches[0];
@@ -1455,8 +1210,11 @@ function handleQRTouchEnd(e) {
 
     if (touch.clientX >= canvasRect.left && touch.clientX <= canvasRect.right &&
         touch.clientY >= canvasRect.top && touch.clientY <= canvasRect.bottom) {
+
         const x = touch.clientX - canvasRect.left;
         const y = touch.clientY - canvasRect.top;
+
+        console.log('QR touch drop at:', { x, y });
         placeQROnPDF(x, y);
     }
 
@@ -1479,41 +1237,54 @@ function handlePDFDrop(e) {
     e.preventDefault();
     e.currentTarget.classList.remove('drop-zone-active');
 
-    if (!e.dataTransfer.getData('qrcode')) return;
+    const hasQR = e.dataTransfer.getData('qrcode');
+
+    if (!hasQR) {
+        console.warn('No QR code in drop data');
+        return;
+    }
 
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
+
+    console.log('QR dropped at:', { x, y });
 
     placeQROnPDF(x, y);
 }
 
 // ==================== QR PLACEMENT ====================
 function placeQROnPDF(x, y) {
+    // Remove existing QR if any
     if (placedQR) {
         placedQR.remove();
     }
 
     const overlay = document.getElementById('qrOverlay');
+
+    // Create QR element
     const qrDiv = document.createElement('div');
-    qrDiv.className = 'placed-qr';
+    qrDiv.className = 'placed-qr selected';
     qrDiv.id = 'placedQR';
     qrDiv.style.left = x + 'px';
     qrDiv.style.top = y + 'px';
     qrDiv.style.width = '100px';
     qrDiv.style.height = '100px';
 
+    // Add QR image
     const img = document.createElement('img');
     img.src = qrCodeImageSrc;
-    img.alt = 'QR Code';
+    img.alt = 'Verification QR Code';
     qrDiv.appendChild(img);
 
+    // Add delete button
     const deleteBtn = document.createElement('div');
     deleteBtn.className = 'delete-qr-btn';
     deleteBtn.innerHTML = '×';
     deleteBtn.onclick = removeQR;
     qrDiv.appendChild(deleteBtn);
 
+    // Add resize handle (only SE corner for simplicity)
     const handle = document.createElement('div');
     handle.className = 'qr-handles handle-se';
     qrDiv.appendChild(handle);
@@ -1521,12 +1292,20 @@ function placeQROnPDF(x, y) {
     overlay.appendChild(qrDiv);
     placedQR = qrDiv;
 
+    // Make draggable and resizable
     makeQRDraggable(qrDiv);
     makeQRResizable(qrDiv);
+
+    // Enable sign button
     updateButtonStates();
+
+    // Save to history for undo/redo
     saveToHistory();
+
+    console.log('QR placed successfully');
 }
 
+// ==================== QR SIZE PRESETS ====================
 function setQRSize(size) {
     if (!placedQR) {
         alert('Please place the QR code first.');
@@ -1539,25 +1318,34 @@ function setQRSize(size) {
     placedQR.style.width = sizeConfig.width + 'px';
     placedQR.style.height = sizeConfig.height + 'px';
 
+    // Update active button
     document.querySelectorAll('.qr-size-btn').forEach(btn => btn.classList.remove('active'));
     event.target.closest('.qr-size-btn').classList.add('active');
 
+    // Save to history
     saveToHistory();
+
+    console.log('QR size changed to:', size);
 }
 
+// ==================== RESET QR POSITION ====================
 function resetQRPosition() {
     if (!placedQR) return;
 
+    // Reset to center of canvas
     const centerX = (canvas.width / 2) - (placedQR.offsetWidth / 2);
     const centerY = (canvas.height / 2) - (placedQR.offsetHeight / 2);
 
     placedQR.style.left = centerX + 'px';
     placedQR.style.top = centerY + 'px';
 
+    // Save to history
     saveToHistory();
+
+    console.log('QR position reset to center');
 }
 
-// ==================== UNDO/REDO ====================
+// ==================== UNDO / REDO FUNCTIONALITY ====================
 function saveToHistory() {
     if (!placedQR) return;
 
@@ -1568,9 +1356,13 @@ function saveToHistory() {
         height: placedQR.style.height
     };
 
+    // Remove all states after current index
     qrHistory = qrHistory.slice(0, historyIndex + 1);
+
+    // Add new state
     qrHistory.push(state);
 
+    // Limit history size
     if (qrHistory.length > MAX_HISTORY) {
         qrHistory.shift();
     } else {
@@ -1583,16 +1375,20 @@ function saveToHistory() {
 function undo() {
     if (historyIndex > 0 && placedQR) {
         historyIndex--;
-        applyHistoryState(qrHistory[historyIndex]);
+        const state = qrHistory[historyIndex];
+        applyHistoryState(state);
         updateUndoRedoButtons();
+        console.log('Undo applied');
     }
 }
 
 function redo() {
     if (historyIndex < qrHistory.length - 1 && placedQR) {
         historyIndex++;
-        applyHistoryState(qrHistory[historyIndex]);
+        const state = qrHistory[historyIndex];
+        applyHistoryState(state);
         updateUndoRedoButtons();
+        console.log('Redo applied');
     }
 }
 
@@ -1613,7 +1409,9 @@ function makeQRDraggable(element) {
     let initialX, initialY;
 
     element.addEventListener('mousedown', function(e) {
-        if (e.target.classList.contains('qr-handles') || e.target.classList.contains('delete-qr-btn')) return;
+        if (e.target.classList.contains('qr-handles') || e.target.classList.contains('delete-qr-btn')) {
+            return;
+        }
         isDragging = true;
         initialX = e.clientX - element.offsetLeft;
         initialY = e.clientY - element.offsetTop;
@@ -1633,8 +1431,11 @@ function makeQRDraggable(element) {
         }
     });
 
+    // Touch support
     element.addEventListener('touchstart', function(e) {
-        if (e.target.classList.contains('qr-handles') || e.target.classList.contains('delete-qr-btn')) return;
+        if (e.target.classList.contains('qr-handles') || e.target.classList.contains('delete-qr-btn')) {
+            return;
+        }
         e.preventDefault();
         isDragging = true;
         const touch = e.touches[0];
@@ -1664,6 +1465,7 @@ function makeQRResizable(element) {
     handles.forEach(handle => {
         let isResizing = false;
         let startX, startY, startWidth, startHeight;
+        let aspectRatio;
 
         handle.addEventListener('mousedown', function(e) {
             e.stopPropagation();
@@ -1672,6 +1474,7 @@ function makeQRResizable(element) {
             startY = e.clientY;
             startWidth = parseInt(window.getComputedStyle(element).width, 10);
             startHeight = parseInt(window.getComputedStyle(element).height, 10);
+            aspectRatio = startWidth / startHeight;
         });
 
         document.addEventListener('mousemove', function(e) {
@@ -1686,6 +1489,7 @@ function makeQRResizable(element) {
             }
         });
 
+        // Touch support
         handle.addEventListener('touchstart', function(e) {
             e.stopPropagation();
             e.preventDefault();
@@ -1695,6 +1499,7 @@ function makeQRResizable(element) {
             startY = touch.clientY;
             startWidth = parseInt(window.getComputedStyle(element).width, 10);
             startHeight = parseInt(window.getComputedStyle(element).height, 10);
+            aspectRatio = startWidth / startHeight;
         }, { passive: false });
 
         document.addEventListener('touchmove', function(e) {
@@ -1716,10 +1521,16 @@ function makeQRResizable(element) {
             const dy = clientY - startY;
 
             if (handle.classList.contains('handle-se')) {
+                // Use the larger delta to maintain square aspect
                 const delta = Math.max(Math.abs(dx), Math.abs(dy));
                 const newSize = startWidth + (dx > 0 ? delta : -delta);
-                const constrainedSize = Math.max(32, Math.min(300, newSize));
 
+                // Set minimum and maximum size
+                const minSize = 50;
+                const maxSize = 300;
+                const constrainedSize = Math.max(minSize, Math.min(maxSize, newSize));
+
+                // Apply same size to width and height (square QR)
                 element.style.width = constrainedSize + 'px';
                 element.style.height = constrainedSize + 'px';
             }
@@ -1731,15 +1542,19 @@ function removeQR() {
     if (placedQR) {
         placedQR.remove();
         placedQR = null;
+
+        // Clear history
         qrHistory = [];
         historyIndex = -1;
+
         updateButtonStates();
         updateUndoRedoButtons();
+        console.log('QR removed');
     }
 }
 
-// ==================== PREVIEW BEFORE SIGN (NEW FLOW) ====================
-function showPreviewBeforeSign() {
+// ==================== INSTANT PREVIEW (NO API CALL) ====================
+function showPreview() {
     if (!placedQR) {
         alert('Please place the QR code first.');
         return;
@@ -1748,7 +1563,7 @@ function showPreviewBeforeSign() {
     // Update timestamp
     document.getElementById('signingTimestamp').textContent = new Date().toLocaleString();
 
-    // Generate instant preview
+    // Copy PDF canvas to preview canvas (INSTANT - No backend call)
     const previewCanvas = document.getElementById('previewCanvas');
     const previewCtx = previewCanvas.getContext('2d');
 
@@ -1758,7 +1573,7 @@ function showPreviewBeforeSign() {
     // Draw PDF
     previewCtx.drawImage(canvas, 0, 0);
 
-    // Draw QR
+    // Draw QR overlay
     const img = new Image();
     img.src = placedQR.querySelector('img').src;
     img.onload = function() {
@@ -1773,7 +1588,7 @@ function showPreviewBeforeSign() {
         previewCtx.drawImage(img, x, y, w, h);
     };
 
-    // Show preview modal
+    // Show modal
     document.getElementById('previewModal').classList.add('active');
 }
 
@@ -1782,7 +1597,7 @@ function hidePreview(event) {
     document.getElementById('previewModal').classList.remove('active');
 }
 
-// ==================== SIGNING (FROM PREVIEW) ====================
+// ==================== CONFIRMATION & SIGNING ====================
 function confirmAndSign() {
     if (!placedQR) {
         alert('Please place the QR code on the document first.');
@@ -1794,18 +1609,44 @@ function confirmAndSign() {
         return;
     }
 
-    if (confirm('Are you sure you want to sign this document? This action is permanent and cannot be undone.')) {
+    // Show confirmation dialog
+    if (confirm('Are you sure you want to sign this document? A unique encryption key will be generated and the document will be permanently signed.')) {
         signDocument();
     }
 }
 
-async function signDocument() {
-    try {
-        hidePreview();
+// ==================== EVENT LISTENERS ====================
+function setupEventListeners() {
+    document.getElementById('confirmSignature').addEventListener('change', updateButtonStates);
+}
 
+function updateButtonStates() {
+    const hasQR = placedQR !== null;
+    const isConfirmed = document.getElementById('confirmSignature').checked;
+
+    document.getElementById('previewBtn').disabled = !hasQR;
+    document.getElementById('signBtn').disabled = !hasQR || !isConfirmed;
+    document.getElementById('resetQRBtn').disabled = !hasQR;
+}
+
+// ==================== SIGNING ====================
+async function signDocument() {
+    if (!placedQR) {
+        alert('Please place the QR code on the document first.');
+        return;
+    }
+
+    if (!document.getElementById('confirmSignature').checked) {
+        alert('Please confirm your QR code placement.');
+        return;
+    }
+
+    try {
         console.log('Starting document signing...');
+
         document.getElementById('loadingOverlay').classList.add('active');
 
+        // Get QR positioning data
         const rect = placedQR.getBoundingClientRect();
         const canvasRect = canvas.getBoundingClientRect();
 
@@ -1825,10 +1666,14 @@ async function signDocument() {
             }
         };
 
+        console.log('QR positioning data:', qrPositioningData);
+
+        // Prepare form data
         const formData = new FormData();
         formData.append('qr_positioning_data', JSON.stringify(qrPositioningData));
         formData.append('_token', document.querySelector('meta[name="csrf-token"]').content);
 
+        // Submit to backend (only signing process, NOT preview)
         const response = await fetch(`/user/signature/sign/${approvalRequestId}/process`, {
             method: 'POST',
             body: formData
@@ -1852,25 +1697,13 @@ async function signDocument() {
     }
 }
 
-function setupEventListeners() {
-    document.getElementById('confirmSignature').addEventListener('change', updateButtonStates);
-}
-
-function updateButtonStates() {
-    const hasQR = placedQR !== null;
-    const isConfirmed = document.getElementById('confirmSignature').checked;
-
-    document.getElementById('previewSignBtn').disabled = !hasQR || !isConfirmed;
-    document.getElementById('resetQRBtn').disabled = !hasQR;
-}
-
 function goBack() {
     if (confirm('Are you sure you want to go back? Your QR placement will be lost.')) {
         window.location.href = '{{ route("user.signature.approval.status") }}';
     }
 }
 
-// Prevent accidental reload
+// Prevent accidental page reload
 window.addEventListener('beforeunload', function(e) {
     if (placedQR) {
         e.preventDefault();

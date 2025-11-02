@@ -160,21 +160,6 @@
     box-shadow: 0 8px 25px rgba(17, 153, 142, 0.15);
 }
 
-.qr-auto-placement {
-    /* margin-top: 1.5rem;
-    text-align: center; */
-    margin-top: 1.5rem;
-    text-align: center;
-}
-
-.qr-auto-placement .btn {
-    width: 100%;
-}
-
-.qr-auto-placement:hover .btn {
-    box-shadow: var(--card-shadow-hover);
-}
-
 .qr-code-item {
     background: white;
     border: 3px solid #11998e;
@@ -612,7 +597,6 @@
     background: rgba(0, 0, 0, 0.75);
     z-index: 9999;
     display: none;
-    margin: 0 auto;
 }
 
 .visual-guide-overlay.active {
@@ -723,71 +707,37 @@
     align-items: center;
 }
 
-/* ========== RESPONSIVE OPTIMIZATION ========== */
-
-/* Tablet and smaller desktops */
+/* ========== RESPONSIVE (MOBILE) ========== */
 @media (max-width: 992px) {
     .signing-workspace {
         grid-template-columns: 1fr;
-        gap: 1.25rem;
+        gap: 1rem;
     }
 
     .qr-panel {
         position: relative;
         top: 0;
         max-height: none;
-        width: 100%;
     }
 
     .pdf-preview-wrapper {
         min-height: 400px;
         max-height: 500px;
     }
-
-    .pdf-panel {
-        padding: 1.25rem;
-    }
-
-    /* .delete-qr-btn {
-    position: absolute;
-    top: -15px;
-    right: -15px;
-    width: 32px;
-    height: 32px;
-    background: var(--danger-gradient);
-    color: white;
-    border: 3px solid white;
-    border-radius: 50%;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    font-weight: bold;
-    box-shadow: 0 4px 12px rgba(235, 51, 73, 0.4);
-    transition: all 0.3s ease;
 }
 
-    .delete-qr-btn:hover {
-        transform: scale(1.15) rotate(90deg);
-    } */
-}
-
-/* Mobile view adjustments */
 @media (max-width: 768px) {
     .signing-container {
         padding: 1rem;
     }
 
     .signing-steps {
-        padding: 1.25rem;
+        padding: 1.5rem;
     }
 
-    /* Stack steps vertically */
     .step-indicator {
         flex-direction: column;
         gap: 1rem;
-        align-items: flex-start;
     }
 
     .step-indicator::before {
@@ -796,51 +746,19 @@
 
     .step-item {
         flex-direction: row;
-        gap: 0.75rem;
         justify-content: flex-start;
+        gap: 1rem;
     }
 
-    .qr-panel {
-        margin-bottom: 1rem;
+    .step-number {
+        margin-bottom: 0;
     }
 
     .qr-code-preview-img {
-        width: 120px;
-        height: 120px;
+        width: 140px;
+        height: 140px;
     }
 
-    .qr-code-wrapper {
-        padding: 1rem;
-    }
-
-    .qr-size-presets {
-        grid-template-columns: repeat(3, 1fr);
-        gap: 0.4rem;
-    }
-
-    .qr-size-btn {
-        padding: 0.6rem;
-        font-size: 12px;
-    }
-
-    /* PDF area fit to screen width */
-    .pdf-preview-wrapper {
-        min-height: 400px;
-        max-height: 70vh;
-        border-width: 1.5px;
-    }
-
-    #pdfCanvas {
-        width: 100% !important;
-        /* height: auto !important; */
-        display: block;
-        margin: 0 auto;
-        /* Preserve aspect ratio */
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-
-    }
-
-    /* Sticky bottom bar adjustments */
     .signing-controls {
         position: fixed;
         bottom: 0;
@@ -848,9 +766,7 @@
         right: 0;
         margin: 0;
         border-radius: 1.5rem 1.5rem 0 0;
-        padding: 1.25rem 1rem;
-        box-shadow: 0 -5px 25px rgba(0, 0, 0, 0.15);
-        border: none;
+        padding: 1.25rem;
     }
 
     .signing-controls .d-flex {
@@ -858,101 +774,46 @@
         gap: 1rem;
     }
 
+    .signing-controls .d-flex > div:first-child {
+        order: 2;
+    }
+
+    .signing-controls .d-flex > div:last-child {
+        order: 1;
+    }
+
     .signing-controls button {
         width: 100%;
-        font-size: 14px;
-        padding: 0.75rem;
     }
 
-    /* Navigation buttons */
-    .page-navigation {
-        flex-direction: column;
-        gap: 0.75rem;
-    }
-
-    .page-navigation button {
-        width: 100%;
-        padding: 0.75rem;
-    }
-
-    .page-info {
-        font-size: 14px;
-    }
-
-    /* Modal fix */
     .preview-modal {
-        padding: 0.75rem;
-    }
-
-    .preview-modal-content {
-        padding: 1.25rem;
-        max-height: 90vh;
-    }
-}
-
-/* Extra small mobile screens (≤576px) */
-@media (max-width: 576px) {
-    .signing-container {
-        padding: 0.75rem;
-    }
-
-    .qr-panel {
         padding: 1rem;
     }
 
-    .qr-code-preview-img {
-        width: 100px;
-        height: 100px;
-    }
-
-    .qr-info h6 {
-        font-size: 13px;
-    }
-
-    .qr-info p {
-        font-size: 12px;
-    }
-
-    .pdf-preview-wrapper {
-        min-height: 350px;
-    }
-
-    .signing-controls small {
-        font-size: 12px;
-        line-height: 1.4;
-    }
-
-    .step-number {
-        width: 38px;
-        height: 38px;
-        font-size: 16px;
-    }
-
-    .guide-step-content p {
-        font-size: 13px;
+    .preview-modal-content {
+        padding: 1.5rem;
     }
 }
 
 /* Touch device optimizations */
 @media (hover: none) and (pointer: coarse) {
     .qr-handles {
-        width: 20px;
-        height: 20px;
-        border: 1px solid white;
+        width: 28px;
+        height: 28px;
+        border: 4px solid white;
     }
 
     .handle-se {
-        bottom: -12px;
-        right: -12px;
+        bottom: -14px;
+        right: -14px;
     }
 
     .delete-qr-btn {
-        width: 20px;
-        height: 20px;
-        top: -12px;
-        right: -12px;
-        font-size: 12px;
-        box-shadow: 0 1px 4px rgba(235, 51, 73, 0.4);
+        width: 40px;
+        height: 40px;
+        top: -20px;
+        right: -20px;
+        font-size: 22px;
     }
 }
 </style>
@@ -1010,13 +871,6 @@
                             <h6><i class="fas fa-qrcode me-2"></i>Drag & Drop</h6>
                             <p>Place on document</p>
                         </div>
-                    </div>
-                    {{-- Auto Place QR Code --}}
-                    <div class="qr-auto-placement">
-                        <button class="btn btn-primary" id="autoPlaceQRBtn" onclick="placeQROnPDF()">
-                            <i class="fas fa-check-circle me-2"></i>
-                            Place QR Code Automatically
-                        </button>
                     </div>
                 @else
                     <div class="alert alert-warning mb-0">
@@ -1268,7 +1122,7 @@ const MAX_HISTORY = 50;
 
 // QR sizes
 const QR_SIZES = {
-    small: { width: 60, height: 60 },
+    small: { width: 80, height: 80 },
     medium: { width: 100, height: 100 },
     large: { width: 150, height: 150 }
 };
@@ -1338,13 +1192,7 @@ async function renderPage(pageNumber) {
 
     try {
         const page = await pdfDocument.getPage(pageNumber);
-        // const viewport = page.getViewport({ scale: 1.2 });
-
-        // responsive scaling for better fit desktop and mobile
-        const container = document.getElementById('pdfPreviewWrapper');
-        const containerWidth = container.clientWidth;
-        const scale = containerWidth / page.getViewport({ scale: 1 }).width;
-        const viewport = page.getViewport({ scale: scale });
+        const viewport = page.getViewport({ scale: 1.2 });
 
         canvas.height = viewport.height;
         canvas.width = viewport.width;
@@ -1718,7 +1566,7 @@ function makeQRResizable(element) {
             if (handle.classList.contains('handle-se')) {
                 const delta = Math.max(Math.abs(dx), Math.abs(dy));
                 const newSize = startWidth + (dx > 0 ? delta : -delta);
-                const constrainedSize = Math.max(32, Math.min(300, newSize));
+                const constrainedSize = Math.max(50, Math.min(300, newSize));
 
                 element.style.width = constrainedSize + 'px';
                 element.style.height = constrainedSize + 'px';
@@ -1801,8 +1649,6 @@ function confirmAndSign() {
 
 async function signDocument() {
     try {
-        hidePreview();
-
         console.log('Starting document signing...');
         document.getElementById('loadingOverlay').classList.add('active');
 

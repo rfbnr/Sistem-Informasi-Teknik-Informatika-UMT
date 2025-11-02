@@ -369,7 +369,7 @@ function viewQRDetails(shortCode, qrId) {
             <div class="col-md-6 text-center">
                 <h6 class="text-muted mb-3">QR Code Preview</h6>
                 <div class="p-3 bg-light rounded">
-                    <i class="fas fa-qrcode fa-5x text-muted"></i>
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${window.location.origin}/signature/verify/${shortCode}" alt="QR Code">
                     <p class="mt-2 mb-0 small text-muted">QR Code: ${shortCode}</p>
                 </div>
             </div>

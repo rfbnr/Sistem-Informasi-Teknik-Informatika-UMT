@@ -193,37 +193,93 @@
             </div>
         </div>
 
-        <!-- System Status -->
+        <!-- Digital Signature Keys Widget -->
         <div class="col-lg-4 mb-4">
-            <div class="card">
-                <div class="card-header bg-dark text-white">
-                    <h5 class="mb-0">
-                        <i class="fas fa-server me-2"></i>
-                        System Status
-                    </h5>
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-key me-2"></i>
+                            Signature Keys
+                        </h5>
+                        <a href="{{ route('admin.signature.keys.index') }}" class="btn btn-sm btn-light">
+                            <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
                 </div>
                 <div class="card-body">
-                    <div class="row text-center">
-                        <div class="col-6">
-                            <div class="mb-2">
-                                <i class="fas fa-circle text-success"></i>
-                                <span class="ms-1">System</span>
-                            </div>
-                            <small class="text-muted">Online</small>
+                    <!-- Key Stats -->
+                    <div class="row text-center mb-3">
+                        <div class="col-6 mb-2">
+                            <div class="h5 text-success mb-0">{{ $keyStats['active_keys'] }}</div>
+                            <small class="text-muted">Active Keys</small>
                         </div>
-                        <div class="col-6">
-                            <div class="mb-2">
-                                <i class="fas fa-circle text-success"></i>
-                                <span class="ms-1">Verification</span>
-                            </div>
-                            <small class="text-muted">Active</small>
+                        <div class="col-6 mb-2">
+                            <div class="h5 text-secondary mb-0">{{ $keyStats['revoked_keys'] }}</div>
+                            <small class="text-muted">Revoked</small>
                         </div>
                     </div>
-                    <hr>
-                    <div class="text-center">
-                        <small class="text-muted">
-                            Last updated: {{ now()->format('d M Y H:i') }}
-                        </small>
+
+                    <!-- Alert Section -->
+                    @if($keyStats['urgent_expiry'] > 0)
+                    <div class="alert alert-danger mb-3 py-2">
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        <strong>{{ $keyStats['urgent_expiry'] }}</strong> keys expire in < 7 days!
+                    </div>
+                    @endif
+
+                    @if($keyStats['expiring_soon'] > 0 && $keyStats['urgent_expiry'] == 0)
+                    <div class="alert alert-warning mb-3 py-2">
+                        <i class="fas fa-clock me-1"></i>
+                        <strong>{{ $keyStats['expiring_soon'] }}</strong> keys expiring soon (30d)
+                    </div>
+                    @endif
+
+                    <!-- Expiring Keys List -->
+                    @if($expiringKeys->count() > 0)
+                    <div class="mb-2">
+                        <strong class="small">Expiring Soon:</strong>
+                    </div>
+                    <div class="list-group list-group-flush" style="max-height: 200px; overflow-y: auto;">
+                        @foreach($expiringKeys as $key)
+                        @php
+                            $daysLeft = (int) now()->diffInDays($key->valid_until, false);
+                        @endphp
+                        <div class="list-group-item px-0 py-2">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <div class="small">
+                                        <code class="text-primary">{{ Str::limit($key->signature_id, 12) }}</code>
+                                    </div>
+                                    @if($key->documentSignature && $key->documentSignature->approvalRequest)
+                                    <div class="small text-muted">
+                                        {{ Str::limit($key->documentSignature->approvalRequest->document_name, 25) }}
+                                    </div>
+                                    @endif
+                                </div>
+                                <div class="ms-2">
+                                    @if($daysLeft <= 7)
+                                        <span class="badge bg-danger small">{{ $daysLeft }} d</span>
+                                    @else
+                                        <span class="badge bg-warning small">{{ $daysLeft }} d</span>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+                    @else
+                    <div class="text-center py-3">
+                        <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                        <p class="small text-muted mb-0">All keys are healthy!</p>
+                    </div>
+                    @endif
+
+                    <!-- Action Button -->
+                    <div class="mt-3 d-grid">
+                        <a href="{{ route('admin.signature.keys.index') }}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-key me-1"></i> Manage All Keys
+                        </a>
                     </div>
                 </div>
             </div>

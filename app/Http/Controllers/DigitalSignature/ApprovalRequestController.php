@@ -143,15 +143,14 @@ class ApprovalRequestController extends Controller
                 'notes' => $request->input('notes'),
             ]);
 
-            // Generate document hash for future integrity verification
-            // $documentContent = Storage::disk('public')->get($documentPath);
-            // $documentContent = Storage::get($documentPath);
-            // $documentHash = hash('sha256', $documentContent);
+            // ENHANCEMENT: Generate document hash for future integrity verification
+            $documentContent = Storage::disk('public')->get($documentPath);
+            $documentHash = hash('sha256', $documentContent);
 
-            // Store hash in metadata
+            // Store hash in metadata for integrity check during signing
             $approvalRequest->update([
                 'workflow_metadata' => [
-                    // 'document_hash' => $documentHash,
+                    'document_hash' => $documentHash,  // Used for integrity check in processDocumentSigning()
                     'file_size' => $uploadedFile->getSize(),
                     'original_filename' => $uploadedFile->getClientOriginalName(),
                     'mime_type' => $uploadedFile->getMimeType(),
@@ -159,6 +158,11 @@ class ApprovalRequestController extends Controller
                     'upload_user_agent' => $request->userAgent(),
                     'upload_timestamp' => now()->timestamp
                 ]
+            ]);
+
+            Log::info('Document hash generated for integrity check', [
+                'approval_request_id' => $approvalRequest->id,
+                'document_hash' => $documentHash
             ]);
 
             // Send notification to Kaprodi

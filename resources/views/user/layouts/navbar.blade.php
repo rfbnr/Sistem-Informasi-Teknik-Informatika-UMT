@@ -50,6 +50,11 @@
                             <i class="fas fa-shield-alt me-2"></i> Verify Document
                         </a></li>
 
+                        {{-- Help & Support --}}
+                        <li><a class="dropdown-item" href="{{ route('user.signature.help') }}">
+                            <i class="fas fa-question-circle me-2"></i> Help & Support
+                        </a></li>
+
                         @guest
                             <li><a class="dropdown-item" href="{{ route('login') }}">
                                 <i class="fas fa-sign-in-alt me-2"></i> Login to Submit Documents

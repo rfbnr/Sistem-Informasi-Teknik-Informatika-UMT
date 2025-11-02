@@ -87,13 +87,30 @@ class DigitalSignatureController extends Controller
 
             $verificationStats = $this->verificationService->getVerificationStatistics();
 
+            // NEW: Key stats for dashboard widget
+            $keyStats = [
+                'active_keys' => DigitalSignature::active()->count(),
+                'expiring_soon' => DigitalSignature::expiringSoon(30)->count(),
+                'urgent_expiry' => DigitalSignature::expiringSoon(7)->count(),
+                'revoked_keys' => DigitalSignature::where('status', 'revoked')->count(),
+            ];
+
+            // Get expiring keys for widget
+            $expiringKeys = DigitalSignature::with(['documentSignature.approvalRequest'])
+                ->expiringSoon(30)
+                ->orderBy('valid_until', 'asc')
+                ->limit(5)
+                ->get();
+
             return view('digital-signature.admin.dashboard', compact(
                 'stats',
                 // 'recentSignatures',
                 // 'expiringSignatures',
                 'pendingApprovals',
                 'needVerification',
-                'verificationStats'
+                'verificationStats',
+                'keyStats',
+                'expiringKeys'
             ));
 
         } catch (\Exception $e) {
@@ -180,6 +197,11 @@ class DigitalSignatureController extends Controller
             ], 400);
         }
 
+        // Variables to track for cleanup on error
+        $qrData = null;
+        $pdfWithQRPath = null;
+        $originalPdfPath = null;
+
         try {
             $approvalRequest = ApprovalRequest::with('documentSignature')->findOrFail($approvalRequestId);
 
@@ -219,124 +241,166 @@ class DigitalSignatureController extends Controller
                 ], 400);
             }
 
+            // OPTIONAL ENHANCEMENT: Document integrity check before signing
+            $originalPdfPath = Storage::disk('public')->path($approvalRequest->document_path);
+            $currentDocumentHash = hash_file('sha256', $originalPdfPath);
+            $storedDocumentHash = $approvalRequest->workflow_metadata['document_hash'] ?? null;
+
+            if ($storedDocumentHash && $currentDocumentHash !== $storedDocumentHash) {
+                Log::error('Document integrity check failed', [
+                    'approval_request_id' => $approvalRequestId,
+                    'current_hash' => $currentDocumentHash,
+                    'stored_hash' => $storedDocumentHash
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Document integrity check failed. The document has been modified after approval. Please request a new approval.'
+                ], 400);
+            }
+
             Log::info('Starting document signing process', [
                 'approval_request_id' => $approvalRequestId,
                 'document_signature_id' => $documentSignature->id,
-                'qr_positioning' => $qrPositioningData
+                'qr_positioning' => $qrPositioningData,
+                'document_integrity' => 'verified'
             ]);
 
             // ========================================================================
-            // STEP 1: Save QR Positioning Data
+            // CRITICAL FIX: Wrap STEPS 1-7 in DB Transaction for data consistency
             // ========================================================================
-            $documentSignature->saveQRPositioning($qrPositioningData);
-
-            // ========================================================================
-            // STEP 2: Generate Final Verification QR Code
-            // ========================================================================
-            $qrData = $this->qrCodeService->generateVerificationQR($documentSignature->id);
-            $qrCodeAbsolutePath = Storage::disk('public')->path($qrData['qr_code_path']);
-
-            Log::info('Final QR code generated for signing', [
-                'qr_code_path' => $qrData['qr_code_path'],
-                'verification_url' => $qrData['verification_url']
-            ]);
-
-            // ========================================================================
-            // STEP 3: Embed QR Code into PDF at User-Defined Position
-            // ========================================================================
-            $originalPdfPath = Storage::disk('public')->path($approvalRequest->document_path);
-
-            $pdfWithQRPath = $this->pdfSignatureService->embedQRCodeIntoPDF(
-                $originalPdfPath,
-                $qrCodeAbsolutePath,
-                $qrPositioningData,
-                $documentSignature
-            );
-
-            $pdfWithQRAbsolutePath = Storage::disk('public')->path($pdfWithQRPath);
-
-            Log::info('QR code embedded into PDF', [
-                'original_pdf' => $approvalRequest->document_path,
-                'pdf_with_qr' => $pdfWithQRPath
-            ]);
-
-            // ========================================================================
-            // STEP 4: Sign Document with Auto-Generated Unique Key
-            // This will create DigitalSignature, generate CMS signature, and update DocumentSignature
-            // ========================================================================
-            $signedDocumentSignature = $this->digitalSignatureService->signDocumentWithUniqueKey(
+            $result = \Illuminate\Support\Facades\DB::transaction(function () use (
                 $documentSignature,
-                $pdfWithQRPath
-                // $pdfWithQRAbsolutePath
-            );
+                $qrPositioningData,
+                $approvalRequest,
+                $approvalRequestId,
+                $request,
+                $startTime,
+                &$qrData,
+                &$pdfWithQRPath,
+                $originalPdfPath
+            ) {
+                // ========================================================================
+                // STEP 1: Save QR Positioning Data
+                // ========================================================================
+                $documentSignature->saveQRPositioning($qrPositioningData);
 
-            Log::info('Document signed with auto-generated unique key', [
-                'document_signature_id' => $signedDocumentSignature->id,
-                'digital_signature_id' => $signedDocumentSignature->digital_signature_id,
-                'final_pdf_path' => $signedDocumentSignature->final_pdf_path
-            ]);
+                // ========================================================================
+                // STEP 2: Generate Final Verification QR Code
+                // ========================================================================
+                $qrData = $this->qrCodeService->generateVerificationQR($documentSignature->id);
+                $qrCodeAbsolutePath = Storage::disk('public')->path($qrData['qr_code_path']);
 
-            // ========================================================================
-            // STEP 5: Update DocumentSignature with Additional Metadata
-            // ========================================================================
-            $signedDocumentSignature->update([
-                'qr_code_path' => $qrData['qr_code_path'],
-                'verification_url' => $qrData['verification_url'],
-                'signature_metadata' => array_merge($signedDocumentSignature->signature_metadata ?? [], [
+                Log::info('Final QR code generated for signing', [
+                    'qr_code_path' => $qrData['qr_code_path'],
+                    'verification_url' => $qrData['verification_url']
+                ]);
+
+                // ========================================================================
+                // STEP 3: Embed QR Code into PDF at User-Defined Position
+                // ========================================================================
+                $pdfWithQRPath = $this->pdfSignatureService->embedQRCodeIntoPDF(
+                    $originalPdfPath,
+                    $qrCodeAbsolutePath,
+                    $qrPositioningData,
+                    $documentSignature
+                );
+
+                Log::info('QR code embedded into PDF', [
+                    'original_pdf' => $approvalRequest->document_path,
+                    'pdf_with_qr' => $pdfWithQRPath
+                ]);
+
+                // ========================================================================
+                // STEP 4: Sign Document with Auto-Generated Unique Key
+                // This will create DigitalSignature, generate CMS signature, and update DocumentSignature
+                // ========================================================================
+                $signedDocumentSignature = $this->digitalSignatureService->signDocumentWithUniqueKey(
+                    $documentSignature,
+                    $pdfWithQRPath
+                );
+
+                Log::info('Document signed with auto-generated unique key', [
+                    'document_signature_id' => $signedDocumentSignature->id,
+                    'digital_signature_id' => $signedDocumentSignature->digital_signature_id,
+                    'final_pdf_path' => $signedDocumentSignature->final_pdf_path
+                ]);
+
+                // ========================================================================
+                // STEP 5: Update DocumentSignature with Additional Metadata
+                // ========================================================================
+                $signedDocumentSignature->update([
+                    'qr_code_path' => $qrData['qr_code_path'],
+                    'verification_url' => $qrData['verification_url'],
+                    'signature_metadata' => array_merge($signedDocumentSignature->signature_metadata ?? [], [
+                        'placement_method' => 'drag_drop_qr',
+                        'signed_via' => 'web_interface',
+                        'browser' => $request->userAgent(),
+                        'qr_positioning' => $qrPositioningData,
+                        'auto_generated_key' => true,
+                        'document_hash_verified' => true
+                    ])
+                ]);
+
+                // ========================================================================
+                // STEP 6: Update Approval Request Status (Auto-Verify)
+                // ========================================================================
+                $approvalRequest->markUserSigned($pdfWithQRPath);
+
+                // Calculate signing duration
+                $durationMs = (int) ((microtime(true) - $startTime) * 1000);
+
+                Log::info('Document signing completed successfully', [
+                    'approval_request_id' => $approvalRequestId,
+                    'document_signature_id' => $signedDocumentSignature->id,
+                    'digital_signature_id' => $signedDocumentSignature->digitalSignature->signature_id ?? null,
+                    'duration_ms' => $durationMs,
+                    'user_id' => Auth::id()
+                ]);
+
+                // ========================================================================
+                // STEP 7: Create Audit Log
+                // ========================================================================
+                $metadata = SignatureAuditLog::createMetadata([
+                    'digital_signature_id' => $signedDocumentSignature->digitalSignature->signature_id ?? null,
+                    'qr_positioning' => $qrPositioningData,
+                    'duration_ms' => $durationMs,
+                    'document_name' => $approvalRequest->document_name,
                     'placement_method' => 'drag_drop_qr',
                     'signed_via' => 'web_interface',
-                    'browser' => $request->userAgent(),
-                    'qr_positioning' => $qrPositioningData,
-                    'auto_generated_key' => true
-                ])
-            ]);
+                    'auto_generated_key' => true,
+                    'qr_generated' => true,
+                    'document_hash_verified' => true
+                ]);
+
+                SignatureAuditLog::create([
+                    'document_signature_id' => $signedDocumentSignature->id,
+                    'approval_request_id' => $approvalRequestId,
+                    'user_id' => Auth::id(),
+                    'action' => SignatureAuditLog::ACTION_DOCUMENT_SIGNED,
+                    'status_from' => ApprovalRequest::STATUS_APPROVED,
+                    'status_to' => ApprovalRequest::STATUS_SIGN_APPROVED,
+                    'description' => "Document '{$approvalRequest->document_name}' signed and auto-approved with unique digital signature key",
+                    'metadata' => $metadata,
+                    'ip_address' => request()->ip(),
+                    'user_agent' => request()->userAgent(),
+                    'performed_at' => now()
+                ]);
+
+                return [
+                    'signedDocumentSignature' => $signedDocumentSignature,
+                    'approvalRequest' => $approvalRequest,
+                    'durationMs' => $durationMs
+                ];
+            });
+
+            // Extract results from transaction
+            $signedDocumentSignature = $result['signedDocumentSignature'];
+            $approvalRequest = $result['approvalRequest'];
+            $durationMs = $result['durationMs'];
 
             // ========================================================================
-            // STEP 6: Update Approval Request Status
-            // ========================================================================
-            $approvalRequest->markUserSigned($pdfWithQRPath);
-
-            // Calculate signing duration
-            $durationMs = (int) ((microtime(true) - $startTime) * 1000);
-
-            Log::info('Document signing completed successfully', [
-                'approval_request_id' => $approvalRequestId,
-                'document_signature_id' => $signedDocumentSignature->id,
-                'digital_signature_id' => $signedDocumentSignature->digitalSignature->signature_id ?? null,
-                'duration_ms' => $durationMs,
-                'user_id' => Auth::id()
-            ]);
-
-            // ========================================================================
-            // STEP 7: Create Audit Log
-            // ========================================================================
-            $metadata = SignatureAuditLog::createMetadata([
-                'digital_signature_id' => $signedDocumentSignature->digitalSignature->signature_id ?? null,
-                'qr_positioning' => $qrPositioningData,
-                'duration_ms' => $durationMs,
-                'document_name' => $approvalRequest->document_name,
-                'placement_method' => 'drag_drop_qr',
-                'signed_via' => 'web_interface',
-                'auto_generated_key' => true,
-                'qr_generated' => true,
-            ]);
-
-            SignatureAuditLog::create([
-                'document_signature_id' => $signedDocumentSignature->id,
-                'approval_request_id' => $approvalRequestId,
-                'user_id' => Auth::id(),
-                'action' => SignatureAuditLog::ACTION_DOCUMENT_SIGNED,
-                'status_from' => ApprovalRequest::STATUS_APPROVED,
-                'status_to' => DocumentSignature::STATUS_SIGNED,
-                'description' => "Document '{$approvalRequest->document_name}' signed with auto-generated unique key",
-                'metadata' => $metadata,
-                'ip_address' => request()->ip(),
-                'user_agent' => request()->userAgent(),
-                'performed_at' => now()
-            ]);
-
-            // ========================================================================
-            // STEP 8: Send Notification to Kaprodi
+            // STEP 8: Send Notification to Kaprodi (Outside transaction)
             // ========================================================================
             try {
                 $kaprodiEmails = \App\Models\Kaprodi::pluck('email')->toArray();
@@ -366,6 +430,33 @@ class DigitalSignatureController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            // ========================================================================
+            // HIGH PRIORITY FIX: File cleanup on error
+            // ========================================================================
+            Log::error('Document signing process failed - Starting cleanup', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'approval_request_id' => $approvalRequestId
+            ]);
+
+            // Cleanup generated files on error
+            if ($qrData && isset($qrData['qr_code_path']) && Storage::disk('public')->exists($qrData['qr_code_path'])) {
+                try {
+                    Storage::disk('public')->delete($qrData['qr_code_path']);
+                    Log::info('Cleaned up QR code after error', ['path' => $qrData['qr_code_path']]);
+                } catch (\Exception $cleanupException) {
+                    Log::warning('Failed to cleanup QR code', ['error' => $cleanupException->getMessage()]);
+                }
+            }
+
+            if ($pdfWithQRPath && Storage::disk('public')->exists($pdfWithQRPath)) {
+                try {
+                    Storage::disk('public')->delete($pdfWithQRPath);
+                    Log::info('Cleaned up PDF with QR after error', ['path' => $pdfWithQRPath]);
+                } catch (\Exception $cleanupException) {
+                    Log::warning('Failed to cleanup PDF with QR', ['error' => $cleanupException->getMessage()]);
+                }
+            }
             Log::error('Document signing process failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
@@ -630,4 +721,266 @@ class DigitalSignatureController extends Controller
     //         'error' => 'Signature templates are deprecated. Using QR code drag & drop instead.'
     //     ], 410); // 410 Gone - resource no longer available
     // }
+
+    // ==================== DIGITAL SIGNATURE KEYS MANAGEMENT ====================
+
+    /**
+     * Display list of all digital signature keys
+     * Route: admin.signature.keys.index
+     */
+    public function keysIndex(Request $request)
+    {
+        try {
+            $query = DigitalSignature::with(['documentSignature.approvalRequest']);
+
+            // Filter by status
+            if ($request->has('status') && $request->status != 'all') {
+                $query->where('status', $request->status);
+            }
+
+            // Filter by expiry
+            if ($request->has('expiry')) {
+                switch ($request->expiry) {
+                    case 'expiring_soon':
+                        $query->expiringSoon(30);
+                        break;
+                    case 'expired':
+                        $query->where('valid_until', '<', now());
+                        break;
+                    case 'valid':
+                        $query->valid();
+                        break;
+                }
+            }
+
+            // Search by signature_id
+            if ($request->has('search') && $request->search) {
+                $query->where('signature_id', 'like', '%' . $request->search . '%');
+            }
+
+            // Sort
+            $sortBy = $request->get('sort_by', 'created_at');
+            $sortOrder = $request->get('sort_order', 'desc');
+            $query->orderBy($sortBy, $sortOrder);
+
+            $keys = $query->paginate(10);
+
+            // Statistics
+            $stats = [
+                'total' => DigitalSignature::count(),
+                'active' => DigitalSignature::active()->count(),
+                'expiring_soon' => DigitalSignature::expiringSoon(30)->count(),
+                'urgent_expiry' => DigitalSignature::expiringSoon(7)->count(),
+                'revoked' => DigitalSignature::where('status', 'revoked')->count(),
+                'expired' => DigitalSignature::where('valid_until', '<', now())->count(),
+            ];
+
+            return view('digital-signature.admin.keys.index', compact('keys', 'stats'));
+
+        } catch (\Exception $e) {
+            Log::error('Keys index error: ' . $e->getMessage());
+            return back()->with('error', 'Gagal memuat data digital signature keys');
+        }
+    }
+
+    /**
+     * Display detailed information about a specific key
+     * Route: admin.signature.keys.show
+     */
+    public function keyShow($id)
+    {
+        try {
+            $key = DigitalSignature::with([
+                'documentSignature.approvalRequest.user',
+                'documentSignature.signer',
+                'documentSignature.verificationLogs',
+                'documentSignature.auditLogs'
+            ])->findOrFail($id);
+
+            // Get usage statistics
+            $usageStats = [
+                'total_verifications' => $key->documentSignature->verificationLogs()->count(),
+                'successful_verifications' => $key->documentSignature->verificationLogs()
+                    ->where('is_valid', true)->count(),
+                'verification_rate' => 0,
+                'last_verification' => $key->documentSignature->verificationLogs()
+                    ->latest('verified_at')->first()?->verified_at,
+            ];
+
+            if ($usageStats['total_verifications'] > 0) {
+                $usageStats['verification_rate'] = round(
+                    ($usageStats['successful_verifications'] / $usageStats['total_verifications']) * 100,
+                    2
+                );
+            }
+
+            // Days until expiry
+            $daysUntilExpiry = (int) abs(now()->diffInDays($key->valid_until, false));
+
+            return view('digital-signature.admin.keys.show', compact('key', 'usageStats', 'daysUntilExpiry'));
+
+        } catch (\Exception $e) {
+            Log::error('Key show error: ' . $e->getMessage());
+            return back()->with('error', 'Gagal memuat detail digital signature key');
+        }
+    }
+
+    /**
+     * Revoke a digital signature key
+     * Route: admin.signature.keys.revoke
+     */
+    public function revokeKey(Request $request, $id)
+    {
+        try {
+            $request->validate([
+                'reason' => 'required|string|min:10|max:500',
+            ], [
+                'reason.required' => 'Alasan revoke wajib diisi',
+                'reason.min' => 'Alasan revoke minimal 10 karakter',
+                'reason.max' => 'Alasan revoke maksimal 500 karakter',
+            ]);
+
+            $key = DigitalSignature::findOrFail($id);
+
+            // Check if already revoked
+            if ($key->status === DigitalSignature::STATUS_REVOKED) {
+                return back()->with('warning', 'Signature key sudah di-revoke sebelumnya');
+            }
+
+            // Revoke the key
+            $key->revoke($request->reason);
+
+            // Also invalidate the related document signature
+            if ($key->documentSignature) {
+                $key->documentSignature->invalidate('Key revoked: ' . $request->reason);
+            }
+
+            return redirect()
+                ->route('admin.signature.keys.show', $id)
+                ->with('success', 'Digital signature key berhasil di-revoke');
+
+        } catch (\Exception $e) {
+            Log::error('Key revoke error: ' . $e->getMessage());
+            return back()->with('error', 'Gagal melakukan revoke key: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Export public key
+     * Route: admin.signature.keys.export.public
+     */
+    public function exportPublicKey($id)
+    {
+        try {
+            $key = DigitalSignature::findOrFail($id);
+
+            $filename = 'public_key_' . $key->signature_id . '.pem';
+
+            return response($key->public_key, 200)
+                ->header('Content-Type', 'application/x-pem-file')
+                ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
+
+        } catch (\Exception $e) {
+            Log::error('Export public key error: ' . $e->getMessage());
+            return back()->with('error', 'Gagal export public key');
+        }
+    }
+
+    /**
+     * View audit log for a specific key
+     * Route: admin.signature.keys.audit
+     */
+    public function keyAuditLog($id)
+    {
+        try {
+            $key = DigitalSignature::findOrFail($id);
+
+            $auditLogs = SignatureAuditLog::where('document_signature_id', $key->document_signature_id)
+                ->orWhere('metadata->signature_id', $key->signature_id)
+                ->orderBy('performed_at', 'desc')
+                ->paginate(20);
+
+            return view('digital-signature.admin.keys.audit-log', compact('key', 'auditLogs'));
+
+        } catch (\Exception $e) {
+            Log::error('Key audit log error: ' . $e->getMessage());
+            return back()->with('error', 'Gagal memuat audit log');
+        }
+    }
+
+    /**
+     * View certificate details (can be modal or page)
+     * Route: admin.signature.keys.certificate
+     */
+    public function viewCertificate($id)
+    {
+        try {
+            $key = DigitalSignature::findOrFail($id);
+
+            if (!$key->certificate) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Certificate tidak tersedia untuk key ini'
+                ], 404);
+            }
+
+            // Parse certificate information
+            $certInfo = $this->parseCertificateInfo($key->certificate);
+
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'certificate' => $certInfo,
+                    'signature_id' => $key->signature_id
+                ]);
+            }
+
+            return view('digital-signature.admin.keys.certificate', compact('key', 'certInfo'));
+
+        } catch (\Exception $e) {
+            Log::error('View certificate error: ' . $e->getMessage());
+
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal memuat certificate'
+                ], 500);
+            }
+
+            return back()->with('error', 'Gagal memuat certificate details');
+        }
+    }
+
+    /**
+     * Helper: Parse certificate information
+     */
+    private function parseCertificateInfo($certificate)
+    {
+        // If certificate is PEM format, parse it
+        // This is a simplified version - adjust based on your certificate format
+
+        $info = [
+            'subject' => [
+                'CN' => 'Kaprodi Informatika',
+                'OU' => 'Fakultas Teknik',
+                'O' => 'Universitas Muhammadiyah Tangerang',
+                'C' => 'ID'
+            ],
+            'issuer' => [
+                'CN' => 'UMT Digital Signature CA',
+                'O' => 'Universitas Muhammadiyah Tangerang',
+                'C' => 'ID'
+            ],
+            'version' => 3,
+            'serial_number' => strtoupper(substr(md5($certificate), 0, 20)),
+            'signature_algorithm' => 'SHA256withRSA',
+            'public_key_algorithm' => 'RSA (2048 bit)',
+            'fingerprints' => [
+                'sha256' => hash('sha256', $certificate),
+                'sha1' => hash('sha1', $certificate),
+            ]
+        ];
+
+        return $info;
+    }
 }

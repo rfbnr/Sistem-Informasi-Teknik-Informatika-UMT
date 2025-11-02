@@ -227,6 +227,7 @@ class ApprovalRequest extends Model
 
     /**
      * Mark sebagai sudah ditandatangani user
+     * REFACTORED: Auto-approve signature after user signs (no manual kaprodi verification)
      */
     //! DIPAKAI DI CONTROLLER DIGITAL SIGNATURE
     public function markUserSigned($signPath)
@@ -234,17 +235,21 @@ class ApprovalRequest extends Model
         $oldStatus = $this->status;
 
         $this->update([
-            // 'status' => self::STATUS_USER_SIGNED,
-            'status' => self::STATUS_SIGN_APPROVED,
+            // 'status' => self::STATUS_USER_SIGNED,  // Old flow: manual verify needed
+            'status' => self::STATUS_SIGN_APPROVED,    // New flow: auto-approved
             'user_signed_at' => now(),
-            'sign_approved_at' => now(),
-            'sign_approved_by' => $this->approved_by,
+            'sign_approved_at' => now(),               // Auto-approved at same time
+            'sign_approved_by' => $this->approved_by,  // Same kaprodi who approved
             'signed_document_path' => $signPath,
         ]);
 
-        // Log audit
-        $this->logStatusChange('user_signed', $oldStatus, self::STATUS_USER_SIGNED,
-            'Document has been digitally signed by user');
+        // FIXED: Log audit with correct final status (SIGN_APPROVED, not USER_SIGNED)
+        $this->logStatusChange(
+            'user_signed_auto_approved',
+            $oldStatus,
+            self::STATUS_SIGN_APPROVED,  // Fixed: Use actual final status
+            'Document has been digitally signed by user and automatically approved by system'
+        );
     }
 
     /**

@@ -4,7 +4,7 @@
         <i class="fas fa-user-shield me-2"></i>
         Kaprodi Panel
     </h5>
-    <small class="text-white-50">UMT Informatika | Digital Signature Management</small>
+    <small class="text-white-50">DiSign | Informatika UMT</small>
 </div>
 
 <ul class="nav flex-column">
@@ -17,17 +17,20 @@
         </a>
     </li>
 
-    <!-- Key Management -->
-    {{-- <li class="nav-item">
-        <a class="nav-link {{ request()->routeIs('admin.signature.keys.index') || request()->routeIs('admin.signature.keys.view') ? 'active' : '' }}"
+    <!-- Digital Signature Keys Management -->
+    <li class="nav-item">
+        <a class="nav-link {{ request()->routeIs('admin.signature.keys.*') ? 'active' : '' }}"
            href="{{ route('admin.signature.keys.index') }}">
             <i class="fas fa-key me-2"></i>
-            Digital Signatures
-            @if(isset($stats['expired_signatures']) && $stats['expired_signatures'] > 0)
-                <span class="badge bg-warning rounded-pill ms-auto">{{ $stats['expired_signatures'] }}</span>
+            Digital Signature Keys
+            @php
+                $expiringKeys = \App\Models\DigitalSignature::expiringSoon(7)->count();
+            @endphp
+            @if($expiringKeys > 0)
+                <span class="badge bg-danger rounded-pill ms-auto">{{ $expiringKeys }}</span>
             @endif
         </a>
-    </li> --}}
+    </li>
 
     <!-- Document Management -->
     <li class="nav-item">
@@ -55,24 +58,6 @@
             @endif
         </a>
     </li>
-
-    <!-- Templates -->
-    {{-- <li class="nav-item">
-        <a class="nav-link {{ request()->routeIs('admin.signature.templates.*') ? 'active' : '' }}"
-           href="{{ route('admin.signature.templates.index') }}">
-            <i class="fas fa-palette me-2"></i>
-            Signature Templates
-        </a>
-    </li> --}}
-
-    <!-- Verification Tools -->
-    {{-- <li class="nav-item">
-        <a class="nav-link {{ request()->routeIs('admin.signature.verification-tools') ? 'active' : '' }}"
-           href="{{ route('admin.signature.verification-tools') }}">
-            <i class="fas fa-shield-alt me-2"></i>
-            Verification Tools
-        </a>
-    </li> --}}
 
     <!-- Divider -->
     <hr class="my-3 text-white-50">
@@ -110,12 +95,12 @@
     </li> --}}
 
     <!-- System Settings -->
-    <li class="nav-item">
+    {{-- <li class="nav-item">
         <a class="nav-link" href="#" onclick="showSettings()">
             <i class="fas fa-cog me-2"></i>
             Settings
         </a>
-    </li>
+    </li> --}}
 
     <!-- Divider -->
     <hr class="my-3 text-white-50">
@@ -130,15 +115,30 @@
 
     <!-- Help & Documentation -->
     <li class="nav-item">
-        <a class="nav-link" href="#" onclick="showHelp()">
+        <a class="nav-link {{ request()->routeIs('admin.signature.help') ? 'active' : '' }}"
+           href="{{ route('admin.signature.help') }}">
             <i class="fas fa-question-circle me-2"></i>
             Help & Support
         </a>
     </li>
+
+    {{-- User Help & Support --}}
+    {{-- <li class="nav-item">
+        <a class="nav-link {{ request()->routeIs('admin.signature.user.help') ? 'active' : '' }}"
+           href="{{ route('admin.signature.help.user') }}">
+            <i class="fas fa-question-circle me-2"></i>
+            User Help & Support
+        </a>
+    </li> --}}
 </ul>
 
+{{-- Logo Section --}}
+<div class="text-center my-4">
+    <img src="{{ asset('assets/logo.JPG') }}" alt="Logo" class="d-inline-block align-text-center img-fluid rounded mx-auto d-block" style="max-width: 150px;">
+</div>
+
 <!-- Quick Stats at Bottom -->
-<div class="mt-auto pt-3">
+{{-- <div class="mt-auto pt-3">
     <div class="bg-white bg-opacity-20 rounded p-3 mx-2">
         <h6 class="text-black mb-2">Quick Stats</h6>
         <div class="row text-center">
@@ -152,16 +152,4 @@
             </div>
         </div>
     </div>
-</div>
-
-<script>
-function showSettings() {
-    // Show settings modal
-    alert('Settings panel coming soon!');
-}
-
-function showHelp() {
-    // Show help modal or redirect to documentation
-    alert('Help documentation coming soon!');
-}
-</script>
+</div> --}}
