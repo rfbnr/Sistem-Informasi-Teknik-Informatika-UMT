@@ -37,8 +37,6 @@ class VerificationService
             // Decrypt QR code data
             $qrResult = $this->qrCodeService->verifyQRCode($encryptedToken);
 
-            // dd($qrResult);
-
             if (!$qrResult['is_valid']) {
                 return $this->createVerificationResult(false, $qrResult['error_message']);
             }

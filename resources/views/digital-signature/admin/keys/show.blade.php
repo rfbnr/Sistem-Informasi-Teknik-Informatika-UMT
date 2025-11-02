@@ -1,4 +1,30 @@
 {{-- resources/views/digital-signature/admin/keys/show.blade.php --}}
+{{--
+    IMPROVED CERTIFICATE VIEWER
+
+    Fitur yang telah diperbaiki:
+    1. Certificate Modal - Menampilkan informasi REAL dari X.509 certificate
+       - Subject DN (Common Name, OU, Organization, Country, State, Locality, Email)
+       - Issuer DN (Common Name, OU, Organization, Country)
+       - Certificate Version (X.509 v3)
+       - Serial Number (real dari OpenSSL, bukan MD5 hash)
+       - Validity Period dengan status badge (expired/expiring/valid)
+       - Cryptographic Algorithms (Public Key & Signature Algorithm)
+       - SHA-256 & SHA-1 Fingerprints (real dari OpenSSL)
+       - Self-Signed Certificate detection
+       - Days remaining calculation
+
+    2. UI/UX Improvements:
+       - Modal size diubah ke modal-xl untuk lebih luas
+       - Informasi dikategorikan dalam cards dengan warna berbeda
+       - Copy to clipboard dengan toast notification
+       - Distinguished Name (DN) ditampilkan dalam format standar
+       - Badge untuk validity status
+       - Responsive design
+       - Security information section
+
+    3. Data Source: Real OpenSSL parsing dari DigitalSignatureController::parseCertificateInfo()
+--}}
 @extends('digital-signature.layouts.app')
 
 @section('title', 'Signature Key Details - ' . $key->signature_id)
@@ -61,6 +87,44 @@
     padding: 8px 12px;
     border-radius: 6px;
     font-weight: 600;
+}
+
+/* Certificate Modal Styles */
+#certificateModal .card {
+    border: none;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+#certificateModal .card-header {
+    font-weight: 600;
+    border-bottom: 2px solid rgba(0,0,0,0.1);
+}
+
+#certificateModal code {
+    background: #f8f9fc;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+}
+
+.certificate-details .copy-btn {
+    cursor: pointer;
+    color: #4e73df;
+    transition: all 0.2s;
+}
+
+.certificate-details .copy-btn:hover {
+    color: #2e59d9;
+    transform: scale(1.2);
+}
+
+/* Toast notification styles */
+.toast {
+    min-width: 250px;
+}
+
+.toast-header {
+    border-bottom: none;
 }
 </style>
 @endpush
@@ -454,17 +518,26 @@
             <div class="modal-header bg-primary text-white">
                 <h5 class="modal-title">
                     <i class="fas fa-certificate me-2"></i>
-                    Digital Certificate Details
+                    Digital Certificate Details - X.509
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body" id="certificateContent">
-                <div class="text-center">
+            <div class="modal-body" id="certificateContent" style="max-height: 80vh; overflow-y: auto;">
+                <div class="text-center py-5">
                     <div class="spinner-border text-primary" role="status">
                         <span class="visually-hidden">Loading...</span>
                     </div>
-                    <p class="mt-2">Loading certificate information...</p>
+                    <p class="mt-3 text-muted">Memuat informasi sertifikat digital...</p>
                 </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <small class="text-muted me-auto">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Informasi ini diambil dari sertifikat X.509 yang ter-generate secara otomatis
+                </small>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i> Tutup
+                </button>
             </div>
         </div>
     </div>
@@ -492,70 +565,258 @@ function viewCertificate() {
     .then(data => {
         if (data.success) {
             const cert = data.certificate;
+
+            // Build Subject DN string
+            let subjectDN = '';
+            if (cert.subject.CN) subjectDN += `CN=${cert.subject.CN}, `;
+            if (cert.subject.OU) subjectDN += `OU=${cert.subject.OU}, `;
+            if (cert.subject.O) subjectDN += `O=${cert.subject.O}, `;
+            if (cert.subject.L) subjectDN += `L=${cert.subject.L}, `;
+            if (cert.subject.ST) subjectDN += `ST=${cert.subject.ST}, `;
+            if (cert.subject.C) subjectDN += `C=${cert.subject.C}`;
+            subjectDN = subjectDN.replace(/, $/, '');
+
+            // Build Issuer DN string
+            let issuerDN = '';
+            if (cert.issuer.CN) issuerDN += `CN=${cert.issuer.CN}, `;
+            if (cert.issuer.OU) issuerDN += `OU=${cert.issuer.OU}, `;
+            if (cert.issuer.O) issuerDN += `O=${cert.issuer.O}, `;
+            if (cert.issuer.C) issuerDN += `C=${cert.issuer.C}`;
+            issuerDN = issuerDN.replace(/, $/, '');
+
+            // Check if certificate is expired or expiring
+            const validUntilDate = new Date(cert.valid_until);
+            const now = new Date();
+            const daysLeft = Math.ceil((validUntilDate - now) / (1000 * 60 * 60 * 24));
+
+            let validityBadge = '';
+            if (daysLeft < 0) {
+                validityBadge = '<span class="badge bg-danger ms-2"><i class="fas fa-exclamation-triangle"></i> EXPIRED</span>';
+            } else if (daysLeft <= 7) {
+                validityBadge = `<span class="badge bg-danger ms-2"><i class="fas fa-clock"></i> ${daysLeft} days left</span>`;
+            } else if (daysLeft <= 30) {
+                validityBadge = `<span class="badge bg-warning ms-2"><i class="fas fa-exclamation-circle"></i> ${daysLeft} days left</span>`;
+            } else {
+                validityBadge = `<span class="badge bg-success ms-2"><i class="fas fa-check-circle"></i> Valid</span>`;
+            }
+
             const html = `
                 <div class="certificate-details">
-                    <h6 class="border-bottom pb-2 mb-3">Certificate Information</h6>
-
-                    <div class="row mb-2">
-                        <div class="col-4"><strong>Version:</strong></div>
-                        <div class="col-8">${cert.version}</div>
+                    <!-- Certificate Overview -->
+                    <div class="alert alert-info mb-4">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-certificate fa-2x me-3"></i>
+                            <div>
+                                <h6 class="mb-1">X.509 Digital Certificate</h6>
+                                <small>Sertifikat digital ini digunakan untuk memverifikasi keaslian tanda tangan digital</small>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="row mb-2">
-                        <div class="col-4"><strong>Serial Number:</strong></div>
-                        <div class="col-8"><code>${cert.serial_number}</code></div>
+                    <!-- Certificate Basic Information -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-primary text-white">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Informasi Dasar Sertifikat</strong>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-2">
+                                <div class="col-md-4"><strong>Version:</strong></div>
+                                <div class="col-md-8">
+                                    <span class="badge bg-secondary">X.509 v${cert.version}</span>
+                                </div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-md-4"><strong>Serial Number:</strong></div>
+                                <div class="col-md-8">
+                                    <code class="text-primary">${cert.serial_number}</code>
+                                    <i class="fas fa-copy ms-2 copy-btn" onclick="copyCertData('${cert.serial_number}', 'Serial Number')" title="Copy"></i>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    <h6 class="border-bottom pb-2 mb-3 mt-4">Subject</h6>
-                    <div class="row mb-2">
-                        <div class="col-4"><strong>CN:</strong></div>
-                        <div class="col-8">${cert.subject.CN}</div>
-                    </div>
-                    <div class="row mb-2">
-                        <div class="col-4"><strong>OU:</strong></div>
-                        <div class="col-8">${cert.subject.OU}</div>
-                    </div>
-                    <div class="row mb-2">
-                        <div class="col-4"><strong>O:</strong></div>
-                        <div class="col-8">${cert.subject.O}</div>
-                    </div>
-                    <div class="row mb-2">
-                        <div class="col-4"><strong>C:</strong></div>
-                        <div class="col-8">${cert.subject.C}</div>
+                    <!-- Subject Information -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-success text-white">
+                            <i class="fas fa-user-circle me-2"></i>
+                            <strong>Subject (Pemilik Sertifikat)</strong>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-light mb-3">
+                                <small class="text-muted">Distinguished Name (DN):</small><br>
+                                <code class="text-dark">${subjectDN}</code>
+                                <i class="fas fa-copy ms-2 copy-btn" onclick="copyCertData('${subjectDN}', 'Subject DN')" title="Copy"></i>
+                            </div>
+
+                            <div class="row mb-2">
+                                <div class="col-md-4"><strong>Common Name (CN):</strong></div>
+                                <div class="col-md-8">${cert.subject.CN || 'N/A'}</div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-md-4"><strong>Organizational Unit (OU):</strong></div>
+                                <div class="col-md-8">${cert.subject.OU || 'N/A'}</div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-md-4"><strong>Organization (O):</strong></div>
+                                <div class="col-md-8">${cert.subject.O || 'N/A'}</div>
+                            </div>
+                            ${cert.subject.L ? `<div class="row mb-2">
+                                <div class="col-md-4"><strong>Locality (L):</strong></div>
+                                <div class="col-md-8">${cert.subject.L}</div>
+                            </div>` : ''}
+                            ${cert.subject.ST ? `<div class="row mb-2">
+                                <div class="col-md-4"><strong>State/Province (ST):</strong></div>
+                                <div class="col-md-8">${cert.subject.ST}</div>
+                            </div>` : ''}
+                            <div class="row mb-2">
+                                <div class="col-md-4"><strong>Country (C):</strong></div>
+                                <div class="col-md-8">${cert.subject.C || 'N/A'}</div>
+                            </div>
+                            ${cert.subject.emailAddress ? `<div class="row mb-2">
+                                <div class="col-md-4"><strong>Email Address:</strong></div>
+                                <div class="col-md-8"><a href="mailto:${cert.subject.emailAddress}">${cert.subject.emailAddress}</a></div>
+                            </div>` : ''}
+                        </div>
                     </div>
 
-                    <h6 class="border-bottom pb-2 mb-3 mt-4">Issuer</h6>
-                    <div class="row mb-2">
-                        <div class="col-4"><strong>CN:</strong></div>
-                        <div class="col-8">${cert.issuer.CN}</div>
-                    </div>
-                    <div class="row mb-2">
-                        <div class="col-4"><strong>O:</strong></div>
-                        <div class="col-8">${cert.issuer.O}</div>
-                    </div>
-                    <div class="row mb-2">
-                        <div class="col-4"><strong>C:</strong></div>
-                        <div class="col-8">${cert.issuer.C}</div>
+                    <!-- Issuer Information -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-warning text-dark">
+                            <i class="fas fa-building me-2"></i>
+                            <strong>Issuer (Penerbit Sertifikat)</strong>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-light mb-3">
+                                <small class="text-muted">Distinguished Name (DN):</small><br>
+                                <code class="text-dark">${issuerDN}</code>
+                                <i class="fas fa-copy ms-2 copy-btn" onclick="copyCertData('${issuerDN}', 'Issuer DN')" title="Copy"></i>
+                            </div>
+
+                            <div class="row mb-2">
+                                <div class="col-md-4"><strong>Common Name (CN):</strong></div>
+                                <div class="col-md-8">${cert.issuer.CN || 'N/A'}</div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-md-4"><strong>Organizational Unit (OU):</strong></div>
+                                <div class="col-md-8">${cert.issuer.OU || 'N/A'}</div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-md-4"><strong>Organization (O):</strong></div>
+                                <div class="col-md-8">${cert.issuer.O || 'N/A'}</div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-md-4"><strong>Country (C):</strong></div>
+                                <div class="col-md-8">${cert.issuer.C || 'N/A'}</div>
+                            </div>
+
+                            ${cert.issuer.CN === cert.subject.CN ?
+                                '<div class="alert alert-info mt-2 mb-0"><i class="fas fa-info-circle me-2"></i><small><strong>Self-Signed Certificate</strong> - Issuer dan Subject sama (sertifikat ditandatangani sendiri)</small></div>'
+                                : ''}
+                        </div>
                     </div>
 
-                    <h6 class="border-bottom pb-2 mb-3 mt-4">Algorithms</h6>
-                    <div class="row mb-2">
-                        <div class="col-4"><strong>Public Key:</strong></div>
-                        <div class="col-8">${cert.public_key_algorithm}</div>
-                    </div>
-                    <div class="row mb-2">
-                        <div class="col-4"><strong>Signature:</strong></div>
-                        <div class="col-8">${cert.signature_algorithm}</div>
+                    <!-- Validity Period -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-info text-white">
+                            <i class="fas fa-clock me-2"></i>
+                            <strong>Periode Validitas</strong>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-2">
+                                <div class="col-md-4"><strong>Valid From:</strong></div>
+                                <div class="col-md-8">
+                                    <i class="fas fa-calendar-check text-success me-2"></i>
+                                    ${cert.valid_from}
+                                </div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-md-4"><strong>Valid Until:</strong></div>
+                                <div class="col-md-8">
+                                    <i class="fas fa-calendar-times text-danger me-2"></i>
+                                    ${cert.valid_until}
+                                    ${validityBadge}
+                                </div>
+                            </div>
+                            ${daysLeft >= 0 ? `
+                            <div class="row mb-2">
+                                <div class="col-md-4"><strong>Days Remaining:</strong></div>
+                                <div class="col-md-8">
+                                    <strong class="${daysLeft <= 7 ? 'text-danger' : (daysLeft <= 30 ? 'text-warning' : 'text-success')}">${daysLeft} hari</strong>
+                                </div>
+                            </div>` : `
+                            <div class="alert alert-danger mt-2 mb-0">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                <strong>Sertifikat ini telah EXPIRED!</strong> Tidak dapat digunakan untuk verifikasi.
+                            </div>`}
+                        </div>
                     </div>
 
-                    <h6 class="border-bottom pb-2 mb-3 mt-4">Fingerprints</h6>
-                    <div class="mb-3">
-                        <strong>SHA-256:</strong><br>
-                        <code class="d-block bg-light p-2 rounded" style="word-break: break-all;">${cert.fingerprints.sha256}</code>
+                    <!-- Cryptographic Algorithms -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-dark text-white">
+                            <i class="fas fa-lock me-2"></i>
+                            <strong>Algoritma Kriptografi</strong>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-2">
+                                <div class="col-md-4"><strong>Public Key Algorithm:</strong></div>
+                                <div class="col-md-8">
+                                    <span class="badge bg-primary">${cert.public_key_algorithm}</span>
+                                </div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-md-4"><strong>Signature Algorithm:</strong></div>
+                                <div class="col-md-8">
+                                    <span class="badge bg-primary">${cert.signature_algorithm}</span>
+                                </div>
+                            </div>
+                            <div class="alert alert-light mt-3 mb-0">
+                                <small><i class="fas fa-shield-alt me-2"></i>Algoritma ini memastikan keamanan dan integritas tanda tangan digital</small>
+                            </div>
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <strong>SHA-1:</strong><br>
-                        <code class="d-block bg-light p-2 rounded" style="word-break: break-all;">${cert.fingerprints.sha1}</code>
+
+                    <!-- Certificate Fingerprints -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-secondary text-white">
+                            <i class="fas fa-fingerprint me-2"></i>
+                            <strong>Certificate Fingerprints</strong>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <strong>SHA-256 Fingerprint:</strong>
+                                    <button class="btn btn-sm btn-outline-primary" onclick="copyCertData('${cert.fingerprints.sha256}', 'SHA-256 Fingerprint')">
+                                        <i class="fas fa-copy"></i> Copy
+                                    </button>
+                                </div>
+                                <code class="d-block bg-light p-2 rounded" style="word-break: break-all; font-size: 11px;">${cert.fingerprints.sha256}</code>
+                                <small class="text-muted">Digunakan untuk verifikasi keaslian sertifikat</small>
+                            </div>
+                            <div class="mb-0">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <strong>SHA-1 Fingerprint:</strong>
+                                    <button class="btn btn-sm btn-outline-primary" onclick="copyCertData('${cert.fingerprints.sha1}', 'SHA-1 Fingerprint')">
+                                        <i class="fas fa-copy"></i> Copy
+                                    </button>
+                                </div>
+                                <code class="d-block bg-light p-2 rounded" style="word-break: break-all; font-size: 11px;">${cert.fingerprints.sha1}</code>
+                                <small class="text-muted">Fingerprint alternatif untuk kompatibilitas</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Security Information -->
+                    <div class="alert alert-success mb-0">
+                        <h6 class="alert-heading"><i class="fas fa-check-circle me-2"></i>Informasi Keamanan</h6>
+                        <hr>
+                        <ul class="mb-0 small">
+                            <li>Sertifikat ini menggunakan enkripsi RSA dengan panjang kunci yang aman</li>
+                            <li>Fingerprint dapat digunakan untuk memverifikasi keaslian sertifikat</li>
+                            <li>Tanda tangan digital yang dibuat dengan key ini dapat diverifikasi secara publik</li>
+                            ${cert.is_fallback ? '<li class="text-warning"><strong>Note:</strong> Format sertifikat fallback terdeteksi</li>' : ''}
+                        </ul>
                     </div>
                 </div>
             `;
@@ -563,19 +824,45 @@ function viewCertificate() {
         } else {
             document.getElementById('certificateContent').innerHTML = `
                 <div class="alert alert-danger">
-                    <i class="fas fa-exclamation-circle"></i>
-                    ${data.message}
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    <strong>Error:</strong> ${data.message || 'Gagal memuat informasi sertifikat'}
                 </div>
             `;
         }
     })
     .catch(error => {
+        console.error('Certificate fetch error:', error);
         document.getElementById('certificateContent').innerHTML = `
             <div class="alert alert-danger">
-                <i class="fas fa-exclamation-circle"></i>
-                Failed to load certificate details
+                <i class="fas fa-exclamation-circle me-2"></i>
+                <strong>Error:</strong> Gagal memuat detail sertifikat. Silakan coba lagi.
             </div>
         `;
+    });
+}
+
+function copyCertData(text, label) {
+    navigator.clipboard.writeText(text).then(() => {
+        // Create toast notification
+        const toast = document.createElement('div');
+        toast.className = 'position-fixed top-0 end-0 p-3';
+        toast.style.zIndex = '9999';
+        toast.innerHTML = `
+            <div class="toast show" role="alert">
+                <div class="toast-header bg-success text-white">
+                    <i class="fas fa-check-circle me-2"></i>
+                    <strong class="me-auto">Copied!</strong>
+                    <button type="button" class="btn-close btn-close-white" onclick="this.closest('.position-fixed').remove()"></button>
+                </div>
+                <div class="toast-body">
+                    ${label} berhasil disalin ke clipboard
+                </div>
+            </div>
+        `;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }).catch(() => {
+        alert('Gagal menyalin ke clipboard');
     });
 }
 

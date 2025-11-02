@@ -40,7 +40,7 @@ class VerificationController extends Controller
      */
     public function verifyByToken($token)
     {
-        // // Rate limiting
+        // Rate limiting
         $key = 'verify_token:' . request()->ip();
         if (RateLimiter::tooManyAttempts($key, 10)) {
             $seconds = RateLimiter::availableIn($key);
@@ -51,6 +51,17 @@ class VerificationController extends Controller
 
         try {
             $verificationResult = $this->verificationService->verifyByToken($token);
+
+            if(!$verificationResult) {
+                return view('digital-signature.verification.error', [
+                    'message' => 'Verification failed. Please check your QR code or verification link.'
+                ]);
+            }
+
+            //  is valid false
+            if(!$verificationResult['is_valid']) {
+                return view('digital-signature.verification.result', compact('verificationResult'));
+            }
 
             // Log public verification attempt
             Log::info('Public verification attempt', [
@@ -163,6 +174,7 @@ class VerificationController extends Controller
                     throw new \Exception('Invalid verification type');
             }
 
+            
             if (!$verificationResult) {
                 throw new \Exception('Verification failed');
             }
@@ -508,5 +520,205 @@ class VerificationController extends Controller
             default:
                 return 0;
         }
+    }
+
+    /**
+     * ✅ NEW: View public certificate information (AJAX)
+     * Shows SAFE certificate info for public verification
+     * HIDES sensitive information (private keys, IP, detailed metadata)
+     */
+    public function viewPublicCertificate($token)
+    {
+        try {
+            // Verify token and get verification result
+            $verificationResult = $this->verificationService->verifyByToken($token);
+
+            if (!$verificationResult['is_valid']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Verifikasi tidak valid. Sertifikat tidak dapat ditampilkan.'
+                ], 404);
+            }
+
+            // Get document signature
+            $documentSignature = $verificationResult['details']['document_signature'] ?? null;
+
+            if (!$documentSignature || !$documentSignature->digitalSignature) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Sertifikat digital tidak ditemukan.'
+                ], 404);
+            }
+
+            $digitalSignature = $documentSignature->digitalSignature;
+            $certificate = $digitalSignature->certificate;
+
+            if (!$certificate) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Sertifikat tidak tersedia.'
+                ], 404);
+            }
+
+            // Parse certificate with OpenSSL
+            $certInfo = $this->parsePublicCertificateInfo($certificate, $digitalSignature);
+
+            if (!$certInfo) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal memproses sertifikat.'
+                ], 500);
+            }
+
+            return response()->json([
+                'success' => true,
+                'certificate' => $certInfo
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Public certificate view error', [
+                'token' => $token,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat memuat sertifikat.'
+            ], 500);
+        }
+    }
+
+    /**
+     * ✅ NEW: Parse certificate info for PUBLIC display
+     * Returns SAFE information only (no sensitive data)
+     */
+    private function parsePublicCertificateInfo($certificate, $digitalSignature)
+    {
+        try {
+            // Check if valid X.509 certificate
+            if (!str_contains($certificate, 'BEGIN CERTIFICATE') ||
+                !str_contains($certificate, 'END CERTIFICATE')) {
+                Log::warning('Invalid certificate format for public view');
+                return null;
+            }
+
+            // Parse certificate
+            $certData = openssl_x509_parse($certificate);
+
+            if (!$certData) {
+                Log::error('Failed to parse certificate', [
+                    'openssl_error' => openssl_error_string()
+                ]);
+                return null;
+            }
+
+            // Calculate days until expiry
+            $validUntil = $digitalSignature->valid_until;
+            $daysLeft = now()->diffInDays($validUntil, false);
+
+            // Get fingerprint (partial for security)
+            $fullFingerprint = openssl_x509_fingerprint($certificate, 'sha256');
+            $maskedFingerprint = $this->maskFingerprint($fullFingerprint);
+
+            // ✅ SAFE PUBLIC INFORMATION ONLY
+            return [
+                // Certificate Basic Info (PUBLIC SAFE)
+                'version' => ($certData['version'] ?? 2) + 1,
+                'serial_number' => '****' . substr($certData['serialNumber'] ?? 'N/A', -8), // Masked for security
+
+                // Subject (Owner) - NO EMAIL for privacy
+                'subject' => [
+                    'CN' => $certData['subject']['CN'] ?? 'N/A',
+                    'OU' => $certData['subject']['OU'] ?? $certData['subject']['organizationalUnitName'] ?? 'N/A',
+                    'O' => $certData['subject']['O'] ?? $certData['subject']['organizationName'] ?? 'N/A',
+                    'L' => $certData['subject']['L'] ?? $certData['subject']['localityName'] ?? null,
+                    'ST' => $certData['subject']['ST'] ?? $certData['subject']['stateOrProvinceName'] ?? null,
+                    'C' => $certData['subject']['C'] ?? $certData['subject']['countryName'] ?? 'N/A',
+                    // NO EMAIL - Privacy protection
+                ],
+
+                // Issuer (Certificate Authority)
+                'issuer' => [
+                    'CN' => $certData['issuer']['CN'] ?? 'N/A',
+                    'OU' => $certData['issuer']['OU'] ?? 'N/A',
+                    'O' => $certData['issuer']['O'] ?? 'N/A',
+                    'C' => $certData['issuer']['C'] ?? 'N/A',
+                ],
+
+                // Validity Period
+                'valid_from' => isset($certData['validFrom_time_t'])
+                    ? date('d F Y H:i:s', $certData['validFrom_time_t'])
+                    : 'N/A',
+                'valid_until' => isset($certData['validTo_time_t'])
+                    ? date('d F Y H:i:s', $certData['validTo_time_t'])
+                    : 'N/A',
+                'days_remaining' => (int) $daysLeft,
+                'is_expired' => $daysLeft < 0,
+                'is_expiring_soon' => $daysLeft >= 0 && $daysLeft <= 30,
+
+                // Cryptographic Info (PUBLIC SAFE)
+                'public_key_algorithm' => 'RSA (' . ($certData['bits'] ?? 2048) . ' bit)',
+                'signature_algorithm' => $certData['signatureTypeLN'] ?? 'sha256WithRSAEncryption',
+
+                // Fingerprint (MASKED for security)
+                'fingerprint_sha256' => $maskedFingerprint,
+                'fingerprint_partial' => substr($fullFingerprint, 0, 16) . '...' . substr($fullFingerprint, -16),
+
+                // Certificate Type
+                'is_self_signed' => ($certData['issuer']['CN'] ?? '') === ($certData['subject']['CN'] ?? ''),
+
+                // Status
+                'status' => $digitalSignature->status,
+                'is_revoked' => $digitalSignature->status === 'revoked',
+
+                // NO PRIVATE/SENSITIVE DATA:
+                // ❌ No private key
+                // ❌ No full serial number
+                // ❌ No email addresses
+                // ❌ No IP addresses
+                // ❌ No metadata (signing IP, user agent, etc.)
+                // ❌ No full fingerprint (only masked)
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('Certificate parsing error for public view', [
+                'error' => $e->getMessage()
+            ]);
+            return null;
+        }
+    }
+
+    /**
+     * ✅ NEW: Mask fingerprint for public display (security)
+     * Shows only partial fingerprint to prevent tracking
+     */
+    private function maskFingerprint($fingerprint)
+    {
+        if (strlen($fingerprint) < 20) {
+            return str_repeat('*', strlen($fingerprint));
+        }
+
+        // Format: Show first 16 chars, mask middle, show last 16 chars
+        $formatted = strtoupper(chunk_split($fingerprint, 2, ':'));
+        $formatted = rtrim($formatted, ':');
+
+        $parts = explode(':', $formatted);
+        $totalParts = count($parts);
+
+        if ($totalParts < 10) {
+            return implode(':', array_fill(0, $totalParts, '**'));
+        }
+
+        // Show first 4 pairs, mask middle, show last 4 pairs
+        $visible = [];
+        for ($i = 0; $i < $totalParts; $i++) {
+            if ($i < 4 || $i >= $totalParts - 4) {
+                $visible[] = $parts[$i];
+            } else {
+                $visible[] = '**';
+            }
+        }
+
+        return implode(':', $visible);
     }
 }

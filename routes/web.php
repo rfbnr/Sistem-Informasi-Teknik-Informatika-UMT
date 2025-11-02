@@ -90,9 +90,13 @@ Route::prefix('signature')->name('signature.')->group(function () {
             ->name('statistics');
     });
 
-    // Download verification certificate
+    // Download verification certificate (PDF Report)
     Route::get('certificate/{token}', [VerificationController::class, 'downloadCertificate'])
         ->name('certificate');
+
+    // View X.509 certificate details (AJAX - Public Safe Info Only)
+    Route::get('certificate/view/{token}', [VerificationController::class, 'viewPublicCertificate'])
+        ->name('certificate.view');
 });
 
 // ===================================================================

@@ -295,9 +295,9 @@ class QRCodeService
                 $mapping->trackAccess();
 
                 // Check rate limiting (security)
-                if ($mapping->shouldRateLimit(10)) {
-                    throw new \Exception('Too many verification attempts. Please try again later.');
-                }
+                // if ($mapping->shouldRateLimit(10)) {
+                //     throw new \Exception('Too many verification attempts. Please try again later.');
+                // }
 
                 // Get encrypted payload from mapping
                 $encryptedPayload = $mapping->encrypted_payload;
@@ -425,8 +425,6 @@ class QRCodeService
     {
         try {
             $verificationData = $this->decryptVerificationData($encryptedToken);
-
-            // dd($verificationData);
 
             $documentSignature = DocumentSignature::findOrFail($verificationData['document_signature_id']);
             $approvalRequest = $documentSignature->approvalRequest;

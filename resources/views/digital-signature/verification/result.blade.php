@@ -151,7 +151,7 @@
 
         /* Document Preview Styling */
         .modal-xl {
-            max-width: 60%;
+            max-width: 50%;
         }
 
         /* Compact button styling for document preview */
@@ -355,14 +355,19 @@
                                 <!-- Actions -->
                                 <div class="row mt-4">
                                     <div class="col-md-6 mb-2">
-                                        <button class="btn btn-download btn-block w-100" onclick="downloadCertificate()">
-                                            <i class="fas fa-certificate"></i> Download Sertifikat
+                                        <button class="btn btn-primary btn-block w-100" onclick="viewCertificate()">
+                                            <i class="fas fa-certificate"></i> Lihat Sertifikat
                                         </button>
                                     </div>
+                                    {{-- <div class="col-md-4 mb-2">
+                                        <button class="btn btn-outline-success btn-block w-100" onclick="downloadCertificate()">
+                                            <i class="fas fa-download"></i> Download PDF
+                                        </button>
+                                    </div> --}}
                                     <div class="col-md-6 mb-2">
                                         <button class="btn btn-outline-primary btn-block w-100" onclick="previewDocument()"
                                             title="Preview Signed Document">
-                                            <i class="fas fa-print"></i> Lihat Dokumen
+                                            <i class="fas fa-file-pdf"></i> Lihat Dokumen
                                         </button>
                                     </div>
                                 </div>
@@ -445,6 +450,38 @@
         </div>
     </div>
 
+    <!-- Certificate Viewer Modal -->
+    <div class="modal fade" id="certificateModal" tabindex="-1" aria-labelledby="certificateModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="certificateModalLabel">
+                        <i class="fas fa-certificate me-2"></i>
+                        Informasi Sertifikat Digital X.509
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="certificateContent" style="max-height: 80vh; overflow-y: auto;">
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-3 text-muted">Memuat informasi sertifikat...</p>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <small class="text-muted me-auto">
+                        <i class="fas fa-shield-alt text-success me-1"></i>
+                        Informasi sertifikat untuk verifikasi publik
+                    </small>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i> Tutup
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Document Preview Modal -->
     <div class="modal fade" id="documentPreviewModal" tabindex="-1" aria-labelledby="documentPreviewModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-centered">
@@ -490,93 +527,381 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
     <script>
+        // Auto-focus pada tombol utama
+        $(document).ready(function() {
+            @if($verificationResult['is_valid'])
+                $('button:contains("Lihat Sertifikat")').focus();
+            @else
+                $('a:contains("Verifikasi Lain")').focus();
+            @endif
+        });
+
         @php
-            $document = $verificationResult['details']['approval_request'];
+            $document = $verificationResult['details']['approval_request'] ?? null;
         @endphp
 
-        function previewDocument(type) {
-            const modal = new bootstrap.Modal(document.getElementById('documentPreviewModal'));
-            const iframe = document.getElementById('documentPreviewFrame');
-            const loading = document.getElementById('pdfLoadingIndicator');
-            const errorDiv = document.getElementById('previewError');
-            const titleSpan = document.getElementById('previewTitle');
-            const downloadBtn = document.getElementById('downloadDocumentBtn');
+        function previewDocument() {
+            @if($verificationResult['is_valid'])
+                const modal = new bootstrap.Modal(document.getElementById('documentPreviewModal'));
+                const iframe = document.getElementById('documentPreviewFrame');
+                const loading = document.getElementById('pdfLoadingIndicator');
+                const errorDiv = document.getElementById('previewError');
+                const titleSpan = document.getElementById('previewTitle');
+                const downloadBtn = document.getElementById('downloadDocumentBtn');
 
-            // Reset modal state
-            iframe.style.display = 'none';
-            errorDiv.style.display = 'none';
-            loading.style.display = 'block';
+                // Reset modal state
+                iframe.style.display = 'none';
+                errorDiv.style.display = 'none';
+                loading.style.display = 'block';
 
-            const signedFileName = '{{ $document->signed_document_path ? basename($document->signed_document_path) : "Not Signed Yet" }}';
+                const signedFileName = '{{ $document->signed_document_path ? basename($document->signed_document_path) : "Not Signed Yet" }}';
 
-            // Set title based on type
-            titleSpan.textContent = 'Signed Document Preview';
+                // Set title based on type
+                titleSpan.textContent = 'Signed Document Preview';
 
-            // Get document path
-            const docPath = '{{ $document->signed_document_path ? asset("storage/" . $document->signed_document_path) : "" }}';
+                // Get document path
+                const docPath = '{{ $document->signed_document_path ? asset("storage/" . $document->signed_document_path) : "" }}';
 
-            if (!docPath) {
-                loading.style.display = 'none';
-                errorDiv.style.display = 'block';
-                document.getElementById('errorMessage').textContent = 'Document not available for preview.';
+                if (!docPath) {
+                    loading.style.display = 'none';
+                    errorDiv.style.display = 'block';
+                    document.getElementById('errorMessage').textContent = 'Document not available for preview.';
+                    modal.show();
+                    return;
+                }
+
+                // Set download button
+                downloadBtn.href = docPath;
+                downloadBtn.style.display = 'none';
+
+                // Show modal
                 modal.show();
-                return;
-            }
 
-            // Set download button
-            downloadBtn.href = docPath;
-            downloadBtn.style.display = 'none';
-
-            // Show modal
-            modal.show();
-
-            // Load PDF in iframe
-            iframe.onload = function() {
-                loading.style.display = 'none';
-                iframe.style.display = 'block';
-            };
-
-            iframe.onerror = function() {
-                loading.style.display = 'none';
-                errorDiv.style.display = 'block';
-                document.getElementById('errorMessage').textContent = 'Failed to load document. The file may be corrupted or not accessible.';
-            };
-
-            // Set iframe source (add #toolbar=0 to hide PDF toolbar for cleaner view)
-            iframe.src = docPath + '#toolbar=0';
-
-            // Fallback timeout in case onload doesn't fire
-            setTimeout(function() {
-                if (loading.style.display !== 'none') {
+                // Load PDF in iframe
+                iframe.onload = function() {
                     loading.style.display = 'none';
                     iframe.style.display = 'block';
-                }
-            }, 3000);
+                };
+
+                iframe.onerror = function() {
+                    loading.style.display = 'none';
+                    errorDiv.style.display = 'block';
+                    document.getElementById('errorMessage').textContent = 'Failed to load document. The file may be corrupted or not accessible.';
+                };
+
+                // Set iframe source (add #toolbar=0 to hide PDF toolbar for cleaner view)
+                iframe.src = docPath + '#toolbar=0';
+
+                // Fallback timeout in case onload doesn't fire
+                setTimeout(function() {
+                    if (loading.style.display !== 'none') {
+                        loading.style.display = 'none';
+                        iframe.style.display = 'block';
+                    }
+                }, 3000);
+            @else
+                alert('Dokumen tidak tersedia untuk pratinjau karena verifikasi gagal.');
+            @endif
         }
 
-        function downloadCertificate() {
-            console.log('Token:', '{{ request()->route('token') ?? '' }}');
-            @if($verificationResult['is_valid'])
-                // Construct certificate download URL
-                const token = '{{ request()->route('token') ?? '' }}';
-                if (token) {
-                    window.open(`{{ route('signature.certificate', '') }}/${token}`, '_blank');
-                } else {
-                    alert('Token verifikasi tidak ditemukan untuk download sertifikat');
+        // Extract token from verification URL
+        function extractTokenFromUrl(url)
+        {
+            const patterns = [
+                '\/verify\/([^\/\\?]+)',
+                '[\\?&]token=([^&]+)',
+                '\/signature\/verify\/([^\/\\?]+)'
+            ];
+
+            // looping match pattern
+            for (const pattern of patterns) {
+                const regex = new RegExp(pattern);
+                const matches = url.match(regex);
+                if (matches && matches[1]) {
+                    return matches[1];
                 }
+            }
+
+            return null;
+        }
+
+        /**
+         * ✅ NEW: View X.509 Certificate in Modal (AJAX)
+         */
+        function viewCertificate() {
+            @if($verificationResult['is_valid'])
+
+                const extractedToken = extractTokenFromUrl('{{ request()->verification_input }}');
+
+                var token = '{{ request()->route('token') ?? '' }}';
+
+                if(!token) token = extractedToken;
+
+                if (!token) {
+                    alert('Token verifikasi tidak ditemukan');
+                    return;
+                }
+
+                const modal = new bootstrap.Modal(document.getElementById('certificateModal'));
+                modal.show();
+
+                // Fetch certificate details via AJAX
+                fetch(`{{ route('signature.certificate.view', '') }}/${token}`, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        displayCertificateInfo(data.certificate);
+                    } else {
+                        showCertificateError(data.message || 'Gagal memuat sertifikat');
+                    }
+                })
+                .catch(error => {
+                    console.error('Certificate fetch error:', error);
+                    showCertificateError('Terjadi kesalahan saat memuat sertifikat');
+                });
             @else
                 alert('Sertifikat hanya tersedia untuk dokumen yang terverifikasi valid');
             @endif
         }
 
-        // Auto-focus pada tombol utama
-        $(document).ready(function() {
-            @if($verificationResult['is_valid'])
-                $('button:contains("Download Sertifikat")').focus();
-            @else
-                $('a:contains("Verifikasi Lain")').focus();
-            @endif
-        });
+        /**
+         * Display certificate information in modal
+         */
+        function displayCertificateInfo(cert) {
+            // Build validity badge
+            let validityBadge = '';
+            if (cert.is_expired) {
+                validityBadge = '<span class="badge bg-danger ms-2"><i class="fas fa-exclamation-triangle"></i> EXPIRED</span>';
+            } else if (cert.is_expiring_soon) {
+                validityBadge = `<span class="badge bg-warning ms-2"><i class="fas fa-clock"></i> ${cert.days_remaining} hari lagi</span>`;
+            } else {
+                validityBadge = `<span class="badge bg-success ms-2"><i class="fas fa-check-circle"></i> Valid</span>`;
+            }
+
+            // Build Subject DN
+            let subjectDN = `CN=${cert.subject.CN}`;
+            if (cert.subject.OU) subjectDN += `, OU=${cert.subject.OU}`;
+            if (cert.subject.O) subjectDN += `, O=${cert.subject.O}`;
+            if (cert.subject.L) subjectDN += `, L=${cert.subject.L}`;
+            if (cert.subject.ST) subjectDN += `, ST=${cert.subject.ST}`;
+            if (cert.subject.C) subjectDN += `, C=${cert.subject.C}`;
+
+            // Build Issuer DN
+            let issuerDN = `CN=${cert.issuer.CN}`;
+            if (cert.issuer.OU) issuerDN += `, OU=${cert.issuer.OU}`;
+            if (cert.issuer.O) issuerDN += `, O=${cert.issuer.O}`;
+            if (cert.issuer.C) issuerDN += `, C=${cert.issuer.C}`;
+
+            const html = `
+                <div class="certificate-details">
+                    <!-- Public Notice -->
+                    <div class="alert alert-info mb-4">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-info-circle fa-2x me-3"></i>
+                            <div>
+                                <h6 class="mb-1">Sertifikat Digital X.509</h6>
+                                <small>Informasi ini ditampilkan untuk keperluan verifikasi publik. Data sensitif tidak ditampilkan untuk melindungi privasi.</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Basic Information -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-primary text-white">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Informasi Dasar</strong>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-2">
+                                <div class="col-md-4"><strong>Version:</strong></div>
+                                <div class="col-md-8"><span class="badge bg-secondary">X.509 v${cert.version}</span></div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-md-4"><strong>Serial Number:</strong></div>
+                                <div class="col-md-8">
+                                    <code class="text-primary">${cert.serial_number}</code>
+                                    <small class="text-muted d-block">Sebagian nomor seri disembunyikan untuk keamanan</small>
+                                </div>
+                            </div>
+                            ${cert.is_revoked ? `
+                            <div class="alert alert-danger mt-2 mb-0">
+                                <i class="fas fa-ban me-2"></i>
+                                <strong>Sertifikat ini telah DICABUT!</strong>
+                            </div>` : ''}
+                        </div>
+                    </div>
+
+                    <!-- Subject (Owner) -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-success text-white">
+                            <i class="fas fa-user-circle me-2"></i>
+                            <strong>Subject (Pemilik Sertifikat)</strong>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-light mb-3">
+                                <small class="text-muted">Distinguished Name (DN):</small><br>
+                                <code class="text-dark">${subjectDN}</code>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-md-4"><strong>Common Name (CN):</strong></div>
+                                <div class="col-md-8">${cert.subject.CN}</div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-md-4"><strong>Organizational Unit (OU):</strong></div>
+                                <div class="col-md-8">${cert.subject.OU}</div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-md-4"><strong>Organization (O):</strong></div>
+                                <div class="col-md-8">${cert.subject.O}</div>
+                            </div>
+                            ${cert.subject.L ? `<div class="row mb-2">
+                                <div class="col-md-4"><strong>Locality (L):</strong></div>
+                                <div class="col-md-8">${cert.subject.L}</div>
+                            </div>` : ''}
+                            ${cert.subject.ST ? `<div class="row mb-2">
+                                <div class="col-md-4"><strong>State/Province (ST):</strong></div>
+                                <div class="col-md-8">${cert.subject.ST}</div>
+                            </div>` : ''}
+                            <div class="row mb-2">
+                                <div class="col-md-4"><strong>Country (C):</strong></div>
+                                <div class="col-md-8">${cert.subject.C}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Issuer -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-warning text-dark">
+                            <i class="fas fa-building me-2"></i>
+                            <strong>Issuer (Penerbit Sertifikat)</strong>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-light mb-3">
+                                <small class="text-muted">Distinguished Name (DN):</small><br>
+                                <code class="text-dark">${issuerDN}</code>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-md-4"><strong>Common Name (CN):</strong></div>
+                                <div class="col-md-8">${cert.issuer.CN}</div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-md-4"><strong>Organization (O):</strong></div>
+                                <div class="col-md-8">${cert.issuer.O}</div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-md-4"><strong>Country (C):</strong></div>
+                                <div class="col-md-8">${cert.issuer.C}</div>
+                            </div>
+                            ${cert.is_self_signed ? `
+                            <div class="alert alert-info mt-2 mb-0">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <small><strong>Self-Signed Certificate</strong> - Issuer dan Subject sama (sertifikat ditandatangani sendiri)</small>
+                            </div>` : ''}
+                        </div>
+                    </div>
+
+                    <!-- Validity Period -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-info text-white">
+                            <i class="fas fa-clock me-2"></i>
+                            <strong>Periode Validitas</strong>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-2">
+                                <div class="col-md-4"><strong>Valid From:</strong></div>
+                                <div class="col-md-8">
+                                    <i class="fas fa-calendar-check text-success me-2"></i>
+                                    ${cert.valid_from}
+                                </div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-md-4"><strong>Valid Until:</strong></div>
+                                <div class="col-md-8">
+                                    <i class="fas fa-calendar-times text-danger me-2"></i>
+                                    ${cert.valid_until}
+                                    ${validityBadge}
+                                </div>
+                            </div>
+                            ${cert.days_remaining >= 0 ? `
+                            <div class="row mb-2">
+                                <div class="col-md-4"><strong>Sisa Waktu:</strong></div>
+                                <div class="col-md-8">
+                                    <strong class="${cert.days_remaining <= 7 ? 'text-danger' : (cert.days_remaining <= 30 ? 'text-warning' : 'text-success')}">${cert.days_remaining} hari</strong>
+                                </div>
+                            </div>` : `
+                            <div class="alert alert-danger mt-2 mb-0">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                <strong>Sertifikat ini telah EXPIRED!</strong>
+                            </div>`}
+                        </div>
+                    </div>
+
+                    <!-- Cryptographic Algorithms -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-dark text-white">
+                            <i class="fas fa-lock me-2"></i>
+                            <strong>Algoritma Kriptografi</strong>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-2">
+                                <div class="col-md-4"><strong>Public Key:</strong></div>
+                                <div class="col-md-8"><span class="badge bg-primary">${cert.public_key_algorithm}</span></div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-md-4"><strong>Signature:</strong></div>
+                                <div class="col-md-8"><span class="badge bg-primary">${cert.signature_algorithm}</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Fingerprint (Masked) -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-secondary text-white">
+                            <i class="fas fa-fingerprint me-2"></i>
+                            <strong>Certificate Fingerprint (Partial)</strong>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-2">
+                                <strong>SHA-256 (Masked):</strong><br>
+                                <code class="d-block bg-light p-2 rounded" style="word-break: break-all; font-size: 11px;">${cert.fingerprint_sha256}</code>
+                                <small class="text-muted">Sebagian fingerprint disembunyikan untuk keamanan</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Security Notice -->
+                    <div class="alert alert-success mb-0">
+                        <h6 class="alert-heading"><i class="fas fa-shield-alt me-2"></i>Informasi Keamanan</h6>
+                        <hr>
+                        <ul class="mb-0 small">
+                            <li>Sertifikat ini digunakan untuk memverifikasi tanda tangan digital pada dokumen</li>
+                            <li>Fingerprint dapat digunakan untuk memverifikasi keaslian sertifikat</li>
+                            <li>Beberapa informasi sensitif tidak ditampilkan untuk melindungi privasi</li>
+                            <li>Sertifikat ini menggunakan enkripsi RSA yang aman</li>
+                        </ul>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('certificateContent').innerHTML = html;
+        }
+
+        /**
+         * Show error in certificate modal
+         */
+        function showCertificateError(message) {
+            document.getElementById('certificateContent').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    <strong>Error:</strong> ${message}
+                </div>
+            `;
+        }
 
         // Share result functionality
         function shareResult() {

@@ -952,35 +952,328 @@ class DigitalSignatureController extends Controller
     }
 
     /**
-     * Helper: Parse certificate information
+     * Helper: Parse REAL certificate information using OpenSSL
+     *
+     * @param string $certificate Certificate in PEM format
+     * @return array Parsed certificate information
+     */
+    // private function parseCertificateInfo($certificate)
+    // {
+    //     try {
+    //         // Check if certificate is in fallback format (base64 encoded JSON)
+    //         if (strpos($certificate, '-----BEGIN CERTIFICATE-----') !== false) {
+    //             // Extract the base64 part
+    //             $certificateLines = explode("\n", $certificate);
+    //             $base64Content = '';
+    //             foreach ($certificateLines as $line) {
+    //                 if (strpos($line, '-----') === false) {
+    //                     $base64Content .= trim($line);
+    //                 }
+    //             }
+
+    //             // Try to decode as JSON (fallback format)
+    //             $decoded = base64_decode($base64Content);
+    //             $jsonData = @json_decode($decoded, true);
+
+    //             Log::info('Attempting to parse certificate, checking for fallback format');
+
+    //             Log::debug('Decoded certificate content', ['decoded' => $decoded]);
+    //             Log::debug('JSON parse result', ['jsonData' => $jsonData]);
+
+    //             if ($jsonData && isset($jsonData['subject'])) {
+    //                 // This is fallback format, parse differently
+    //                 Log::info('Detected fallback certificate format');
+
+    //                 return [
+    //                     'is_fallback' => true,
+    //                     'subject' => [
+    //                         'CN' => $jsonData['subject'] ?? 'N/A',
+    //                     ],
+    //                     'issuer' => [
+    //                         'CN' => $jsonData['issuer'] ?? 'N/A',
+    //                     ],
+    //                     'version' => 3,
+    //                     'serial_number' => $jsonData['serial_number'] ?? 'N/A',
+    //                     'signature_algorithm' => 'SHA256withRSA',
+    //                     'public_key_algorithm' => 'RSA (2048 bit)',
+    //                     'valid_from' => $jsonData['valid_from'] ?? 'N/A',
+    //                     'valid_until' => $jsonData['valid_until'] ?? 'N/A',
+    //                     'fingerprints' => [
+    //                         'sha256' => hash('sha256', $certificate),
+    //                         'sha1' => hash('sha1', $certificate),
+    //                     ]
+    //                 ];
+    //             }
+    //         }
+
+    //         // ✅ PARSE REAL X.509 Certificate using OpenSSL
+    //         $certData = openssl_x509_parse($certificate);
+
+    //         if (!$certData) {
+    //             throw new \Exception('Failed to parse certificate: ' . openssl_error_string());
+    //         }
+
+    //         Log::info('Successfully parsed X.509 certificate', [
+    //             'subject_CN' => $certData['subject']['CN'] ?? 'N/A',
+    //             'issuer_CN' => $certData['issuer']['CN'] ?? 'N/A',
+    //             'serial' => $certData['serialNumber'] ?? 'N/A'
+    //         ]);
+
+    //         // ✅ Get REAL X.509 fingerprints using OpenSSL
+    //         $sha256Fingerprint = openssl_x509_fingerprint($certificate, 'sha256');
+    //         $sha1Fingerprint = openssl_x509_fingerprint($certificate, 'sha1');
+
+    //         // Format fingerprints with colons (standard X.509 format)
+    //         $sha256Formatted = strtoupper(chunk_split($sha256Fingerprint, 2, ':'));
+    //         $sha256Formatted = rtrim($sha256Formatted, ':');
+    //         $sha1Formatted = strtoupper(chunk_split($sha1Fingerprint, 2, ':'));
+    //         $sha1Formatted = rtrim($sha1Formatted, ':');
+
+    //         // ✅ Extract REAL data from parsed certificate
+    //         $info = [
+    //             'is_fallback' => false,
+    //             'subject' => [
+    //                 'CN' => $certData['subject']['CN'] ?? 'N/A',
+    //                 'OU' => $certData['subject']['OU'] ?? $certData['subject']['organizationalUnitName'] ?? 'N/A',
+    //                 'O' => $certData['subject']['O'] ?? $certData['subject']['organizationName'] ?? 'N/A',
+    //                 'C' => $certData['subject']['C'] ?? $certData['subject']['countryName'] ?? 'N/A',
+    //                 'ST' => $certData['subject']['ST'] ?? $certData['subject']['stateOrProvinceName'] ?? null,
+    //                 'L' => $certData['subject']['L'] ?? $certData['subject']['localityName'] ?? null,
+    //                 'emailAddress' => $certData['subject']['emailAddress'] ?? null,
+    //             ],
+    //             'issuer' => [
+    //                 'CN' => $certData['issuer']['CN'] ?? 'N/A',
+    //                 'OU' => $certData['issuer']['OU'] ?? $certData['issuer']['organizationalUnitName'] ?? 'N/A',
+    //                 'O' => $certData['issuer']['O'] ?? $certData['issuer']['organizationName'] ?? 'N/A',
+    //                 'C' => $certData['issuer']['C'] ?? $certData['issuer']['countryName'] ?? 'N/A',
+    //             ],
+    //             'version' => ($certData['version'] ?? 2) + 1, // OpenSSL returns 0-based version (0=v1, 1=v2, 2=v3)
+    //             'serial_number' => isset($certData['serialNumberHex'])
+    //                 ? strtoupper($certData['serialNumberHex'])
+    //                 : (isset($certData['serialNumber'])
+    //                     ? strtoupper(sprintf('%X', $certData['serialNumber']))
+    //                     : 'N/A'),
+    //             'signature_algorithm' => $certData['signatureTypeLN'] ?? $certData['signatureTypeSN'] ?? 'sha256WithRSAEncryption',
+    //             'public_key_algorithm' => 'RSA (' . ($certData['bits'] ?? 2048) . ' bit)',
+    //             'valid_from' => isset($certData['validFrom_time_t'])
+    //                 ? date('Y-m-d H:i:s', $certData['validFrom_time_t'])
+    //                 : 'N/A',
+    //             'valid_until' => isset($certData['validTo_time_t'])
+    //                 ? date('Y-m-d H:i:s', $certData['validTo_time_t'])
+    //                 : 'N/A',
+    //             'valid_from_timestamp' => $certData['validFrom_time_t'] ?? null,
+    //             'valid_until_timestamp' => $certData['validTo_time_t'] ?? null,
+    //             'fingerprints' => [
+    //                 'sha256' => $sha256Formatted,
+    //                 'sha256_raw' => $sha256Fingerprint,
+    //                 'sha1' => $sha1Formatted,
+    //                 'sha1_raw' => $sha1Fingerprint,
+    //             ],
+    //             'purposes' => $certData['purposes'] ?? [],
+    //             'extensions' => $certData['extensions'] ?? [],
+    //         ];
+
+    //         // Remove null values from subject and issuer
+    //         $info['subject'] = array_filter($info['subject'], function($value) {
+    //             return $value !== null;
+    //         });
+    //         $info['issuer'] = array_filter($info['issuer'], function($value) {
+    //             return $value !== null;
+    //         });
+
+    //         Log::debug('Certificate info parsed', $info);
+
+    //         return $info;
+
+    //     } catch (\Exception $e) {
+    //         Log::error('Failed to parse certificate: ' . $e->getMessage(), [
+    //             'certificate_preview' => substr($certificate, 0, 100) . '...',
+    //             'error_trace' => $e->getTraceAsString()
+    //         ]);
+
+    //         // ❌ Fallback to basic info (only if parsing fails completely)
+    //         return [
+    //             'error' => true,
+    //             'error_message' => 'Failed to parse certificate: ' . $e->getMessage(),
+    //             'subject' => [
+    //                 'CN' => 'Certificate Parsing Error',
+    //                 'O' => 'Universitas Muhammadiyah Tangerang',
+    //                 'C' => 'ID'
+    //             ],
+    //             'issuer' => [
+    //                 'CN' => 'Certificate Parsing Error',
+    //                 'O' => 'Universitas Muhammadiyah Tangerang',
+    //                 'C' => 'ID'
+    //             ],
+    //             'version' => 'N/A',
+    //             'serial_number' => 'N/A',
+    //             'signature_algorithm' => 'N/A',
+    //             'public_key_algorithm' => 'N/A',
+    //             'valid_from' => 'N/A',
+    //             'valid_until' => 'N/A',
+    //             'fingerprints' => [
+    //                 'sha256' => 'N/A',
+    //                 'sha1' => 'N/A',
+    //             ],
+    //         ];
+    //     }
+    // }
+    /**
+     * ✅ FIXED: Parse certificate with proper validation
      */
     private function parseCertificateInfo($certificate)
     {
-        // If certificate is PEM format, parse it
-        // This is a simplified version - adjust based on your certificate format
+        try {
+            // ✅ VALIDATE: Check if certificate is NULL or empty
+            if (empty($certificate)) {
+                throw new \Exception('Certificate is empty or null');
+            }
 
-        $info = [
-            'subject' => [
-                'CN' => 'Kaprodi Informatika',
-                'OU' => 'Fakultas Teknik',
-                'O' => 'Universitas Muhammadiyah Tangerang',
-                'C' => 'ID'
-            ],
-            'issuer' => [
-                'CN' => 'UMT Digital Signature CA',
-                'O' => 'Universitas Muhammadiyah Tangerang',
-                'C' => 'ID'
-            ],
-            'version' => 3,
-            'serial_number' => strtoupper(substr(md5($certificate), 0, 20)),
-            'signature_algorithm' => 'SHA256withRSA',
-            'public_key_algorithm' => 'RSA (2048 bit)',
-            'fingerprints' => [
-                'sha256' => hash('sha256', $certificate),
-                'sha1' => hash('sha1', $certificate),
-            ]
-        ];
+            // ✅ VALIDATE: Check PEM format markers
+            if (!str_contains($certificate, '-----BEGIN CERTIFICATE-----') ||
+                !str_contains($certificate, '-----END CERTIFICATE-----')) {
+                throw new \Exception('Certificate is not in valid PEM format');
+            }
 
-        return $info;
+            Log::info('Parsing X.509 certificate');
+
+            // ✅ Try to parse as real X.509 certificate FIRST
+            $certData = openssl_x509_parse($certificate);
+
+            if (!$certData) {
+                $opensslError = openssl_error_string();
+                throw new \Exception("Failed to parse X.509 certificate: {$opensslError}");
+            }
+
+            // ✅ If parsing succeeded, this is a REAL X.509 certificate
+            Log::info('Successfully parsed REAL X.509 certificate', [
+                'subject_CN' => $certData['subject']['CN'] ?? 'N/A',
+                'issuer_CN' => $certData['issuer']['CN'] ?? 'N/A',
+                'serial' => $certData['serialNumber'] ?? 'N/A',
+                'version' => ($certData['version'] ?? 2) + 1
+            ]);
+
+            // ✅ Get certificate fingerprints
+            $sha256Fingerprint = openssl_x509_fingerprint($certificate, 'sha256');
+            $sha1Fingerprint = openssl_x509_fingerprint($certificate, 'sha1');
+
+            // Format fingerprints (XX:XX:XX format)
+            $sha256Formatted = strtoupper(implode(':', str_split($sha256Fingerprint, 2)));
+            $sha1Formatted = strtoupper(implode(':', str_split($sha1Fingerprint, 2)));
+
+            // ✅ Build certificate info from REAL parsed data
+            return [
+                'is_real_certificate' => true,
+                'is_fallback' => false,
+                'subject' => [
+                    'CN' => $certData['subject']['CN'] ?? 'N/A',
+                    'OU' => $certData['subject']['OU'] ?? $certData['subject']['organizationalUnitName'] ?? 'N/A',
+                    'O' => $certData['subject']['O'] ?? $certData['subject']['organizationName'] ?? 'N/A',
+                    'C' => $certData['subject']['C'] ?? $certData['subject']['countryName'] ?? 'N/A',
+                    'ST' => $certData['subject']['ST'] ?? $certData['subject']['stateOrProvinceName'] ?? null,
+                    'L' => $certData['subject']['L'] ?? $certData['subject']['localityName'] ?? null,
+                    'emailAddress' => $certData['subject']['emailAddress'] ?? null,
+                ],
+                'issuer' => [
+                    'CN' => $certData['issuer']['CN'] ?? 'N/A',
+                    'OU' => $certData['issuer']['OU'] ?? $certData['issuer']['organizationalUnitName'] ?? 'N/A',
+                    'O' => $certData['issuer']['O'] ?? $certData['issuer']['organizationName'] ?? 'N/A',
+                    'C' => $certData['issuer']['C'] ?? $certData['issuer']['countryName'] ?? 'N/A',
+                ],
+                'version' => ($certData['version'] ?? 2) + 1,
+                'serial_number' => isset($certData['serialNumberHex'])
+                    ? strtoupper($certData['serialNumberHex'])
+                    : (isset($certData['serialNumber']) ? strtoupper(dechex($certData['serialNumber'])) : 'N/A'),
+                'signature_algorithm' => $certData['signatureTypeLN'] ?? $certData['signatureTypeSN'] ?? 'sha256WithRSAEncryption',
+                'public_key_algorithm' => 'RSA (' . ($certData['bits'] ?? 2048) . ' bit)',
+                'valid_from' => isset($certData['validFrom_time_t'])
+                    ? date('Y-m-d H:i:s', $certData['validFrom_time_t'])
+                    : 'N/A',
+                'valid_until' => isset($certData['validTo_time_t'])
+                    ? date('Y-m-d H:i:s', $certData['validTo_time_t'])
+                    : 'N/A',
+                'valid_from_timestamp' => $certData['validFrom_time_t'] ?? null,
+                'valid_until_timestamp' => $certData['validTo_time_t'] ?? null,
+                'fingerprints' => [
+                    'sha256' => $sha256Formatted,
+                    'sha256_raw' => strtoupper($sha256Fingerprint),
+                    'sha1' => $sha1Formatted,
+                    'sha1_raw' => strtoupper($sha1Fingerprint),
+                ],
+                'purposes' => $certData['purposes'] ?? [],
+                'extensions' => $certData['extensions'] ?? [],
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('Certificate parsing failed', [
+                'error' => $e->getMessage(),
+                'certificate_preview' => substr($certificate ?? '', 0, 200)
+            ]);
+
+            // ✅ Check if this is the old fallback JSON format
+            try {
+                // Extract content between PEM markers
+                $lines = explode("\n", $certificate);
+                $base64Content = '';
+                foreach ($lines as $line) {
+                    if (!str_contains($line, '-----')) {
+                        $base64Content .= trim($line);
+                    }
+                }
+
+                $decoded = base64_decode($base64Content);
+                $jsonData = @json_decode($decoded, true);
+
+                if ($jsonData && isset($jsonData['subject'])) {
+                    Log::warning('Detected OLD fallback JSON certificate format - NEEDS REGENERATION', [
+                        'subject' => $jsonData['subject'] ?? 'N/A'
+                    ]);
+
+                    return [
+                        'is_real_certificate' => false,
+                        'is_fallback' => true,
+                        'warning' => 'This is an old fallback certificate format. Please regenerate the digital signature key.',
+                        'subject' => [
+                            'CN' => $jsonData['subject'] ?? 'N/A',
+                        ],
+                        'issuer' => [
+                            'CN' => $jsonData['issuer'] ?? 'N/A',
+                        ],
+                        'version' => 'N/A (Fallback Format)',
+                        'serial_number' => $jsonData['serial_number'] ?? 'N/A',
+                        'signature_algorithm' => 'N/A (Fallback Format)',
+                        'public_key_algorithm' => 'N/A (Fallback Format)',
+                        'valid_from' => $jsonData['valid_from'] ?? 'N/A',
+                        'valid_until' => $jsonData['valid_until'] ?? 'N/A',
+                        'fingerprints' => [
+                            'sha256' => 'N/A (Fallback Format)',
+                            'sha1' => 'N/A (Fallback Format)',
+                        ],
+                    ];
+                }
+            } catch (\Exception $fallbackCheckEx) {
+                // Not fallback format either
+            }
+
+            // ✅ Return error info
+            return [
+                'is_real_certificate' => false,
+                'is_fallback' => false,
+                'error' => true,
+                'error_message' => 'Certificate parsing failed: ' . $e->getMessage(),
+                'subject' => ['CN' => 'Certificate Error'],
+                'issuer' => ['CN' => 'Certificate Error'],
+                'version' => 'N/A',
+                'serial_number' => 'N/A',
+                'signature_algorithm' => 'N/A',
+                'public_key_algorithm' => 'N/A',
+                'valid_from' => 'N/A',
+                'valid_until' => 'N/A',
+                'fingerprints' => [
+                    'sha256' => 'N/A',
+                    'sha1' => 'N/A',
+                ],
+            ];
+        }
     }
 }
