@@ -11,12 +11,14 @@ use App\Models\SignatureAuditLog;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 use App\Services\PDFSignatureService;
 use App\Services\VerificationService;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Storage;
 use App\Services\DigitalSignatureService;
 use Illuminate\Support\Facades\Validator;
+use App\Mail\ApprovalRequestSignedNotification;
 
 class DigitalSignatureController extends Controller
 {
@@ -403,12 +405,22 @@ class DigitalSignatureController extends Controller
             // STEP 8: Send Notification to Kaprodi (Outside transaction)
             // ========================================================================
             try {
-                $kaprodiEmails = \App\Models\Kaprodi::pluck('email')->toArray();
-                if (!empty($kaprodiEmails)) {
-                    \Illuminate\Support\Facades\Mail::to($kaprodiEmails)->send(
-                        new \App\Mail\DocumentSignedByUserNotification($approvalRequest, $signedDocumentSignature)
+                // Send success notification to student with signed PDF and QR code
+                if ($approvalRequest->user) {
+                    Mail::to($approvalRequest->user->email)->send(
+                        new ApprovalRequestSignedNotification(
+                            $approvalRequest,
+                            $signedDocumentSignature
+                        )
                     );
                 }
+
+                // $kaprodiEmails = \App\Models\Kaprodi::pluck('email')->toArray();
+                // if (!empty($kaprodiEmails)) {
+                //     \Illuminate\Support\Facades\Mail::to($kaprodiEmails)->send(
+                //         new \App\Mail\DocumentSignedByUserNotification($approvalRequest, $signedDocumentSignature)
+                //     );
+                // }
             } catch (\Exception $mailException) {
                 Log::warning('Failed to send notification email', [
                     'error' => $mailException->getMessage()

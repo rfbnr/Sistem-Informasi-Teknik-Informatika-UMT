@@ -33,34 +33,50 @@
     <div class="alert alert-warning">
         <strong style="font-size: 16px;">⚡ TINDAKAN DIPERLUKAN</strong>
         <p class="mt-10 mb-0">
-            Dokumen Anda telah disetujui, tetapi Anda perlu <strong>MENANDATANGANI dokumen secara manual</strong> menggunakan template tanda tangan digital yang telah Kaprodi sediakan sebelumnya.
+            Dokumen Anda telah disetujui oleh Kaprodi. Langkah selanjutnya adalah <strong>menempatkan QR Code verifikasi</strong> pada dokumen Anda sebelum proses penandatanganan digital dilakukan oleh sistem.
         </p>
     </div>
 
     {{-- How to Sign Section --}}
     <div class="info-card-blue">
         <h3 class="section-title">
-            ✍️ Cara Menandatangani Dokumen
+            🎯 Langkah-Langkah Penandatanganan
         </h3>
         <ol class="list-styled">
-            <li><strong>Klik tombol "Tandatangani Dokumen"</strong> di bawah ini untuk membuka halaman penandatanganan</li>
-            <li><strong>Pilih template tanda tangan Kaprodi</strong> yang sudah disediakan</li>
-            <li><strong>Letakkan tanda tangan</strong> pada posisi yang sesuai di dokumen (drag & drop)</li>
-            <li><strong>Review penempatan</strong> tanda tangan Anda sebelum submit</li>
-            <li><strong>Submit untuk review</strong> - Kaprodi akan memverifikasi tanda tangan Anda</li>
+            <li><strong>Klik tombol "Lanjutkan ke Penandatanganan"</strong> di bawah ini</li>
+            <li><strong>Sistem akan menampilkan preview dokumen</strong> Anda dalam canvas interaktif</li>
+            <li><strong>QR Code sementara akan muncul</strong> - Anda dapat drag & drop untuk menempatkannya di posisi yang diinginkan</li>
+            <li><strong>Gunakan zoom controls</strong> untuk akurasi penempatan (jika dokumen multi-halaman, navigasi ke halaman yang sesuai)</li>
+            <li><strong>Klik "Proses Tanda Tangan"</strong> setelah posisi QR Code sudah pas</li>
+            <li><strong>Sistem akan otomatis:</strong>
+                <ul style="margin-top: 8px;">
+                    <li>Generate kunci digital RSA-2048 bit unik untuk dokumen Anda</li>
+                    <li>Generate sertifikat X.509 v3 yang dipersonalisasi</li>
+                    <li>Embed QR Code final ke dokumen pada posisi yang Anda pilih</li>
+                    <li>Sign dokumen dengan tanda tangan digital CMS (RSA-SHA256)</li>
+                    <li>Verifikasi otomatis (tidak perlu approval manual lagi)</li>
+                </ul>
+            </li>
         </ol>
     </div>
 
     {{-- Next Steps After Signing --}}
     <div class="section-card">
         <h4 class="section-subtitle">
-            📌 Setelah Menandatangani
+            📌 Setelah Submit Penandatanganan
         </h4>
         <ul class="list-styled text-muted text-small">
-            <li class="mb-6">Kaprodi akan menerima notifikasi untuk memverifikasi penempatan tanda tangan tersebut</li>
-            <li class="mb-6">Proses verifikasi biasanya memakan waktu 1-2 hari kerja</li>
-            <li class="mb-6">Anda akan menerima email notifikasi setelah dokumen diverifikasi</li>
-            <li>Dokumen final akan dilengkapi dengan <strong>QR Code verifikasi</strong></li>
+            <li class="mb-6">Proses signing akan berjalan otomatis (< 10 detik)</li>
+            <li class="mb-6">Dokumen akan <strong>langsung terverifikasi</strong> tanpa perlu approval manual</li>
+            <li class="mb-6">Anda akan menerima <strong>email notifikasi</strong> berisi:
+                <ul style="margin-top: 4px;">
+                    <li>Dokumen PDF yang sudah ditandatangani (attachment)</li>
+                    <li>QR Code verifikasi (attachment)</li>
+                    <li>Link verifikasi publik</li>
+                    <li>Informasi sertifikat digital</li>
+                </ul>
+            </li>
+            <li>Dokumen final dilengkapi dengan <strong>QR Code</strong> yang dapat di-scan untuk verifikasi keaslian</li>
         </ul>
     </div>
 
@@ -117,7 +133,7 @@
 
         @include('emails.components.button', [
             'url' => route('user.signature.sign.document', $approvalRequest->id),
-            'text' => '✍️ Tandatangani Dokumen',
+            'text' => '🎯 Lanjutkan ke Penandatanganan',
             'type' => 'primary',
             'block' => true
         ])
@@ -138,10 +154,11 @@
             💡 Catatan Penting
         </h4>
         <ul class="list-no-margin text-muted text-small">
-            <li>Simpan email ini sebagai bukti persetujuan</li>
-            <li>Cek halaman status secara berkala untuk update terbaru</li>
-            <li>Setelah ditandatangani, Anda akan menerima dokumen final dengan QR Code</li>
-            <li>QR Code dapat digunakan untuk verifikasi keaslian dokumen</li>
+            <li>Simpan email ini sebagai bukti persetujuan dari Kaprodi</li>
+            <li>Proses penandatanganan menggunakan kriptografi RSA-2048 bit yang aman</li>
+            <li>Setiap dokumen mendapatkan kunci digital unik (tidak ada sharing key)</li>
+            <li>Sertifikat X.509 v3 yang di-generate akan dipersonalisasi dengan informasi Kaprodi</li>
+            <li>QR Code yang di-embed dapat di-scan oleh siapa saja untuk verifikasi publik</li>
         </ul>
     </div>
 
