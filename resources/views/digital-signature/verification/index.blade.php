@@ -282,12 +282,12 @@
         </div>
     </div>
 
-    <!-- QR Scanner Library -->
-    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.4/minified/html5-qrcode.min.js"></script>
+    <!-- jQuery (load first) -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- jQuery -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- QR Scanner Library (load after jQuery) -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
     <script>
         let html5QrCode;
@@ -320,56 +320,107 @@
 
             // Stop QR scanner if switching away
             if (method !== 'qr' && html5QrCode) {
-                html5QrCode.stop().catch(err => {
-                    console.log('QR scanner already stopped');
-                });
-                $('#qrReader').hide();
+                try {
+                    html5QrCode.stop().then(() => {
+                        console.log('QR scanner stopped successfully');
+                        $('#qrReader').hide();
+                        $('#startQRScanner').prop('disabled', false).html('<i class="fas fa-camera"></i> Mulai Scan');
+                        html5QrCode = null; // Clear the instance
+                    }).catch(err => {
+                        console.log('QR scanner already stopped or error:', err);
+                        $('#qrReader').hide();
+                        $('#startQRScanner').prop('disabled', false).html('<i class="fas fa-camera"></i> Mulai Scan');
+                        html5QrCode = null;
+                    });
+                } catch (err) {
+                    console.log('Error stopping QR scanner:', err);
+                    $('#qrReader').hide();
+                    $('#startQRScanner').prop('disabled', false).html('<i class="fas fa-camera"></i> Mulai Scan');
+                    html5QrCode = null;
+                }
             }
         }
 
         // QR Code Scanner
         $('#startQRScanner').click(function() {
+            // Check if Html5Qrcode is available
+            if (typeof Html5Qrcode === 'undefined') {
+                alert('Library QR Scanner belum siap. Mohon refresh halaman dan coba lagi.');
+                console.error('Html5Qrcode is not defined. Library not loaded properly.');
+                return;
+            }
+
             $('#qrReader').show();
             $(this).prop('disabled', true).text('Scanning...');
 
-            html5QrCode = new Html5Qrcode("qrReader");
-            html5QrCode.start(
-                { facingMode: "environment" },
-                {
-                    fps: 10,
-                    qrbox: { width: 250, height: 250 }
-                },
-                (decodedText, decodedResult) => {
-                    // QR Code successfully scanned
-                    console.log(`QR Code detected: ${decodedText}`);
+            try {
+                html5QrCode = new Html5Qrcode("qrReader");
 
-                    // Set the scanned data to QR input (not extract, send full data)
-                    $('#qrInput').val(decodedText);
-                    $('#verifyButton').prop('disabled', false);
+                html5QrCode.start(
+                    { facingMode: "environment" }, // Use back camera
+                    {
+                        fps: 10,
+                        qrbox: { width: 250, height: 250 },
+                        aspectRatio: 1.0
+                    },
+                    (decodedText, decodedResult) => {
+                        // QR Code successfully scanned
+                        console.log(`QR Code detected: ${decodedText}`);
 
-                    // Stop scanning
-                    html5QrCode.stop().then(() => {
-                        $('#qrReader').hide();
-                        $('#startQRScanner').prop('disabled', false).html('<i class="fas fa-camera"></i> Mulai Scan');
-                    }).catch(err => {
-                        console.log('Error stopping scanner:', err);
-                    });
+                        // Set the scanned data to QR input (not extract, send full data)
+                        $('#qrInput').val(decodedText);
+                        $('#verifyButton').prop('disabled', false);
 
-                    // Auto-submit or show confirmation
-                    if (confirm('QR Code berhasil discan. Lanjutkan verifikasi?')) {
-                        $('#verificationForm').submit();
+                        // Stop scanning
+                        html5QrCode.stop().then(() => {
+                            $('#qrReader').hide();
+                            $('#startQRScanner').prop('disabled', false).html('<i class="fas fa-camera"></i> Mulai Scan');
+
+                            // Auto-submit or show confirmation
+                            if (confirm('QR Code berhasil discan. Lanjutkan verifikasi?')) {
+                                $('#verificationForm').submit();
+                            }
+                        }).catch(err => {
+                            console.log('Error stopping scanner:', err);
+                            $('#qrReader').hide();
+                            $('#startQRScanner').prop('disabled', false).html('<i class="fas fa-camera"></i> Mulai Scan');
+                        });
+                    },
+                    (errorMessage) => {
+                        // QR Code scan error (this is normal during scanning)
+                        // Don't log every frame error to avoid console spam
                     }
-                },
-                (errorMessage) => {
-                    // QR Code scan error (this is normal during scanning)
-                    // Don't log every frame error
-                }
-            ).catch(err => {
-                console.error('Camera access denied or not available:', err);
-                alert('Tidak dapat mengakses kamera. Pastikan Anda memberikan izin akses kamera dan menggunakan HTTPS.');
+                ).catch(err => {
+                    console.error('Camera access error:', err);
+
+                    // let errorMsg = 'Tidak dapat mengakses kamera. ';
+                    let errorMsg = err;
+
+                    if (err.name === 'NotAllowedError') {
+                        errorMsg += 'Mohon berikan izin akses kamera pada browser Anda.';
+                    } else if (err.name === 'NotFoundError') {
+                        errorMsg += 'Kamera tidak ditemukan pada perangkat Anda.';
+                    } else if (err.name === 'NotReadableError') {
+                        errorMsg += 'Kamera sedang digunakan oleh aplikasi lain.';
+                    } else if (err.name === 'OverconstrainedError') {
+                        errorMsg += 'Kamera tidak mendukung mode yang diminta.';
+                    } else if (err.name === 'SecurityError') {
+                        errorMsg += 'Akses kamera diblokir karena alasan keamanan. Pastikan menggunakan HTTPS.';
+                    }
+                    //  else {
+                    //     errorMsg += err.message || 'Error tidak diketahui.';
+                    // }
+
+                    alert(errorMsg);
+                    $('#startQRScanner').prop('disabled', false).html('<i class="fas fa-camera"></i> Mulai Scan');
+                    $('#qrReader').hide();
+                });
+            } catch (err) {
+                console.error('Error initializing QR scanner:', err);
+                alert('Gagal menginisialisasi QR scanner. Mohon refresh halaman dan coba lagi.');
                 $('#startQRScanner').prop('disabled', false).html('<i class="fas fa-camera"></i> Mulai Scan');
                 $('#qrReader').hide();
-            });
+            }
         });
 
         // Input validation - only for visible/enabled inputs
@@ -399,9 +450,48 @@
             $('.verification-section').hide();
         });
 
+        // Check if Html5Qrcode library is loaded
+        function checkLibraryLoaded() {
+            return new Promise((resolve) => {
+                if (typeof Html5Qrcode !== 'undefined') {
+                    resolve(true);
+                } else {
+                    let attempts = 0;
+                    const maxAttempts = 50; // 5 seconds max wait
+                    const checkInterval = setInterval(() => {
+                        attempts++;
+                        if (typeof Html5Qrcode !== 'undefined') {
+                            clearInterval(checkInterval);
+                            resolve(true);
+                        } else if (attempts >= maxAttempts) {
+                            clearInterval(checkInterval);
+                            resolve(false);
+                        }
+                    }, 100);
+                }
+            });
+        }
+
         // Initialize default method
         $(document).ready(function() {
             selectMethod('qr');
+
+            // Check if QR library is loaded
+            checkLibraryLoaded().then((loaded) => {
+                if (!loaded) {
+                    console.error('Html5Qrcode library failed to load');
+                    $('#startQRScanner').prop('disabled', true)
+                        .html('<i class="fas fa-exclamation-triangle"></i> Library Gagal Dimuat')
+                        .addClass('btn-danger');
+
+                    // Show error message
+                    $('<div class="alert alert-warning mt-2" role="alert">')
+                        .html('<i class="fas fa-exclamation-triangle"></i> <strong>Peringatan:</strong> Library QR Scanner gagal dimuat. Silakan gunakan metode URL Verifikasi sebagai alternatif atau refresh halaman.')
+                        .insertAfter('#qrReader');
+                } else {
+                    console.log('Html5Qrcode library loaded successfully');
+                }
+            });
         });
 
         // Handle browser back button
@@ -409,6 +499,17 @@
             if (event.persisted) {
                 $('#loadingState').hide();
                 $('#verifyButton').prop('disabled', false);
+            }
+        });
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            if (html5QrCode) {
+                try {
+                    html5QrCode.stop().catch(err => console.log('Cleanup error:', err));
+                } catch (err) {
+                    console.log('Cleanup error:', err);
+                }
             }
         });
     </script>
