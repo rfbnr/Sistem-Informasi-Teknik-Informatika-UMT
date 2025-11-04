@@ -1,0 +1,691 @@
+<?php
+
+namespace App\Http\Controllers\DigitalSignature;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+
+class HelpSupportController extends Controller
+{
+    /**
+     * Display Help & Support page for Admin/Kaprodi
+     */
+    public function adminHelp()
+    {
+        $helpSections = $this->getAdminHelpSections();
+        $faqItems = $this->getAdminFAQs();
+
+        return view('digital-signature.admin.help-support', compact(
+            'helpSections',
+            'faqItems'
+        ));
+    }
+
+    /**
+     * Display Help & Support page for Users/Students
+     */
+    public function userHelp()
+    {
+        $helpSections = $this->getUserHelpSections();
+        $faqItems = $this->getUserFAQs();
+
+        return view('digital-signature.user.help-support', compact(
+            'helpSections',
+            'faqItems'
+        ));
+    }
+
+    /**
+     * Get Admin/Kaprodi help sections with comprehensive documentation
+     */
+    private function getAdminHelpSections()
+    {
+        return [
+            [
+                'id' => 'dashboard',
+                'icon' => 'tachometer-alt',
+                'color' => 'primary',
+                'title' => 'Ikhtisar Dashboard',
+                'description' => 'Memahami dashboard dan statistik tanda tangan digital Anda',
+                'items' => [
+                    [
+                        'title' => 'Kartu Statistik',
+                        'content' => 'Dashboard menampilkan statistik real-time meliputi:<br>
+                            • <strong>Total Tanda Tangan</strong>: Jumlah tanda tangan digital yang dihasilkan<br>
+                            • <strong>Persetujuan Tertunda</strong>: Dokumen menunggu persetujuan Anda (klik untuk navigasi)<br>
+                            • <strong>Tanda Tangan Terverifikasi</strong>: Dokumen yang berhasil diverifikasi<br>
+                            • <strong>Dokumen Ditolak</strong>: Dokumen yang ditolak'
+                    ],
+                    [
+                        'title' => 'Aktivitas Terbaru',
+                        'content' => 'Pantau tindakan terbaru dalam sistem termasuk pengajuan baru, persetujuan, dan penolakan. Setiap aktivitas menampilkan timestamp dan informasi pengguna.'
+                    ],
+                    [
+                        'title' => 'Aksi Cepat',
+                        'content' => 'Akses fungsi yang sering digunakan langsung dari dashboard:<br>
+                            • Lihat permintaan persetujuan tertunda<br>
+                            • Akses tanda tangan dokumen<br>
+                            • Buat laporan'
+                    ]
+                ]
+            ],
+            [
+                'id' => 'approval-requests',
+                'icon' => 'clipboard-check',
+                'color' => 'warning',
+                'title' => 'Managing Approval Requests',
+                'description' => 'How to review and process document approval requests',
+                'items' => [
+                    [
+                        'title' => 'Viewing Requests',
+                        'content' => 'Navigate to <strong>Approval Requests</strong> from the sidebar. You will see a list of all requests with filters for:<br>
+                            • Status (Pending, Approved, Rejected, Signed)<br>
+                            • Date range<br>
+                            • User/Student name'
+                    ],
+                    [
+                        'title' => 'Approving Documents',
+                        'content' => 'To approve a request:<br>
+                            1. Click on the request to view details<br>
+                            2. Review the document preview carefully<br>
+                            3. Check document metadata and user information<br>
+                            4. Click <strong>Approve</strong> button<br>
+                            5. Add optional approval notes<br>
+                            6. Confirm approval<br><br>
+                            Once approved, the user can proceed to sign the document digitally.'
+                    ],
+                    [
+                        'title' => 'Rejecting Documents',
+                        'content' => 'To reject a request:<br>
+                            1. Click on the request to view details<br>
+                            2. Click <strong>Reject</strong> button<br>
+                            3. Provide clear rejection reason (required)<br>
+                            4. Confirm rejection<br><br>
+                            The user will be notified via email about the rejection and the reason.'
+                    ],
+                    [
+                        'title' => 'Document Preview',
+                        'content' => 'Before making a decision, you can:<br>
+                            • Preview PDF directly in browser<br>
+                            • Download the original document<br>
+                            • Check document metadata (file size, upload date, etc.)<br>
+                            • View user submission notes'
+                    ]
+                ]
+            ],
+            [
+                'id' => 'document-signatures',
+                'icon' => 'file-signature',
+                'color' => 'success',
+                'title' => 'Document Signatures Management',
+                'description' => 'Monitor and manage signed documents',
+                'items' => [
+                    [
+                        'title' => 'Viewing Signed Documents',
+                        'content' => 'Access all signed documents from <strong>Document Signatures</strong> menu. Each entry shows:<br>
+                            • Signature status (Pending, Signed, Verified, Invalid)<br>
+                            • Document name and type<br>
+                            • Digital signature ID<br>
+                            • QR code verification status<br>
+                            • Signing date and user'
+                    ],
+                    [
+                        'title' => 'Document Status',
+                        'content' => '<strong>Pending</strong>: Document approved but not yet signed by user<br>
+                            <strong>Signed</strong>: User has completed digital signing<br>
+                            <strong>Verified</strong>: Signature has been automatically verified by system<br>
+                            <strong>Invalid</strong>: Signature invalidated by admin (document tampering or other issues)'
+                    ],
+                    [
+                        'title' => 'Downloading & Viewing',
+                        'content' => 'For each signed document, you can:<br>
+                            • <strong>View</strong>: Preview signed PDF with embedded QR code<br>
+                            • <strong>Download</strong>: Get final signed PDF file<br>
+                            • <strong>Download QR Code</strong>: Get standalone QR code image<br>
+                            • <strong>View Details</strong>: See full signature metadata'
+                    ],
+                    [
+                        'title' => 'Invalidating Signatures',
+                        'content' => 'If you discover document tampering or need to revoke a signature:<br>
+                            1. Click on the document<br>
+                            2. Click <strong>Invalidate</strong> button<br>
+                            3. Provide invalidation reason<br>
+                            4. Confirm action<br><br>
+                            <span class="text-danger"><strong>Warning:</strong> This action cannot be undone!</span>'
+                    ]
+                ]
+            ],
+            [
+                'id' => 'reports',
+                'icon' => 'chart-bar',
+                'color' => 'info',
+                'title' => 'Reports & Analytics',
+                'description' => 'Generate and export comprehensive reports',
+                'items' => [
+                    [
+                        'title' => 'Main Reports Dashboard',
+                        'content' => 'Access detailed analytics showing:<br>
+                            • Total approval requests and completion rate<br>
+                            • Document signature statistics<br>
+                            • QR code analytics and scan counts<br>
+                            • Average processing time<br>
+                            • Rejection rates and reasons<br>
+                            • Timeline charts for trends'
+                    ],
+                    [
+                        'title' => 'QR Code Analytics',
+                        'content' => 'Dedicated QR code report showing:<br>
+                            • Total QR codes generated<br>
+                            • Total scans and average scans per code<br>
+                            • Most scanned QR codes (top 5)<br>
+                            • Never scanned codes<br>
+                            • Active vs expired codes<br>
+                            • Last access information with IP addresses'
+                    ],
+                    [
+                        'title' => 'Performance Metrics',
+                        'content' => 'Analyze system performance:<br>
+                            • <strong>Approval Speed</strong>: Average, fastest, slowest, median approval times<br>
+                            • <strong>Signature Rate</strong>: Percentage of approved documents that get signed<br>
+                            • <strong>Completion Trend</strong>: Month-over-month comparison<br>
+                            • <strong>Benchmarks</strong>: Compare against target metrics'
+                    ],
+                    [
+                        'title' => 'Exporting Reports',
+                        'content' => 'Export data in multiple formats:<br>
+                            • <strong>CSV Export</strong>: Detailed tabular data for Excel analysis<br>
+                            • <strong>PDF Export</strong>: Professional report with charts<br><br>
+                            Both exports include:<br>
+                            • Complete approval request data<br>
+                            • Status distributions<br>
+                            • Processing time statistics<br>
+                            • Custom date range selection'
+                    ]
+                ]
+            ],
+            [
+                'id' => 'activity-logs',
+                'icon' => 'history',
+                'color' => 'secondary',
+                'title' => 'Activity Logs & Audit Trail',
+                'description' => 'Monitor all system activities for security and compliance',
+                'items' => [
+                    [
+                        'title' => 'Audit Logs',
+                        'content' => 'Complete audit trail of all actions:<br>
+                            • User submissions and edits<br>
+                            • Admin approvals and rejections<br>
+                            • Signature generation events<br>
+                            • Document invalidations<br>
+                            • System-level actions<br><br>
+                            Each log entry includes:<br>
+                            • Timestamp<br>
+                            • User/Admin who performed action<br>
+                            • IP address and user agent<br>
+                            • Before/after status<br>
+                            • Detailed metadata'
+                    ],
+                    [
+                        'title' => 'Verification Logs',
+                        'content' => 'Track all signature verification attempts:<br>
+                            • Public QR code scans<br>
+                            • Manual verification attempts<br>
+                            • Success/failure status<br>
+                            • Visitor IP addresses<br>
+                            • Access timestamps'
+                    ],
+                    [
+                        'title' => 'Filtering Logs',
+                        'content' => 'Use advanced filters to find specific events:<br>
+                            • Date range selection<br>
+                            • Action type filter<br>
+                            • User/Admin filter<br>
+                            • Status filter<br>
+                            • Search by document name or ID'
+                    ],
+                    [
+                        'title' => 'Exporting Logs',
+                        'content' => 'Export logs for compliance or investigation:<br>
+                            • CSV format for detailed analysis<br>
+                            • Includes all metadata fields<br>
+                            • Filtered data based on your selections'
+                    ]
+                ]
+            ],
+            [
+                'id' => 'security',
+                'icon' => 'shield-alt',
+                'color' => 'danger',
+                'title' => 'Security & Best Practices',
+                'description' => 'Ensure system security and data integrity',
+                'items' => [
+                    [
+                        'title' => 'Digital Signature Security',
+                        'content' => 'Our system uses:<br>
+                            • <strong>RSA-2048</strong> encryption algorithm<br>
+                            • <strong>SHA-256</strong> hashing for document integrity<br>
+                            • <strong>Unique key pair</strong> for each signature<br>
+                            • <strong>Encrypted key storage</strong> in database<br>
+                            • <strong>Document hash verification</strong> before signing'
+                    ],
+                    [
+                        'title' => 'QR Code Verification',
+                        'content' => 'QR codes provide:<br>
+                            • Short verification codes (12 characters)<br>
+                            • Encrypted payload mapping<br>
+                            • Expiration dates (default: 5 years)<br>
+                            • Access tracking (IP, timestamp, count)<br>
+                            • Rate limiting (10 attempts per hour)'
+                    ],
+                    [
+                        'title' => 'Document Integrity',
+                        'content' => 'System automatically:<br>
+                            • Generates SHA-256 hash on document upload<br>
+                            • Verifies hash before signing (detects tampering)<br>
+                            • Rejects signature if document was modified<br>
+                            • Logs all integrity check failures'
+                    ],
+                    [
+                        'title' => 'Best Practices',
+                        'content' => '<strong>DO:</strong><br>
+                            • Review documents carefully before approval<br>
+                            • Provide clear rejection reasons<br>
+                            • Regularly check activity logs for suspicious activity<br>
+                            • Keep track of expiring signatures<br><br>
+                            <strong>DON\'T:</strong><br>
+                            • Approve documents without thorough review<br>
+                            • Share admin credentials<br>
+                            • Invalidate signatures without valid reason<br>
+                            • Ignore security warnings or alerts'
+                    ]
+                ]
+            ]
+        ];
+    }
+
+    /**
+     * Get User/Student help sections
+     */
+    private function getUserHelpSections()
+    {
+        return [
+            [
+                'id' => 'getting-started',
+                'icon' => 'play-circle',
+                'color' => 'primary',
+                'title' => 'Getting Started',
+                'description' => 'Quick start guide for digital signature system',
+                'items' => [
+                    [
+                        'title' => 'System Overview',
+                        'content' => 'Digital Signature System allows you to:<br>
+                            • Submit documents for approval<br>
+                            • Sign documents digitally with QR code<br>
+                            • Track your submission status<br>
+                            • Download signed documents<br><br>
+                            <strong>Process Flow:</strong><br>
+                            1. Upload Document → 2. Admin Approval → 3. Digital Signing → 4. Completed'
+                    ],
+                    [
+                        'title' => 'Account Requirements',
+                        'content' => 'To use the system, you need:<br>
+                            • Valid student account (NIM)<br>
+                            • Registered email address<br>
+                            • Active student status<br><br>
+                            Contact admin if you have account issues.'
+                    ]
+                ]
+            ],
+            [
+                'id' => 'submit-document',
+                'icon' => 'upload',
+                'color' => 'success',
+                'title' => 'Submitting Documents',
+                'description' => 'How to upload and submit documents for approval',
+                'items' => [
+                    [
+                        'title' => 'Document Requirements',
+                        'content' => 'Ensure your document meets these requirements:<br>
+                            • <strong>Format</strong>: PDF only<br>
+                            • <strong>File Size</strong>: Maximum 10 MB<br>
+                            • <strong>Content</strong>: Clear, readable text<br>
+                            • <strong>Pages</strong>: Complete document (no missing pages)<br>
+                            • <strong>Quality</strong>: Not scanned or low-quality images'
+                    ],
+                    [
+                        'title' => 'Upload Process',
+                        'content' => 'To submit a document:<br>
+                            1. Go to <strong>Request Approval</strong> menu<br>
+                            2. Click <strong>Upload Document</strong> button<br>
+                            3. Fill in the form:<br>
+                            &nbsp;&nbsp;&nbsp;• Document Name (descriptive)<br>
+                            &nbsp;&nbsp;&nbsp;• Document Type (select from dropdown)<br>
+                            &nbsp;&nbsp;&nbsp;• Notes (optional, explain purpose)<br>
+                            4. Choose PDF file from your computer<br>
+                            5. Review all information<br>
+                            6. Click <strong>Submit for Approval</strong><br><br>
+                            You will receive email notification once submitted.'
+                    ],
+                    [
+                        'title' => 'After Submission',
+                        'content' => 'What happens next:<br>
+                            • Status changes to <span class="badge bg-warning">Pending</span><br>
+                            • Admin/Kaprodi receives notification<br>
+                            • You can track status in <strong>My Documents</strong><br>
+                            • You will be notified via email about approval/rejection<br><br>
+                            <strong>Average approval time:</strong> 1-3 working days'
+                    ]
+                ]
+            ],
+            [
+                'id' => 'signing-process',
+                'icon' => 'pen-fancy',
+                'color' => 'info',
+                'title' => 'Digital Signing Process',
+                'description' => 'How to sign your approved documents',
+                'items' => [
+                    [
+                        'title' => 'When to Sign',
+                        'content' => 'You can sign after:<br>
+                            • Document status changes to <span class="badge bg-info">Approved - Ready to Sign</span><br>
+                            • You receive approval email notification<br>
+                            • "Sign Document" button appears in My Documents'
+                    ],
+                    [
+                        'title' => 'Signing Interface',
+                        'content' => 'The signing page has two main sections:<br>
+                            <strong>Left Panel:</strong> QR Code template<br>
+                            • Drag the QR code<br>
+                            • Choose size (Small/Medium/Large)<br>
+                            • Auto-placement button available<br><br>
+                            <strong>Right Panel:</strong> PDF Preview<br>
+                            • See your document in real-time<br>
+                            • Drag QR code to desired position<br>
+                            • Zoom in/out as needed'
+                    ],
+                    [
+                        'title' => 'Step-by-Step Signing',
+                        'content' => '1. <strong>Position QR Code:</strong><br>
+                            &nbsp;&nbsp;&nbsp;• Drag QR from left to PDF preview<br>
+                            &nbsp;&nbsp;&nbsp;• Or click "Auto Place" for automatic positioning<br>
+                            &nbsp;&nbsp;&nbsp;• Adjust size if needed<br>
+                            &nbsp;&nbsp;&nbsp;• Move to preferred location (usually bottom-right)<br><br>
+                            2. <strong>Preview:</strong><br>
+                            &nbsp;&nbsp;&nbsp;• Click "Preview Document" to see final result<br>
+                            &nbsp;&nbsp;&nbsp;• Check QR code visibility and position<br><br>
+                            3. <strong>Sign:</strong><br>
+                            &nbsp;&nbsp;&nbsp;• Click "Sign Document" button<br>
+                            &nbsp;&nbsp;&nbsp;• Confirm your action<br>
+                            &nbsp;&nbsp;&nbsp;• Wait for processing (usually 5-10 seconds)<br>
+                            &nbsp;&nbsp;&nbsp;• Download your signed document!'
+                    ],
+                    [
+                        'title' => 'Mobile Signing',
+                        'content' => 'The system is fully responsive for mobile devices:<br>
+                            • Vertical layout (QR top, PDF bottom)<br>
+                            • Touch-friendly drag & drop<br>
+                            • Fixed controls at bottom of screen<br>
+                            • Tap and drag QR code to position<br>
+                            • Same preview and sign functionality'
+                    ],
+                    [
+                        'title' => 'Important Notes',
+                        'content' => '<span class="text-warning"><i class="fas fa-exclamation-triangle"></i> <strong>Important:</strong></span><br>
+                            • QR code MUST be visible in the final document<br>
+                            • Do not close browser during signing process<br>
+                            • Signature is automatically verified by system<br>
+                            • You can only sign once (no re-signing)<br>
+                            • Signed document cannot be edited'
+                    ]
+                ]
+            ],
+            [
+                'id' => 'my-documents',
+                'icon' => 'folder-open',
+                'color' => 'warning',
+                'title' => 'My Documents & Status',
+                'description' => 'Track and manage your submitted documents',
+                'items' => [
+                    [
+                        'title' => 'Document Status',
+                        'content' => 'Understanding status badges:<br>
+                            • <span class="badge bg-warning">Pending</span>: Awaiting admin approval<br>
+                            • <span class="badge bg-info">Approved</span>: Ready for your signature<br>
+                            • <span class="badge bg-primary">User Signed</span>: You signed, awaiting verification<br>
+                            • <span class="badge bg-success">Completed</span>: Fully signed and verified<br>
+                            • <span class="badge bg-danger">Rejected</span>: Admin rejected your submission'
+                    ],
+                    [
+                        'title' => 'Available Actions',
+                        'content' => 'Depending on status, you can:<br>
+                            • <strong>View</strong>: See document details<br>
+                            • <strong>Sign</strong>: Digitally sign approved document<br>
+                            • <strong>Download Original</strong>: Get uploaded file<br>
+                            • <strong>Download Signed</strong>: Get final signed PDF<br>
+                            • <strong>Download QR Code</strong>: Get verification QR image<br>
+                            • <strong>View Rejection Reason</strong>: See why document was rejected'
+                    ],
+                    [
+                        'title' => 'Resubmitting Rejected Documents',
+                        'content' => 'If your document was rejected:<br>
+                            1. Read rejection reason carefully<br>
+                            2. Fix the issues mentioned<br>
+                            3. Prepare corrected document<br>
+                            4. Submit as new request<br>
+                            5. Reference previous submission in notes (optional)'
+                    ]
+                ]
+            ],
+            [
+                'id' => 'my-signatures',
+                'icon' => 'file-signature',
+                'color' => 'success',
+                'title' => 'My Signed Documents',
+                'description' => 'Access and manage your digitally signed documents',
+                'items' => [
+                    [
+                        'title' => 'Viewing Signed Documents',
+                        'content' => 'Access from <strong>My Signatures</strong> menu:<br>
+                            • See all your completed signatures<br>
+                            • View signature details and metadata<br>
+                            • Check digital signature ID<br>
+                            • See signing date and time<br>
+                            • View QR code information'
+                    ],
+                    [
+                        'title' => 'Downloading Files',
+                        'content' => 'For each signed document:<br>
+                            • <strong>Signed PDF</strong>: Complete document with embedded QR code<br>
+                            • <strong>QR Code Image</strong>: Standalone verification QR<br>
+                            • <strong>Verification URL</strong>: Link for public verification<br><br>
+                            All downloads are unlimited and permanent.'
+                    ],
+                    [
+                        'title' => 'Sharing Signed Documents',
+                        'content' => 'Your signed documents can be:<br>
+                            • Shared via email or messaging<br>
+                            • Uploaded to academic portals<br>
+                            • Printed (QR code remains scannable)<br>
+                            • Verified publicly using QR code<br><br>
+                            Anyone can verify authenticity by scanning the QR code.'
+                    ]
+                ]
+            ],
+            [
+                'id' => 'verification',
+                'icon' => 'qrcode',
+                'color' => 'secondary',
+                'title' => 'QR Code Verification',
+                'description' => 'Understand how verification works',
+                'items' => [
+                    [
+                        'title' => 'What is the QR Code?',
+                        'content' => 'The QR code embedded in your signed document:<br>
+                            • Contains encrypted verification data<br>
+                            • Links to signature validation page<br>
+                            • Cannot be copied or forged<br>
+                            • Valid for 5 years from creation<br>
+                            • Tracks verification attempts'
+                    ],
+                    [
+                        'title' => 'How to Verify',
+                        'content' => 'Anyone can verify your document:<br>
+                            1. <strong>Scan QR Code:</strong> Use phone camera or QR scanner app<br>
+                            2. <strong>Automatic Redirect:</strong> Opens verification page<br>
+                            3. <strong>View Details:</strong> Shows:<br>
+                            &nbsp;&nbsp;&nbsp;• Document name<br>
+                            &nbsp;&nbsp;&nbsp;• Signature status (Valid/Invalid)<br>
+                            &nbsp;&nbsp;&nbsp;• Signing date and user<br>
+                            &nbsp;&nbsp;&nbsp;• Digital signature ID<br>
+                            &nbsp;&nbsp;&nbsp;• Encryption details<br>
+                            4. <strong>Confirmation:</strong> Green badge = Valid, Red = Invalid'
+                    ],
+                    [
+                        'title' => 'Public Verification Page',
+                        'content' => 'Alternative verification methods:<br>
+                            • Visit public verification page<br>
+                            • Enter short code manually (12 characters)<br>
+                            • Upload PDF to check embedded signature<br>
+                            • View verification history (your documents only)'
+                    ]
+                ]
+            ],
+            [
+                'id' => 'troubleshooting',
+                'icon' => 'tools',
+                'color' => 'danger',
+                'title' => 'Troubleshooting & FAQ',
+                'description' => 'Common issues and solutions',
+                'items' => [
+                    [
+                        'title' => 'Upload Errors',
+                        'content' => '<strong>Problem:</strong> "File too large" error<br>
+                            <strong>Solution:</strong> Compress PDF or reduce quality (max 10 MB)<br><br>
+                            <strong>Problem:</strong> "Invalid file type"<br>
+                            <strong>Solution:</strong> Ensure file is PDF format (.pdf extension)<br><br>
+                            <strong>Problem:</strong> "Upload failed"<br>
+                            <strong>Solution:</strong> Check internet connection, try again, or use different browser'
+                    ],
+                    [
+                        'title' => 'Signing Issues',
+                        'content' => '<strong>Problem:</strong> Cannot drag QR code<br>
+                            <strong>Solution:</strong> Try different browser (Chrome, Firefox recommended)<br><br>
+                            <strong>Problem:</strong> "Sign Document" button disabled<br>
+                            <strong>Solution:</strong> Ensure QR code is placed on PDF first<br><br>
+                            <strong>Problem:</strong> Signing takes too long<br>
+                            <strong>Solution:</strong> Wait patiently (can take up to 30 seconds), don\'t refresh'
+                    ],
+                    [
+                        'title' => 'Download Problems',
+                        'content' => '<strong>Problem:</strong> Cannot download signed PDF<br>
+                            <strong>Solution:</strong> Check browser pop-up blocker settings<br><br>
+                            <strong>Problem:</strong> Downloaded file is corrupted<br>
+                            <strong>Solution:</strong> Clear browser cache and download again<br><br>
+                            <strong>Problem:</strong> QR code image won\'t download<br>
+                            <strong>Solution:</strong> Right-click and "Save Image As"'
+                    ],
+                    [
+                        'title' => 'General Issues',
+                        'content' => 'If problems persist:<br>
+                            • Clear browser cache and cookies<br>
+                            • Try incognito/private browsing mode<br>
+                            • Use updated browser version<br>
+                            • Contact IT support with error message<br>
+                            • Email: support@umt.ac.id<br>
+                            • Include your NIM and description'
+                    ]
+                ]
+            ]
+        ];
+    }
+
+    /**
+     * Get Admin FAQs
+     */
+    private function getAdminFAQs()
+    {
+        return [
+            [
+                'question' => 'How do I approve multiple documents at once?',
+                'answer' => 'Currently, the system requires individual review of each document to ensure quality. Bulk approval is not available to maintain document verification standards.'
+            ],
+            [
+                'question' => 'Can I revoke an approval after it has been given?',
+                'answer' => 'No, once a document is approved, it cannot be directly revoked. If the student has not signed yet, you can contact the system administrator. If already signed, you must use the "Invalidate Signature" function with a clear reason.'
+            ],
+            [
+                'question' => 'What happens if a student does not sign after approval?',
+                'answer' => 'Approved documents remain in "Approved - Ready to Sign" status indefinitely. There is no automatic expiration. You can follow up with the student or contact them directly.'
+            ],
+            [
+                'question' => 'How long are digital signatures valid?',
+                'answer' => 'Digital signatures are valid for 5 years from the signing date by default. The QR code verification will work during this period. After expiration, the signature remains valid but verification may show as "expired".'
+            ],
+            [
+                'question' => 'Can I edit a signed document?',
+                'answer' => 'No, signed documents cannot be edited. Any modification will invalidate the signature and the document hash check will fail. If changes are needed, the student must submit a new document.'
+            ],
+            [
+                'question' => 'What is the difference between "Signed" and "Verified" status?',
+                'answer' => 'In the current system, signatures are automatically verified after signing. Both statuses effectively mean the same - the document is successfully signed with a valid digital signature. "Verified" is the final status.'
+            ],
+            [
+                'question' => 'How do I export all approval data for a specific period?',
+                'answer' => 'Go to Reports & Analytics → Click "Export Report" button → Select date range → Choose CSV or PDF format → Download. The export includes all approval requests with complete metadata.'
+            ],
+            [
+                'question' => 'Why are there two "rejected" options in stats?',
+                'answer' => 'There is only one rejection point: when you reject an approval request. The "Invalid" status is for already-signed documents that you manually invalidated later. They are tracked separately for clarity.'
+            ]
+        ];
+    }
+
+    /**
+     * Get User FAQs
+     */
+    private function getUserFAQs()
+    {
+        return [
+            [
+                'question' => 'How long does it take to get approval?',
+                'answer' => 'Average approval time is 1-3 working days. You will receive an email notification once your document is reviewed. Check your submission status regularly in "My Documents".'
+            ],
+            [
+                'question' => 'Can I edit my document after submission?',
+                'answer' => 'No, submitted documents cannot be edited. If you need to make changes, you must submit a new request. If your document is still pending, you can contact admin to reject it first.'
+            ],
+            [
+                'question' => 'Why was my document rejected?',
+                'answer' => 'Check the rejection reason provided by the admin in the document details. Common reasons include: incomplete information, poor quality PDF, wrong format, missing required sections, or policy violations. Fix the issues and resubmit.'
+            ],
+            [
+                'question' => 'Can I sign the same document multiple times?',
+                'answer' => 'No, each document can only be signed once. Once you sign and the status becomes "Completed", the signature is final. If you need another signed copy, download it from "My Signatures".'
+            ],
+            [
+                'question' => 'What if I make a mistake while positioning the QR code?',
+                'answer' => 'Before clicking "Sign Document", you can move the QR code as many times as needed. Use the preview function to check the position. Once you confirm signing, the position is final.'
+            ],
+            [
+                'question' => 'Is my digital signature legally valid?',
+                'answer' => 'Digital signatures created by this system use RSA-2048 encryption and SHA-256 hashing, which are industry-standard cryptographic methods. However, legal validity depends on Indonesian laws and your specific use case. Consult with legal counsel if needed.'
+            ],
+            [
+                'question' => 'Can I use my signed document for official purposes?',
+                'answer' => 'Yes, signed documents from this system are accepted by UMT Informatika for academic purposes. For external use, check with the receiving institution if they accept digitally signed documents.'
+            ],
+            [
+                'question' => 'What happens if I lose my signed document?',
+                'answer' => 'Don\'t worry! All signed documents are permanently stored in the system. Go to "My Signatures" menu and download your document again. You can download it unlimited times.'
+            ],
+            [
+                'question' => 'How can others verify my signed document?',
+                'answer' => 'Anyone can verify by: (1) Scanning the QR code embedded in your PDF using a phone camera or QR scanner app, or (2) Visiting the public verification page and entering the verification code. The verification page will show if the signature is valid.'
+            ],
+            [
+                'question' => 'What should I do if the QR code cannot be scanned?',
+                'answer' => 'Ensure: (1) Document is not too blurry or low quality when printed, (2) QR code is not covered or cropped, (3) Scanner has good lighting, (4) Try different QR scanner apps. If issues persist, download a new copy from the system.'
+            ]
+        ];
+    }
+}
