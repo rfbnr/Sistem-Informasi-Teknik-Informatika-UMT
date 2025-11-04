@@ -13,10 +13,12 @@ class {{ class }} extends Mailable
 {
     use Queueable, SerializesModels;
 
+    public $approvalRequest;
+
     /**
      * Create a new message instance.
      */
-    public function __construct()
+    public function __construct($approvalRequest)
     {
         //
     }
@@ -26,8 +28,15 @@ class {{ class }} extends Mailable
      */
     public function envelope(): Envelope
     {
+        $documentName = $this->approvalRequest->document_name;
+
         return new Envelope(
-            subject: '{{ subject }}',
+            subject: "⚠️ Permintaan Perlu Perbaikan - {$documentName}",
+            tags: ['digital-signature', 'request-rejected'],
+            // metadata: [
+            //     'approval_request_id' => $this->approvalRequest->id,
+            //     'user_id' => $this->approvalRequest->user_id,
+            // ],
         );
     }
 

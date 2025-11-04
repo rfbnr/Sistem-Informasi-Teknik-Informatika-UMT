@@ -64,6 +64,11 @@ return [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', App\Models\User::class),
         ],
+        'kaprodis' => [
+            'driver' => 'eloquent',
+            'model' => env('AUTH_MODEL', App\Models\Kaprodi::class),
+
+        ],
 
         // 'users' => [
         //     'driver' => 'database',

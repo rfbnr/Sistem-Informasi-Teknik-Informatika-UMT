@@ -15,9 +15,6 @@ class Kaprodi extends Model
         'email',
         'password',
         'NIDN',
-        'phone',
-        'jabatan',
-        'status'
     ];
 
     public function setPasswordAttribute($value)
@@ -27,30 +24,13 @@ class Kaprodi extends Model
         }
     }
 
-    public function approvalRequests()
+    public function isKaprodi()
     {
-        return $this->hasMany(ApprovalRequest::class, 'approved_by');
+        return true;
     }
 
-    public function signatureRequests()
+    public function templates()
     {
-        return $this->belongsToMany(SignatureRequest::class, 'signature_request_signees', 'user_id', 'signature_request_id')
-                    ->withPivot(['role', 'order', 'status', 'required', 'notified_at', 'viewed_at', 'responded_at', 'rejection_reason'])
-                    ->withTimestamps();
+        return $this->hasMany(SignatureTemplate::class);
     }
-
-    public function signatures()
-    {
-        return $this->hasMany(Signature::class, 'signer_id');
-    }
-
-    protected $hidden = [
-        'password',
-        'remember_token',
-    ];
-
-    protected $casts = [
-        'email_verified_at' => 'datetime',
-        'password' => 'hashed',
-    ];
 }

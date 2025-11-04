@@ -27,7 +27,54 @@
                         <li><a class="dropdown-item" href="{{ url('alumni') }}">ALUMNI</a></li>
                     </ul>
                 </li>
+
                 <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle text-white" href="#" id="servicesDropdown" role="button" data-bs-toggle="dropdown">
+                        LAYANAN DIGITAL
+                    </a>
+                    <ul class="dropdown-menu">
+                        @auth('web')
+                            <li><a class="dropdown-item" href="{{ route('user.signature.approval.request') }}">
+                                <i class="fas fa-file-upload me-2"></i> Submit Document
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ route('user.signature.approval.status') }}">
+                                <i class="fas fa-list-alt me-2"></i> My Documents
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ route('user.signature.my.signatures.index') }}">
+                                <i class="fas fa-signature me-2"></i> My Signatures
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                        @endauth
+
+                        <li><a class="dropdown-item" href="{{ route('signature.verify.page') }}">
+                            <i class="fas fa-shield-alt me-2"></i> Verify Document
+                        </a></li>
+
+                        {{-- Help & Support --}}
+                        <li><a class="dropdown-item" href="{{ route('user.signature.help') }}">
+                            <i class="fas fa-question-circle me-2"></i> Help & Support
+                        </a></li>
+
+                        @guest
+                            <li><a class="dropdown-item" href="{{ route('login') }}">
+                                <i class="fas fa-sign-in-alt me-2"></i> Login to Submit Documents
+                            </a></li>
+                        @endguest
+                    </ul>
+                </li>
+
+                {{-- <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle text-white" href="#" role="button"
+                        data-bs-toggle="dropdown" aria-expanded="false">
+                        LAYANAN
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ url('aproval') }}">APROVAL KAPRODI</a></li>
+                        <li><a class="dropdown-item" href="{{ route('signature.verify.page') }}">VERIFIKASI DIGITAL</a></li>
+                        <li><a class="dropdown-item" href="{{ url('layanans') }}">KAPRODI</a></li>
+                    </ul>
+                </li> --}}
+                {{-- <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle text-white" href="#" id="layananDropdown" role="button"
                         data-bs-toggle="dropdown" aria-expanded="false">
                         LAYANAN
@@ -40,7 +87,7 @@
                         <li><a class="dropdown-item" href="{{ route('signatures.index') }}">🖋️ TANDA TANGAN</a></li>
                         <li><a class="dropdown-item" href="{{ route('validation.index') }}">✅ VALIDASI</a></li>
                     </ul>
-                </li>
+                </li> --}}
 
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle text-white" href="#" id="layananDropdown" role="button"

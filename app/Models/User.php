@@ -29,11 +29,6 @@ class User extends Authenticatable implements FilamentUser
         'password',
         'roles',
         'NIM',
-        'phone',
-        'address',
-        'semester',
-        'angkatan',
-        'status'
     ];
 
     /**
@@ -59,41 +54,13 @@ class User extends Authenticatable implements FilamentUser
         ];
     }
 
-    public function approvalRequests()
+    public function approvalRequest()
     {
         return $this->hasMany(ApprovalRequest::class);
     }
 
-    public function documents()
+    public function isAdmin()
     {
-        return $this->hasMany(Document::class);
-    }
-
-    public function signatureRequests()
-    {
-        return $this->belongsToMany(SignatureRequest::class, 'signature_request_signees')
-                    ->withPivot(['role', 'order', 'status', 'required', 'notified_at', 'viewed_at', 'responded_at', 'rejection_reason'])
-                    ->withTimestamps();
-    }
-
-    public function signatures()
-    {
-        return $this->hasMany(Signature::class, 'signer_id');
-    }
-
-    public function requestedSignatures()
-    {
-        return $this->hasMany(SignatureRequest::class, 'requester_id');
-    }
-
-    protected static function boot()
-    {
-        parent::boot();
-
-        static::creating(function ($user) {
-            if (!$user->status) {
-                $user->status = 'active';
-            }
-        });
+        return $this->roles === 'admin';
     }
 }

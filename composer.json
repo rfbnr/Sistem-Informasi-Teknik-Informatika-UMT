@@ -6,14 +6,16 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
+        "barryvdh/laravel-dompdf": "^3.1",
         "endroid/qr-code": "^5.0",
         "filament/filament": "^3.2",
         "laravel/framework": "^11.9",
         "laravel/tinker": "^2.9",
         "milon/barcode": "^11.0",
         "nesbot/carbon": "^3.7",
+        "setasign/fpdi": "^2.6",
         "simplesoftwareio/simple-qrcode": "^4.2",
-        "web3p/web3.php": "^0.1.6"
+        "tecnickcom/tcpdf": "^6.10"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
