@@ -2,11 +2,15 @@
 /vendor
 /node_modules
 
-# Abaikan file build atau IDE
+# VCS & IDE
 .git
 .gitignore
+.vscode
+.idea
+.DS_Store
+
+# Env lokal
 .env
 .env.*
-.DS_Store
 npm-debug.log
 yarn-error.log

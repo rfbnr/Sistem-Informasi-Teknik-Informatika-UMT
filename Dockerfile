@@ -1,13 +1,39 @@
-# ===== Base builder =====
-FROM php:8.2-cli
+# ============================================================================
+# Dockerfile untuk Laravel dengan Nginx, PHP-FPM, Ghostscript, dan Vite
+# ============================================================================
+# ===============================
+# Stage 1: Build front-end assets (Vite)
+# ===============================
+FROM node:20-alpine AS assets
+WORKDIR /app
 
-# System deps & PHP extensions (termasuk Ghostscript)
+# Pasang deps lebih awal untuk caching yang optimal
+COPY package.json package-lock.json* pnpm-lock.yaml* yarn.lock* .npmrc* ./
+# Pilih npm; ubah kalau kamu pakai pnpm/yarn
+RUN npm ci
+
+# Copy source yang dibutuhkan Vite
+COPY vite.config.* postcss.config.* tailwind.config.* ./
+COPY resources ./resources
+# Jika kamu punya file lain untuk build (mis. tsconfig.json), copy juga
+# COPY tsconfig.json ./
+
+# Build Vite → output default ke public/build
+RUN npm run build
+
+
+# ===============================
+# Stage 2: Composer (vendor)
+# ===============================
+FROM php:8.2-fpm AS vendor
+WORKDIR /app
+
+# System deps untuk ekstensi PHP
 RUN apt-get update && apt-get install -y \
     git unzip zip \
     libzip-dev \
     libpng-dev libjpeg-dev libfreetype6-dev \
     libicu-dev \
-    ghostscript \
  && docker-php-ext-configure gd --with-jpeg --with-freetype \
  && docker-php-ext-install -j"$(nproc)" intl zip gd pdo_mysql opcache \
  && rm -rf /var/lib/apt/lists/*
@@ -16,64 +42,149 @@ RUN apt-get update && apt-get install -y \
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 ENV COMPOSER_ALLOW_SUPERUSER=1
 
+# Install vendor (tanpa scripts; .env belum ada di build time)
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --no-interaction --prefer-dist --no-progress --no-scripts
+
+# Copy sisa source supaya autoload match ke codebase
+COPY . .
+RUN composer dump-autoload -o
+
+
+# ===============================
+# Stage 3: Final Image (Nginx + PHP-FPM + Ghostscript)
+# ===============================
+FROM php:8.2-fpm
+
+# Install Nginx, Supervisor, Ghostscript, dan deps yang sama
+RUN apt-get update && apt-get install -y \
+    nginx supervisor ghostscript \
+    git unzip zip \
+    libzip-dev \
+    libpng-dev libjpeg-dev libfreetype6-dev \
+    libicu-dev \
+ && docker-php-ext-configure gd --with-jpeg --with-freetype \
+ && docker-php-ext-install -j"$(nproc)" intl zip gd pdo_mysql opcache \
+ && rm -rf /var/lib/apt/lists/*
+
+# Direktori app
 WORKDIR /app
 
-# 1) Install vendor tanpa script (artisan belum ada)
-COPY composer.json composer.lock ./
-RUN composer install --no-interaction --prefer-dist --no-progress --no-scripts
+# Copy app + vendor dari stage vendor
+COPY --from=vendor /app /app
 
-# 2) Copy source
-COPY . .
+# Copy assets hasil Vite ke public/build
+COPY --from=assets /app/public/build /app/public/build
 
-# 3) Dump autoload & discover (artisan sudah ada)
-RUN composer dump-autoload -o \
- && php artisan package:discover --ansi || true
+# Nginx & Supervisor configs
+COPY .docker/nginx.conf /etc/nginx/nginx.conf
+COPY .docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-# 4) Pastikan folder & permission benar, symlink storage dibuat saat build
-RUN mkdir -p storage/app/public \
-    && mkdir -p storage/app/temp \
-    && mkdir -p public/storage \
-    && chmod -R 775 storage bootstrap/cache \
-    && chown -R www-data:www-data storage bootstrap/cache \
-    && php artisan storage:link || true
+# Entrypoint
+COPY .docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
-# Default env (bisa override dari Railway Variables)
+# Pastikan folder & permission benar
+RUN mkdir -p storage/app/public storage/app/temp public/storage \
+ && chmod -R 775 storage bootstrap/cache \
+ && chown -R www-data:www-data storage bootstrap/cache \
+ && ln -sf ../storage/app/public public/storage
+
+# ENV default (Railway bisa override)
 ENV APP_ENV=production \
     APP_DEBUG=false \
     PORT=8080
 
 EXPOSE 8080
 
-# 5) Entrypoint: robust .env bootstrap + optimisasi + serve
-# - Jika .env tidak ada:
-#     a) Jika .env.example ada -> copy
-#     b) Jika tidak ada -> tulis .env minimal (APP_URL, FILESYSTEM_DISK, dst)
-# - Jika APP_KEY env sudah ada -> skip key:generate
-# - Jika belum ada -> generate
-CMD sh -lc '\
-  if [ ! -f .env ]; then \
-    if [ -f .env.example ]; then \
-      cp .env.example .env; \
-    else \
-      printf "APP_NAME=Laravel\nAPP_ENV=${APP_ENV}\nAPP_KEY=\nAPP_DEBUG=${APP_DEBUG}\nAPP_URL=${APP_URL:-http://localhost}\nLOG_CHANNEL=stack\nFILESYSTEM_DISK=public\n" > .env; \
-    fi; \
-  fi; \
-  if [ -n "${APP_KEY}" ]; then \
-    # inject APP_KEY dari env Railway jika diberikan
-    if grep -q "^APP_KEY=" .env; then \
-      sed -i "s#^APP_KEY=.*#APP_KEY=${APP_KEY}#g" .env; \
-    else \
-      printf "\nAPP_KEY=${APP_KEY}\n" >> .env; \
-    fi; \
-  fi; \
-  if ! grep -q "^APP_KEY=base64:" .env; then \
-    php artisan key:generate --force || true; \
-  fi; \
-  php artisan config:cache || true; \
-  php artisan route:cache || true; \
-  php artisan migrate --force || true; \
-  php artisan serve --host=0.0.0.0 --port=${PORT} \
-'
+# Jalankan via supervisor (menjalankan nginx + php-fpm)
+CMD ["/entrypoint.sh"]
+
+
+# ============================================================================
+# Dockerfile untuk Laravel di Railway dengan penyesuaian Railway Variables
+# ============================================================================
+
+# ===== Base builder =====
+# FROM php:8.2-cli
+
+# # System deps & PHP extensions (termasuk Ghostscript)
+# RUN apt-get update && apt-get install -y \
+#     git unzip zip \
+#     libzip-dev \
+#     libpng-dev libjpeg-dev libfreetype6-dev \
+#     libicu-dev \
+#     ghostscript \
+#  && docker-php-ext-configure gd --with-jpeg --with-freetype \
+#  && docker-php-ext-install -j"$(nproc)" intl zip gd pdo_mysql opcache \
+#  && rm -rf /var/lib/apt/lists/*
+
+# # Composer
+# COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+# ENV COMPOSER_ALLOW_SUPERUSER=1
+
+# WORKDIR /app
+
+# # 1) Install vendor tanpa script (artisan belum ada)
+# COPY composer.json composer.lock ./
+# RUN composer install --no-interaction --prefer-dist --no-progress --no-scripts
+
+# # 2) Copy source
+# COPY . .
+
+# # 3) Dump autoload & discover (artisan sudah ada)
+# RUN composer dump-autoload -o \
+#  && php artisan package:discover --ansi || true
+
+# # 4) Pastikan folder & permission benar, symlink storage dibuat saat build
+# RUN mkdir -p storage/app/public \
+#     && mkdir -p storage/app/temp \
+#     && mkdir -p public/storage \
+#     && chmod -R 775 storage bootstrap/cache \
+#     && chown -R www-data:www-data storage bootstrap/cache \
+#     && php artisan storage:link || true
+
+# # Default env (bisa override dari Railway Variables)
+# ENV APP_ENV=production \
+#     APP_DEBUG=false \
+#     PORT=8080
+
+# EXPOSE 8080
+
+# # 5) Entrypoint: robust .env bootstrap + optimisasi + serve
+# # - Jika .env tidak ada:
+# #     a) Jika .env.example ada -> copy
+# #     b) Jika tidak ada -> tulis .env minimal (APP_URL, FILESYSTEM_DISK, dst)
+# # - Jika APP_KEY env sudah ada -> skip key:generate
+# # - Jika belum ada -> generate
+# CMD sh -lc '\
+#   if [ ! -f .env ]; then \
+#     if [ -f .env.example ]; then \
+#       cp .env.example .env; \
+#     else \
+#       printf "APP_NAME=Laravel\nAPP_ENV=${APP_ENV}\nAPP_KEY=\nAPP_DEBUG=${APP_DEBUG}\nAPP_URL=${APP_URL:-http://localhost}\nLOG_CHANNEL=stack\nFILESYSTEM_DISK=public\n" > .env; \
+#     fi; \
+#   fi; \
+#   if [ -n "${APP_KEY}" ]; then \
+#     # inject APP_KEY dari env Railway jika diberikan
+#     if grep -q "^APP_KEY=" .env; then \
+#       sed -i "s#^APP_KEY=.*#APP_KEY=${APP_KEY}#g" .env; \
+#     else \
+#       printf "\nAPP_KEY=${APP_KEY}\n" >> .env; \
+#     fi; \
+#   fi; \
+#   if ! grep -q "^APP_KEY=base64:" .env; then \
+#     php artisan key:generate --force || true; \
+#   fi; \
+#   php artisan config:cache || true; \
+#   php artisan route:cache || true; \
+#   php artisan migrate --force || true; \
+#   php artisan serve --host=0.0.0.0 --port=${PORT} \
+# '
+
+# ============================================================================
+# # Versi sebelumnya sebelum penyesuaian Railway Variables
+# ============================================================================
 
 
 # # ===== Base builder =====
