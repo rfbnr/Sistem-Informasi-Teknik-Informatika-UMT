@@ -237,11 +237,18 @@
                                 <td>
                                     <div class="btn-group btn-group-sm" role="group">
                                         <!-- View Document -->
-                                        <button class="btn btn-outline-info"
+                                        {{-- <button class="btn btn-outline-info"
                                                 onclick="viewDocument({{ $request->id }}, '{{ asset('storage/' . $request->document_path) }}')"
                                                 title="View Document">
                                             <i class="fas fa-eye"></i>
+                                        </button> --}}
+                                        <button class="btn btn-outline-info"
+                                                onclick="viewDocument({{ $request->id }}, '{{ Storage::url($request->document_path) }}')"
+                                                title="View Document">
+                                            <i class="fas fa-eye"></i>
                                         </button>
+
+
 
                                         <!-- Download Original -->
                                         {{-- <a href="{{ route('admin.signature.approval.download', $request->id) }}"

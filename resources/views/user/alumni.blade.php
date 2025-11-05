@@ -61,7 +61,9 @@
                 @foreach ($alumnis as $alumni)
                     <div class="col-md-3 mb-4">
                         <div class="card h-100">
-                            <img src="{{ asset('storage/' . $alumni->image) }}" class="card-img-top"
+                            {{-- <img src="{{ asset('storage/' . $alumni->image) }}" class="card-img-top"
+                                alt="{{ $alumni->name }}"> --}}
+                            <img src="{{ Storage::url($alumni->image) }}" class="card-img-top"
                                 alt="{{ $alumni->name }}">
                             <div class="card-body text-center">
                                 <h5 class="card-title">{{ $alumni->name }}</h5>

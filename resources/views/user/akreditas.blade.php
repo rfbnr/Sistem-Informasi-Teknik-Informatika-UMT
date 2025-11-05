@@ -14,7 +14,8 @@
                 @foreach ($akreditasis as $akreditasi)
                     <div class="col-12 col-md-8">
                         <div class="text-center my-4">
-                            <img src="{{ asset('storage/' . $akreditasi->image) }}" class="img-fluid" alt="Uploaded Image">
+                            {{-- <img src="{{ asset('storage/' . $akreditasi->image) }}" class="img-fluid" alt="Uploaded Image"> --}}
+                            <img src="{{ Storage::url($akreditasi->image) }}" class="img-fluid" alt="Uploaded Image">
                         </div>
                     </div>
                 @endforeach

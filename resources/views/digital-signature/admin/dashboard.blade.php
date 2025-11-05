@@ -164,8 +164,12 @@
                                                 onclick="showApproveModal({{ $approval->id }}, '{{ $approval->document_name }}', '{{ $approval->document_type }}')">
                                             <i class="fas fa-check me-1"></i> Approve
                                         </button>
-                                        <button class="btn btn-sm btn-info mb-1 w-100"
+                                        {{-- <button class="btn btn-sm btn-info mb-1 w-100"
                                         onclick="viewDocument({{ $approval->id }}, '{{ asset('storage/' . $approval->document_path) }}')">
+                                            <i class="fas fa-file-alt me-1"></i> View
+                                        </button> --}}
+                                        <button class="btn btn-sm btn-info mb-1 w-100"
+                                        onclick="viewDocument({{ $approval->id }}, '{{ Storage::url($approval->document_path) }}')">
                                             <i class="fas fa-file-alt me-1"></i> View
                                         </button>
                                         <a href="{{ route('admin.signature.approval.show', $approval->id) }}"

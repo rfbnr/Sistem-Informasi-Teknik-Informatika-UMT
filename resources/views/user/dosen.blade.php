@@ -77,7 +77,9 @@
                 @foreach ($dosens as $index => $dosen)
                     <div class="col-md-3 mb-4">
                         <div class="card h-100 text-center">
-                            <img src="{{ asset('storage/' . $dosen->image) }}" class="card-img-top"
+                            {{-- <img src="{{ asset('storage/' . $dosen->image) }}" class="card-img-top"
+                                alt="{{ $dosen->name }}"> --}}
+                            <img src="{{ Storage::url($dosen->image) }}" class="card-img-top"
                                 alt="{{ $dosen->name }}">
                             <div class="card-body">
                                 <h5 class="card-title">{{ $dosen->name }}</h5>

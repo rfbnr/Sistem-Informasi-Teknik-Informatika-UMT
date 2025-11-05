@@ -213,7 +213,12 @@
                 </div>
                 <div class="card-body p-0">
                     <div style="height: 600px; position: relative;">
-                        <iframe src="{{ asset('storage/' . $approvalRequest->document_path) }}"
+                        {{-- <iframe src="{{ asset('storage/' . $approvalRequest->document_path) }}"
+                                style="width:100%; height:100%; border:none;"
+                                frameborder="0">
+                        </iframe> --}}
+
+                        <iframe src="{{ Storage::url($approvalRequest->document_path) }}"
                                 style="width:100%; height:100%; border:none;"
                                 frameborder="0">
                         </iframe>
