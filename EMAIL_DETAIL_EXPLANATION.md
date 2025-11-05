@@ -8,6 +8,7 @@
 ## 🔍 ANALISIS MENDALAM SEMUA EMAIL
 
 ### **SUMMARY:**
+
 Total Email yang ADA: **6 emails**
 Total Email yang SEHARUSNYA: **6 emails**
 
@@ -25,11 +26,13 @@ Email untuk "Kaprodi Verify Signature Success" **SUDAH ADA** (`ApprovalRequestSi
 **⚡ Trigger Event:** Student upload dokumen baru (request approval)
 
 **📍 Dikirim di mana:**
-- File: `app/Http/Controllers/DigitalSignature/ApprovalRequestController.php`
-- Method: `upload()`
-- Line: ~251-253
+
+-   File: `app/Http/Controllers/DigitalSignature/ApprovalRequestController.php`
+-   Method: `upload()`
+-   Line: ~251-253
 
 **Code:**
+
 ```php
 $kaprodiEmails = Kaprodi::pluck('email')->toArray();
 if (!empty($kaprodiEmails)) {
@@ -38,15 +41,17 @@ if (!empty($kaprodiEmails)) {
 ```
 
 **📄 Subject:**
+
 ```
 🔔 Permintaan Baru: {Document Name} - {Student Name}
 ```
 
 **📝 Isi Email:**
-- Alert box: "PERMINTAAN BARU MASUK"
-- Document details (nama, nomor, tipe, requester)
-- Tombol: "Review & Setujui Dokumen"
-- Timeline: Step 1/4 (Diajukan)
+
+-   Alert box: "PERMINTAAN BARU MASUK"
+-   Document details (nama, nomor, tipe, requester)
+-   Tombol: "Review & Setujui Dokumen"
+-   Timeline: Step 1/4 (Diajukan)
 
 **✅ Status:** SUDAH BENAR & AKTIF
 
@@ -59,11 +64,13 @@ if (!empty($kaprodiEmails)) {
 **⚡ Trigger Event:** Kaprodi approve request dokumen
 
 **📍 Dikirim di mana:**
-- File: `app/Http/Controllers/DigitalSignature/ApprovalRequestController.php`
-- Method: `approve()`
-- Line: ~577-579
+
+-   File: `app/Http/Controllers/DigitalSignature/ApprovalRequestController.php`
+-   Method: `approve()`
+-   Line: ~577-579
 
 **Code:**
+
 ```php
 Mail::to($approvalRequest->user->email)->send(
     new ApprovalRequestApprovedNotification($approvalRequest)
@@ -71,26 +78,28 @@ Mail::to($approvalRequest->user->email)->send(
 ```
 
 **📄 Subject:**
+
 ```
 ✅ Permintaan Disetujui - {Document Name}
 ```
 
 **📝 Isi Email:**
-- Success message: "Selamat! Permintaan Anda DISETUJUI"
-- **⚡ TINDAKAN DIPERLUKAN:** "Anda perlu MENANDATANGANI dokumen"
-- **✍️ Cara Menandatangani Dokumen** (5 steps):
-  1. Klik tombol "Tandatangani Dokumen"
-  2. Pilih template tanda tangan
-  3. Letakkan tanda tangan (drag & drop)
-  4. Review penempatan
-  5. Submit untuk review Kaprodi
-- **📌 Setelah Anda Menandatangani:**
-  - Kaprodi akan menerima notifikasi
-  - Proses verifikasi 1-2 hari kerja
-  - Email setelah diverifikasi
-  - Dokumen final dengan QR Code
-- Tombol PRIMARY: **"Tandatangani Dokumen"**
-- Timeline: Step 2/4 (Disetujui)
+
+-   Success message: "Selamat! Permintaan Anda DISETUJUI"
+-   **⚡ TINDAKAN DIPERLUKAN:** "Anda perlu MENANDATANGANI dokumen"
+-   **✍️ Cara Menandatangani Dokumen** (5 steps):
+    1. Klik tombol "Tandatangani Dokumen"
+    2. Pilih template tanda tangan
+    3. Letakkan tanda tangan (drag & drop)
+    4. Review penempatan
+    5. Submit untuk review Kaprodi
+-   **📌 Setelah Anda Menandatangani:**
+    -   Kaprodi akan menerima notifikasi
+    -   Proses verifikasi 1-2 hari kerja
+    -   Email setelah diverifikasi
+    -   Dokumen final dengan QR Code
+-   Tombol PRIMARY: **"Tandatangani Dokumen"**
+-   Timeline: Step 2/4 (Disetujui)
 
 **✅ Status:** SUDAH BENAR & AKTIF (baru saja di-update dengan instruksi signing)
 
@@ -103,11 +112,13 @@ Mail::to($approvalRequest->user->email)->send(
 **⚡ Trigger Event:** Kaprodi reject request dokumen (di awal, sebelum signing)
 
 **📍 Dikirim di mana:**
-- File: `app/Http/Controllers/DigitalSignature/ApprovalRequestController.php`
-- Method: `reject()`
-- Line: ~644-646
+
+-   File: `app/Http/Controllers/DigitalSignature/ApprovalRequestController.php`
+-   Method: `reject()`
+-   Line: ~644-646
 
 **Code:**
+
 ```php
 Mail::to($approvalRequest->user->email)->send(
     new ApprovalRequestRejectedNotification($approvalRequest)
@@ -115,17 +126,19 @@ Mail::to($approvalRequest->user->email)->send(
 ```
 
 **📄 Subject:**
+
 ```
 ⚠️ Permintaan Perlu Perbaikan - {Document Name}
 ```
 
 **📝 Isi Email:**
-- Warning message (friendly tone)
-- Rejection reason prominently displayed
-- Step-by-step repair guide
-- Tips for approval
-- Encouragement message
-- Tombol: "Perbaiki & Ajukan Ulang"
+
+-   Warning message (friendly tone)
+-   Rejection reason prominently displayed
+-   Step-by-step repair guide
+-   Tips for approval
+-   Encouragement message
+-   Tombol: "Perbaiki & Ajukan Ulang"
 
 **✅ Status:** SUDAH BENAR & AKTIF (baru saja di-uncomment)
 
@@ -138,11 +151,13 @@ Mail::to($approvalRequest->user->email)->send(
 **⚡ Trigger Event:** Student selesai menandatangani dokumen
 
 **📍 Dikirim di mana:**
-- File: `app/Http/Controllers/DigitalSignature/DigitalSignatureController.php`
-- Method: `processDocumentSigning()`
-- Line: ~532-538
+
+-   File: `app/Http/Controllers/DigitalSignature/DigitalSignatureController.php`
+-   Method: `processDocumentSigning()`
+-   Line: ~532-538
 
 **Code:**
+
 ```php
 // Send notification to Kaprodi for verification
 $kaprodiEmails = \App\Models\Kaprodi::pluck('email')->toArray();
@@ -154,27 +169,29 @@ if (!empty($kaprodiEmails)) {
 ```
 
 **📄 Subject:**
+
 ```
 ✍️ Dokumen Ditandatangani - Perlu Verifikasi: {Document Name}
 ```
 
 **📝 Isi Email:**
-- Alert box: **"⏰ VERIFIKASI DIPERLUKAN"**
-- Info: "Mahasiswa {Name} telah menyelesaikan penandatanganan"
-- Signature information card:
-  - Mahasiswa yang sign
-  - Waktu tanda tangan
-  - Template yang digunakan
-  - Status: Menunggu Verifikasi
-- **📋 Panduan Verifikasi** (5 poin):
-  1. Penempatan tanda tangan: posisi yang tepat
-  2. Kualitas visual: jelas dan tidak buram
-  3. Ukuran proporsional: sesuai area
-  4. Tidak overlap: tidak menutupi konten penting
-  5. Kesesuaian template: sesuai yang disetujui
-- Timeline: Step 3/4 (Ditandatangani - waiting verification)
-- Tombol PRIMARY: **"✅ Verifikasi & Review Dokumen"**
-- Catatan penting tentang proses verifikasi
+
+-   Alert box: **"⏰ VERIFIKASI DIPERLUKAN"**
+-   Info: "Mahasiswa {Name} telah menyelesaikan penandatanganan"
+-   Signature information card:
+    -   Mahasiswa yang sign
+    -   Waktu tanda tangan
+    -   Template yang digunakan
+    -   Status: Menunggu Verifikasi
+-   **📋 Panduan Verifikasi** (5 poin):
+    1. Penempatan tanda tangan: posisi yang tepat
+    2. Kualitas visual: jelas dan tidak buram
+    3. Ukuran proporsional: sesuai area
+    4. Tidak overlap: tidak menutupi konten penting
+    5. Kesesuaian template: sesuai yang disetujui
+-   Timeline: Step 3/4 (Ditandatangani - waiting verification)
+-   Tombol PRIMARY: **"✅ Verifikasi & Review Dokumen"**
+-   Catatan penting tentang proses verifikasi
 
 **✅ Status:** BARU DIBUAT & AKTIF
 
@@ -187,15 +204,18 @@ if (!empty($kaprodiEmails)) {
 **⚡ Trigger Event:** ❌ **SEHARUSNYA:** Kaprodi verify/approve signature (FINAL STEP)
 
 **📍 SEHARUSNYA dikirim di mana:**
-- File: `app/Http/Controllers/DigitalSignature/ApprovalRequestController.php`
-- Method: `approveSignature()` (line 670-714)
-- **❌ TETAPI SAAT INI TIDAK ADA EMAIL DI METHOD INI!**
+
+-   File: `app/Http/Controllers/DigitalSignature/ApprovalRequestController.php`
+-   Method: `approveSignature()` (line 670-714)
+-   **❌ TETAPI SAAT INI TIDAK ADA EMAIL DI METHOD INI!**
 
 **📍 Saat ini SALAH dikirim di:**
-- File: `app/Http/Controllers/DigitalSignature/ApprovalRequestController.php`
-- Method: `uploadSignedDocument()` (line 765-767) - **INI METHOD LAMA/UNUSED!**
+
+-   File: `app/Http/Controllers/DigitalSignature/ApprovalRequestController.php`
+-   Method: `uploadSignedDocument()` (line 765-767) - **INI METHOD LAMA/UNUSED!**
 
 **Code yang SEHARUSNYA ditambahkan di `approveSignature()`:**
+
 ```php
 // MISSING! Should be at line ~707 (after verification, before return)
 if ($approvalRequest->documentSignature) {
@@ -209,28 +229,31 @@ if ($approvalRequest->documentSignature) {
 ```
 
 **📄 Subject:**
+
 ```
 ✅ Dokumen Terverifikasi & Ditandatangani - {Document Name}
 ```
 
 **📝 Isi Email:**
-- Success message: **"Tanda tangan Anda telah DIVERIFIKASI oleh Kaprodi"**
-- Intro: "Dokumen telah melalui seluruh proses verifikasi"
-- Signature information card (signer, tanggal, algoritma)
-- Timeline: **Step 4/4 (SEMUA COMPLETE!)** ✅
-  - [DIAJUKAN ✓] → [DISETUJUI ✓] → [DITANDATANGANI ✓] → [TERVERIFIKASI ✓]
-- **🎊 Proses Selesai - Semua Tahap Berhasil**
-- QR Code embedded (base64)
-- **📎 Attachments:**
-  - Signed PDF document
-  - QR Code PNG file
-- Download section
-- Verification guide
-- Tombol: "Download Dokumen Lengkap"
+
+-   Success message: **"Tanda tangan Anda telah DIVERIFIKASI oleh Kaprodi"**
+-   Intro: "Dokumen telah melalui seluruh proses verifikasi"
+-   Signature information card (signer, tanggal, algoritma)
+-   Timeline: **Step 4/4 (SEMUA COMPLETE!)** ✅
+    -   [DIAJUKAN ✓] → [DISETUJUI ✓] → [DITANDATANGANI ✓] → [TERVERIFIKASI ✓]
+-   **🎊 Proses Selesai - Semua Tahap Berhasil**
+-   QR Code embedded (base64)
+-   **📎 Attachments:**
+    -   Signed PDF document
+    -   QR Code PNG file
+-   Download section
+-   Verification guide
+-   Tombol: "Download Dokumen Lengkap"
 
 **❌ Status:** EMAIL SUDAH ADA & SUDAH BAGUS, TETAPI **TIDAK DIKIRIM** DI TEMPAT YANG BENAR!
 
 **🔧 Yang Perlu Diperbaiki:**
+
 1. ❌ Email ini TIDAK dikirim di method `approveSignature()` (line 670-714)
 2. ❌ Method `approveSignature()` hanya return success tanpa email
 3. ⚠️ Email ini saat ini dikirim di method `uploadSignedDocument()` yang sepertinya OLD/DEPRECATED method
@@ -244,11 +267,13 @@ if ($approvalRequest->documentSignature) {
 **⚡ Trigger Event:** Kaprodi reject signature (minta re-sign)
 
 **📍 Dikirim di mana:**
-- File: `app/Models/DocumentSignature.php`
-- Method: `rejectSignature()`
-- Line: ~318-326
+
+-   File: `app/Models/DocumentSignature.php`
+-   Method: `rejectSignature()`
+-   Line: ~318-326
 
 **Code:**
+
 ```php
 // Send notification to student about signature rejection
 if ($this->approvalRequest && $this->approvalRequest->user) {
@@ -263,25 +288,27 @@ if ($this->approvalRequest && $this->approvalRequest->user) {
 ```
 
 **📄 Subject:**
+
 ```
 ⚠️ Tanda Tangan Perlu Diperbaiki - {Document Name}
 ```
 
 **📝 Isi Email:**
-- Warning message (friendly, tidak discouraging)
-- "Jangan khawatir, ini quality control"
-- **📝 Alasan Penolakan** (rejection reason dalam red card)
-- **💡 Tips untuk Penandatanganan Ulang** (5 tips):
-  1. Posisi yang tepat
-  2. Ukuran proporsional
-  3. Tidak menutupi teks
-  4. Kualitas visual bagus
-  5. Preview sebelum submit
-- **📋 Langkah-Langkah** (7 steps untuk re-sign)
-- Timeline: Retry state (Disetujui ✓, but need to re-sign ↻)
-- **💪 Jangan Berkecil Hati!** (encouragement section)
-- **💡 Butuh Bantuan?** (support contact)
-- Tombol PRIMARY: **"Tandatangani Ulang Dokumen"**
+
+-   Warning message (friendly, tidak discouraging)
+-   "Jangan khawatir, ini quality control"
+-   **📝 Alasan Penolakan** (rejection reason dalam red card)
+-   **💡 Tips untuk Penandatanganan Ulang** (5 tips):
+    1. Posisi yang tepat
+    2. Ukuran proporsional
+    3. Tidak menutupi teks
+    4. Kualitas visual bagus
+    5. Preview sebelum submit
+-   **📋 Langkah-Langkah** (7 steps untuk re-sign)
+-   Timeline: Retry state (Disetujui ✓, but need to re-sign ↻)
+-   **💪 Jangan Berkecil Hati!** (encouragement section)
+-   **💡 Butuh Bantuan?** (support contact)
+-   Tombol PRIMARY: **"Tandatangani Ulang Dokumen"**
 
 **✅ Status:** BARU DIBUAT & AKTIF
 
@@ -384,12 +411,14 @@ if ($this->approvalRequest && $this->approvalRequest->user) {
 ### **MASALAH UTAMA: Email #5 Tidak Dikirim di Tempat yang Benar**
 
 **Problem:**
-- Email `ApprovalRequestSignedNotification` **SUDAH ADA** dan **SUDAH BAGUS**
-- Tetapi email ini **TIDAK DIKIRIM** di method `approveSignature()` (line 670-714)
-- Method `approveSignature()` adalah method yang dipanggil saat **Kaprodi verify signature**
-- Email ini seharusnya dikirim DI SINI, bukan di method `uploadSignedDocument()` (old method)
+
+-   Email `ApprovalRequestSignedNotification` **SUDAH ADA** dan **SUDAH BAGUS**
+-   Tetapi email ini **TIDAK DIKIRIM** di method `approveSignature()` (line 670-714)
+-   Method `approveSignature()` adalah method yang dipanggil saat **Kaprodi verify signature**
+-   Email ini seharusnya dikirim DI SINI, bukan di method `uploadSignedDocument()` (old method)
 
 **Current Situation:**
+
 ```php
 // File: ApprovalRequestController.php
 // Method: approveSignature() - Line 670-714
@@ -415,6 +444,7 @@ public function approveSignature(Request $request, $id)
 ```
 
 **What Should Be:**
+
 ```php
 public function approveSignature(Request $request, $id)
 {
@@ -448,18 +478,19 @@ public function approveSignature(Request $request, $id)
 
 ## 📋 CHECKLIST STATUS SEMUA EMAIL
 
-| # | Email Name | Trigger | Recipient | Location | Status |
-|---|------------|---------|-----------|----------|--------|
-| 1 | `NewApprovalRequestNotification` | Student upload | Kaprodi | ApprovalRequestController@upload() ~251 | ✅ OK |
-| 2 | `ApprovalRequestApprovedNotification` | Kaprodi approve | Student | ApprovalRequestController@approve() ~577 | ✅ OK (UPDATED) |
-| 3 | `ApprovalRequestRejectedNotification` | Kaprodi reject request | Student | ApprovalRequestController@reject() ~644 | ✅ OK (FIXED) |
-| 4 | `DocumentSignedByUserNotification` | Student signs | Kaprodi | DigitalSignatureController@processDocumentSigning() ~532 | ✅ OK (NEW) |
-| 5 | `ApprovalRequestSignedNotification` | Kaprodi verify | Student | ❌ **SHOULD BE** ApprovalRequestController@approveSignature() ~707 | ❌ **MISSING TRIGGER!** |
-| 6 | `DocumentSignatureRejectedByKaprodiNotification` | Kaprodi reject signature | Student | DocumentSignature@rejectSignature() ~318 | ✅ OK (NEW) |
+| #   | Email Name                                       | Trigger                  | Recipient | Location                                                           | Status                  |
+| --- | ------------------------------------------------ | ------------------------ | --------- | ------------------------------------------------------------------ | ----------------------- |
+| 1   | `NewApprovalRequestNotification`                 | Student upload           | Kaprodi   | ApprovalRequestController@upload() ~251                            | ✅ OK                   |
+| 2   | `ApprovalRequestApprovedNotification`            | Kaprodi approve          | Student   | ApprovalRequestController@approve() ~577                           | ✅ OK (UPDATED)         |
+| 3   | `ApprovalRequestRejectedNotification`            | Kaprodi reject request   | Student   | ApprovalRequestController@reject() ~644                            | ✅ OK (FIXED)           |
+| 4   | `DocumentSignedByUserNotification`               | Student signs            | Kaprodi   | DigitalSignatureController@processDocumentSigning() ~532           | ✅ OK (NEW)             |
+| 5   | `ApprovalRequestSignedNotification`              | Kaprodi verify           | Student   | ❌ **SHOULD BE** ApprovalRequestController@approveSignature() ~707 | ❌ **MISSING TRIGGER!** |
+| 6   | `DocumentSignatureRejectedByKaprodiNotification` | Kaprodi reject signature | Student   | DocumentSignature@rejectSignature() ~318                           | ✅ OK (NEW)             |
 
 **Summary:**
-- ✅ 5 emails AKTIF dan bekerja dengan benar
-- ❌ 1 email EXISTS but NOT TRIGGERED at the correct place
+
+-   ✅ 5 emails AKTIF dan bekerja dengan benar
+-   ❌ 1 email EXISTS but NOT TRIGGERED at the correct place
 
 ---
 
@@ -472,6 +503,7 @@ public function approveSignature(Request $request, $id)
 **Location:** After line ~701 (after verification check, before return)
 
 **Code to ADD:**
+
 ```php
 // Send success notification to student with attachments
 if ($approvalRequest->documentSignature) {
@@ -485,6 +517,7 @@ if ($approvalRequest->documentSignature) {
 ```
 
 **Full Context:**
+
 ```php
 public function approveSignature(Request $request, $id)
 {
@@ -560,9 +593,10 @@ public function approveSignature(Request $request, $id)
 Email untuk "Kaprodi Verify Signature" **SUDAH ADA** (`ApprovalRequestSignedNotification`), **SUDAH BAGUS**, tapi **TIDAK DIKIRIM** di method yang benar!
 
 **Yang perlu diperbaiki:**
-- Tambahkan trigger email di `ApprovalRequestController@approveSignature()` method (line ~707)
-- Email `ApprovalRequestSignedNotification` harus dikirim DI SINI
-- Ini adalah FINAL step yang mengirim PDF + QR Code ke mahasiswa
+
+-   Tambahkan trigger email di `ApprovalRequestController@approveSignature()` method (line ~707)
+-   Email `ApprovalRequestSignedNotification` harus dikirim DI SINI
+-   Ini adalah FINAL step yang mengirim PDF + QR Code ke mahasiswa
 
 ---
 

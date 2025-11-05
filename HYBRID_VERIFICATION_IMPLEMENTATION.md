@@ -3,40 +3,45 @@
 ## 📋 Overview
 
 Implementasi **Hybrid Approach** untuk Digital Signature Verification yang menggabungkan:
-- ✅ **Full Encryption** (Security requirement terpenuhi)
-- ✅ **Short URL** (User experience excellent)
-- ✅ **Best of Both Worlds!**
+
+-   ✅ **Full Encryption** (Security requirement terpenuhi)
+-   ✅ **Short URL** (User experience excellent)
+-   ✅ **Best of Both Worlds!**
 
 ---
 
 ## 🎯 Problem yang Diselesaikan
 
 ### **BEFORE (Problem):**
+
 ```
 URL: https://domain.com/signature/verify/eyJpdiI6IktZR1pQU0hOQ...350_chars
 ```
 
 **Issues:**
-- ❌ URL terlalu panjang (350+ characters)
-- ❌ QR Code density sangat tinggi (susah di-scan)
-- ❌ Tidak user-friendly untuk dibagikan
-- ❌ Terlihat mencurigakan
-- ❌ No audit trail
-- ❌ Tidak bisa revoke
+
+-   ❌ URL terlalu panjang (350+ characters)
+-   ❌ QR Code density sangat tinggi (susah di-scan)
+-   ❌ Tidak user-friendly untuk dibagikan
+-   ❌ Terlihat mencurigakan
+-   ❌ No audit trail
+-   ❌ Tidak bisa revoke
 
 ### **AFTER (Solution):**
+
 ```
 URL: https://domain.com/signature/verify/ABCD-1234-EFGH
 ```
 
 **Benefits:**
-- ✅ URL pendek (60 chars → **85% reduction!**)
-- ✅ QR Code mudah di-scan
-- ✅ Professional appearance
-- ✅ Full encryption TETAP terjaga di database
-- ✅ Audit trail lengkap
-- ✅ Revocable QR codes
-- ✅ Rate limiting enabled
+
+-   ✅ URL pendek (60 chars → **85% reduction!**)
+-   ✅ QR Code mudah di-scan
+-   ✅ Professional appearance
+-   ✅ Full encryption TETAP terjaga di database
+-   ✅ Audit trail lengkap
+-   ✅ Revocable QR codes
+-   ✅ Rate limiting enabled
 
 ---
 
@@ -85,47 +90,55 @@ VERIFICATION DATA:
 ## 📦 What's Included
 
 ### **1. Database Migration**
+
 ```
 database/migrations/2025_10_23_143010_create_verification_code_mappings_table.php
 ```
 
 **Table Structure:**
-- `short_code` - Short verification code (XXXX-XXXX-XXXX)
-- `encrypted_payload` - Full encrypted verification data
-- `document_signature_id` - Reference to document
-- `expires_at` - Expiration timestamp
-- `access_count` - Number of verification attempts
-- `last_accessed_at` - Last access timestamp
-- `last_accessed_ip` - IP address tracking
-- `last_accessed_user_agent` - Browser tracking
+
+-   `short_code` - Short verification code (XXXX-XXXX-XXXX)
+-   `encrypted_payload` - Full encrypted verification data
+-   `document_signature_id` - Reference to document
+-   `expires_at` - Expiration timestamp
+-   `access_count` - Number of verification attempts
+-   `last_accessed_at` - Last access timestamp
+-   `last_accessed_ip` - IP address tracking
+-   `last_accessed_user_agent` - Browser tracking
 
 ### **2. Model**
+
 ```
 app/Models/VerificationCodeMapping.php
 ```
 
 **Key Methods:**
-- `generateShortCode()` - Generate unique short code
-- `createMapping()` - Create new mapping
-- `findByShortCode()` - Lookup with validation
-- `trackAccess()` - Audit trail
-- `shouldRateLimit()` - Security check
+
+-   `generateShortCode()` - Generate unique short code
+-   `createMapping()` - Create new mapping
+-   `findByShortCode()` - Lookup with validation
+-   `trackAccess()` - Audit trail
+-   `shouldRateLimit()` - Security check
 
 ### **3. Updated Services**
 
 #### **QRCodeService.php**
-- ✅ `createEncryptedVerificationData()` - Creates mapping
-- ✅ `decryptVerificationData()` - Supports both short code & full token
+
+-   ✅ `createEncryptedVerificationData()` - Creates mapping
+-   ✅ `decryptVerificationData()` - Supports both short code & full token
 
 #### **VerificationService.php**
-- ✅ Already compatible (uses QRCodeService)
+
+-   ✅ Already compatible (uses QRCodeService)
 
 ### **4. Cleanup Command**
+
 ```
 app/Console/Commands/CleanupExpiredVerificationCodes.php
 ```
 
 **Usage:**
+
 ```bash
 # Dry run (preview only)
 php artisan verification:cleanup --dry-run
@@ -141,6 +154,7 @@ php artisan verification:cleanup --days=180
 ```
 
 ### **5. Scheduled Task**
+
 ```
 bootstrap/app.php
 ```
@@ -321,21 +335,23 @@ Layer 4: Verification Token (Authenticity)
 
 ### **2. Rate Limiting**
 
-- Max 10 attempts per hour per short code
-- Automatic blocking on suspicious activity
-- IP tracking & logging
+-   Max 10 attempts per hour per short code
+-   Automatic blocking on suspicious activity
+-   IP tracking & logging
 
 ### **3. Audit Trail**
 
 Every verification attempt tracked:
-- Timestamp
-- IP address
-- User agent
-- Access count
+
+-   Timestamp
+-   IP address
+-   User agent
+-   Access count
 
 ### **4. Revocable Codes**
 
 Admin dapat revoke QR code:
+
 ```php
 $mapping = VerificationCodeMapping::findByShortCode('ABCD-1234-EFGH');
 $mapping->delete(); // Code immediately invalid
@@ -371,15 +387,15 @@ ORDER BY count DESC;
 
 ## 🚀 Deployment Checklist
 
-- [x] Run migration: `php artisan migrate`
-- [x] Test QR generation
-- [x] Test verification
-- [x] Test cleanup command
-- [x] Verify scheduled task: `php artisan schedule:list`
-- [ ] Setup cron job: `* * * * * cd /path && php artisan schedule:run`
-- [ ] Monitor logs: `tail -f storage/logs/laravel.log`
-- [ ] Backup database before deploy
-- [ ] Test in staging environment first
+-   [x] Run migration: `php artisan migrate`
+-   [x] Test QR generation
+-   [x] Test verification
+-   [x] Test cleanup command
+-   [x] Verify scheduled task: `php artisan schedule:list`
+-   [ ] Setup cron job: `* * * * * cd /path && php artisan schedule:run`
+-   [ ] Monitor logs: `tail -f storage/logs/laravel.log`
+-   [ ] Backup database before deploy
+-   [ ] Test in staging environment first
 
 ---
 
@@ -390,6 +406,7 @@ ORDER BY count DESC;
 Default: 5 years
 
 To change:
+
 ```php
 // In VerificationCodeMapping::createMapping()
 $mapping = self::create([
@@ -403,6 +420,7 @@ $mapping = self::create([
 Default: 10 attempts/hour
 
 To change:
+
 ```php
 // In QRCodeService::decryptVerificationData()
 if ($mapping->shouldRateLimit(20)) { // Change to 20
@@ -415,6 +433,7 @@ if ($mapping->shouldRateLimit(20)) { // Change to 20
 Default: Monthly at 2 AM
 
 To change in `bootstrap/app.php`:
+
 ```php
 $schedule->command('verification:cleanup --force')
     ->weekly()        // Change to weekly
@@ -429,6 +448,7 @@ $schedule->command('verification:cleanup --force')
 ### **Issue: Short code not found**
 
 **Solution:**
+
 ```bash
 # Check if mapping exists
 php artisan tinker
@@ -441,6 +461,7 @@ mysql> SELECT * FROM verification_code_mappings LIMIT 5;
 ### **Issue: Rate limit too strict**
 
 **Solution:**
+
 ```php
 // Temporary disable rate limiting for testing
 // In QRCodeService::decryptVerificationData()
@@ -451,6 +472,7 @@ mysql> SELECT * FROM verification_code_mappings LIMIT 5;
 ### **Issue: Scheduled cleanup not running**
 
 **Solution:**
+
 ```bash
 # Verify cron job
 crontab -l
@@ -466,9 +488,9 @@ php artisan schedule:run
 
 ## 📚 References
 
-- Laravel 11 Scheduling: https://laravel.com/docs/11.x/scheduling
-- Laravel Encryption: https://laravel.com/docs/11.x/encryption
-- QR Code Best Practices: https://www.qr-code-generator.com/qr-code-marketing/qr-codes-basics/
+-   Laravel 11 Scheduling: https://laravel.com/docs/11.x/scheduling
+-   Laravel Encryption: https://laravel.com/docs/11.x/encryption
+-   QR Code Best Practices: https://www.qr-code-generator.com/qr-code-marketing/qr-codes-basics/
 
 ---
 
@@ -489,6 +511,7 @@ This implementation follows the same license as your main project.
 **🎉 Congratulations! Hybrid Verification System successfully implemented!**
 
 For questions or issues, check the logs:
+
 ```bash
 tail -f storage/logs/laravel.log | grep "verification"
 ```

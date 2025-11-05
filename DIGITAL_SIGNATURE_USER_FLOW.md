@@ -437,10 +437,11 @@ Response:
 ```
 
 **Output**:
-- DocumentSignature record dengan status 'verified'
-- Signed PDF dengan embedded signature + QR code
-- QR code image untuk verifikasi
-- Audit log entry
+
+-   DocumentSignature record dengan status 'verified'
+-   Signed PDF dengan embedded signature + QR code
+-   QR code image untuk verifikasi
+-   Audit log entry
 
 ---
 
@@ -706,10 +707,11 @@ IF INVALID:
 ```
 
 **Output**:
-- Verification result (valid/invalid)
-- Detailed verification report
-- SignatureVerificationLog entry
-- Updated access_count in mapping table
+
+-   Verification result (valid/invalid)
+-   Detailed verification report
+-   SignatureVerificationLog entry
+-   Updated access_count in mapping table
 
 ---
 
@@ -740,14 +742,14 @@ pending → approved → sign_approved
 
 ## ⏱️ Timeline Estimate
 
-| Phase | Actor | Duration |
-|-------|-------|----------|
-| 1. Key Generation | Kaprodi | 5-10 minutes (one-time) |
-| 2. Document Submission | User | 3-5 minutes |
-| 3. Document Approval | Kaprodi | 2-5 minutes per doc |
-| 4. Digital Signing | Kaprodi | 3-7 minutes per doc |
-| 5. Document Distribution | System | Instant (automated) |
-| 6. Verification | Public | 10-30 seconds |
+| Phase                    | Actor   | Duration                |
+| ------------------------ | ------- | ----------------------- |
+| 1. Key Generation        | Kaprodi | 5-10 minutes (one-time) |
+| 2. Document Submission   | User    | 3-5 minutes             |
+| 3. Document Approval     | Kaprodi | 2-5 minutes per doc     |
+| 4. Digital Signing       | Kaprodi | 3-7 minutes per doc     |
+| 5. Document Distribution | System  | Instant (automated)     |
+| 6. Verification          | Public  | 10-30 seconds           |
 
 **Total Time (per document)**: ~15-30 minutes from submission to signed delivery
 

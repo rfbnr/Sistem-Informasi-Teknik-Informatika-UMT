@@ -118,10 +118,11 @@ $expiresAt = $signatureExpiry < $defaultExpiry
 ```
 
 **Benefits:**
-- ✅ Respects master key validity
-- ✅ Prevents creating QR for revoked keys
-- ✅ Prevents creating QR for expired keys
-- ✅ Comprehensive logging for debugging
+
+-   ✅ Respects master key validity
+-   ✅ Prevents creating QR for revoked keys
+-   ✅ Prevents creating QR for expired keys
+-   ✅ Comprehensive logging for debugging
 
 ---
 
@@ -160,10 +161,11 @@ public static function createMapping($encryptedPayload, $documentSignatureId, $e
 ```
 
 **Benefits:**
-- ✅ Flexible input types
-- ✅ Backward compatible
-- ✅ Type-safe with validation
-- ✅ Clear error messages
+
+-   ✅ Flexible input types
+-   ✅ Backward compatible
+-   ✅ Type-safe with validation
+-   ✅ Clear error messages
 
 ---
 
@@ -185,10 +187,11 @@ public static function createMapping($encryptedPayload, $documentSignatureId, $e
 ```
 
 **Benefits:**
-- ✅ Centralized configuration
-- ✅ Environment-specific settings
-- ✅ Easy to customize
-- ✅ Well documented
+
+-   ✅ Centralized configuration
+-   ✅ Environment-specific settings
+-   ✅ Easy to customize
+-   ✅ Well documented
 
 ---
 
@@ -210,6 +213,7 @@ WHERE vcm.expires_at > ds.valid_until;
 ```
 
 **Results:**
+
 ```
 Total mappings processed: 3
 Updated: 3
@@ -263,6 +267,7 @@ Expected:
 ```
 
 **Actual Result:** ✅ PASS
+
 ```
 Log: QR code expiration calculated dynamically
 ├─ signature_expiry: 2025-10-01 00:00:00
@@ -287,6 +292,7 @@ Expected:
 ```
 
 **Actual Result:** ✅ PASS
+
 ```
 Log: QR code expiration calculated dynamically
 ├─ signature_expiry: 2034-10-01 00:00:00
@@ -309,6 +315,7 @@ Expected:
 ```
 
 **Actual Result:** ✅ PASS
+
 ```
 Log: Attempting to create QR for revoked digital signature
 ├─ digital_signature_id: 5
@@ -330,6 +337,7 @@ Expected:
 ```
 
 **Actual Result:** ✅ PASS
+
 ```
 Log: Attempting to create QR for expired digital signature
 ├─ digital_signature_id: 5
@@ -351,6 +359,7 @@ Expected:
 ```
 
 **Actual Result:** ✅ PASS
+
 ```
 Migration Summary:
 ├─ Total: 3
@@ -492,15 +501,15 @@ VERIFICATION_REVOCATION_GRACE_DAYS=0
 
 ## 🚀 Deployment Checklist
 
-- [x] Update QRCodeService.php
-- [x] Update VerificationCodeMapping.php
-- [x] Create config/signature.php
-- [x] Create & run migration for existing data
-- [x] Test all scenarios
-- [ ] Update `.env` with configuration
-- [ ] Monitor logs after deployment
-- [ ] Communicate changes to team
-- [ ] Update user documentation
+-   [x] Update QRCodeService.php
+-   [x] Update VerificationCodeMapping.php
+-   [x] Create config/signature.php
+-   [x] Create & run migration for existing data
+-   [x] Test all scenarios
+-   [ ] Update `.env` with configuration
+-   [ ] Monitor logs after deployment
+-   [ ] Communicate changes to team
+-   [ ] Update user documentation
 
 ---
 
@@ -509,26 +518,29 @@ VERIFICATION_REVOCATION_GRACE_DAYS=0
 ### **Log Events Added:**
 
 1. **QR code expiration calculated dynamically**
-   ```
-   document_signature_id, digital_signature_id,
-   signature_expiry, default_expiry, chosen_expiry,
-   expiry_reason, days_until_expiry
-   ```
+
+    ```
+    document_signature_id, digital_signature_id,
+    signature_expiry, default_expiry, chosen_expiry,
+    expiry_reason, days_until_expiry
+    ```
 
 2. **Attempting to create QR for revoked digital signature**
-   ```
-   digital_signature_id, revoked_at, revocation_reason
-   ```
+
+    ```
+    digital_signature_id, revoked_at, revocation_reason
+    ```
 
 3. **Attempting to create QR for expired digital signature**
-   ```
-   digital_signature_id, expired_at
-   ```
+
+    ```
+    digital_signature_id, expired_at
+    ```
 
 4. **Updated verification code mapping expiration** (migration)
-   ```
-   mapping_id, short_code, old_expires, new_expires, reason
-   ```
+    ```
+    mapping_id, short_code, old_expires, new_expires, reason
+    ```
 
 ### **Monitoring Queries:**
 
@@ -569,12 +581,13 @@ GROUP BY status;
 **Cause:** The DigitalSignature used for signing has expired.
 
 **Solution:**
+
 1. Create new DigitalSignature:
-   ```bash
-   php artisan tinker
-   >>> $service = app(\App\Services\DigitalSignatureService::class);
-   >>> $newSig = $service->createDigitalSignature('Purpose', $userId, 1);
-   ```
+    ```bash
+    php artisan tinker
+    >>> $service = app(\App\Services\DigitalSignatureService::class);
+    >>> $newSig = $service->createDigitalSignature('Purpose', $userId, 1);
+    ```
 2. Re-sign document with new signature
 3. Generate new QR code
 
@@ -587,6 +600,7 @@ GROUP BY status;
 **Cause:** The DigitalSignature was revoked for security reasons.
 
 **Solution:**
+
 1. Investigate why signature was revoked
 2. If safe, create new DigitalSignature
 3. Re-sign document
@@ -599,25 +613,26 @@ GROUP BY status;
 **Cause:** Existing mappings not updated by migration.
 
 **Solution:**
+
 1. Check migration status:
-   ```bash
-   php artisan migrate:status
-   ```
+    ```bash
+    php artisan migrate:status
+    ```
 2. Re-run migration if needed:
-   ```bash
-   php artisan migrate:rollback --step=1
-   php artisan migrate
-   ```
+    ```bash
+    php artisan migrate:rollback --step=1
+    php artisan migrate
+    ```
 3. Check logs for errors
 
 ---
 
 ## 📚 References
 
-- Digital Signature Standards: ISO/IEC 14533-1
-- PKI Best Practices: RFC 5280
-- Laravel Encryption: https://laravel.com/docs/11.x/encryption
-- Carbon Dates: https://carbon.nesbot.com/docs/
+-   Digital Signature Standards: ISO/IEC 14533-1
+-   PKI Best Practices: RFC 5280
+-   Laravel Encryption: https://laravel.com/docs/11.x/encryption
+-   Carbon Dates: https://carbon.nesbot.com/docs/
 
 ---
 
@@ -635,19 +650,20 @@ GROUP BY status;
 
 If you're maintaining this code:
 
-- [ ] Understand cascade expiration concept
-- [ ] Check `config/signature.php` settings
-- [ ] Monitor logs for expiration patterns
-- [ ] Review QR generation failures
-- [ ] Keep DigitalSignatures renewed
-- [ ] Communicate signature renewals to users
-- [ ] Regular cleanup of expired mappings
+-   [ ] Understand cascade expiration concept
+-   [ ] Check `config/signature.php` settings
+-   [ ] Monitor logs for expiration patterns
+-   [ ] Review QR generation failures
+-   [ ] Keep DigitalSignatures renewed
+-   [ ] Communicate signature renewals to users
+-   [ ] Regular cleanup of expired mappings
 
 ---
 
 **🎉 Dynamic Expiration Successfully Implemented!**
 
 For questions or issues:
+
 ```bash
 tail -f storage/logs/laravel.log | grep "expiration\|revoked\|expired"
 ```

@@ -1,4 +1,5 @@
 # Dokumentasi Sistem Verifikasi Digital Signature
+
 ## Program Studi Teknik Informatika - Universitas Muhammadiyah Tangerang
 
 ---
@@ -23,20 +24,20 @@ Sistem Digital Signature ini dirancang untuk memberikan mekanisme tanda tangan d
 
 ### Fitur Utama
 
-- ✅ **Tanda Tangan Digital dengan RSA-SHA256**: Setiap dokumen ditandatangani dengan kunci unik
-- ✅ **Sertifikat X.509 v3**: Setiap tanda tangan memiliki sertifikat digital yang valid
-- ✅ **Verifikasi Publik**: Siapa saja dapat memverifikasi keaslian dokumen melalui QR Code atau Token
-- ✅ **Audit Trail Lengkap**: Semua aktivitas tercatat dalam log audit
-- ✅ **Keamanan Multi-Layer**: Rate limiting, encryption, dan masking data sensitif
-- ✅ **QR Code Dynamic Positioning**: Kaprodi dapat menempatkan QR code di posisi yang diinginkan
+-   ✅ **Tanda Tangan Digital dengan RSA-SHA256**: Setiap dokumen ditandatangani dengan kunci unik
+-   ✅ **Sertifikat X.509 v3**: Setiap tanda tangan memiliki sertifikat digital yang valid
+-   ✅ **Verifikasi Publik**: Siapa saja dapat memverifikasi keaslian dokumen melalui QR Code atau Token
+-   ✅ **Audit Trail Lengkap**: Semua aktivitas tercatat dalam log audit
+-   ✅ **Keamanan Multi-Layer**: Rate limiting, encryption, dan masking data sensitif
+-   ✅ **QR Code Dynamic Positioning**: Kaprodi dapat menempatkan QR code di posisi yang diinginkan
 
 ### Teknologi yang Digunakan
 
-- **Backend**: Laravel 10+, PHP 8.1+
-- **Kriptografi**: OpenSSL (RSA 2048-bit, SHA-256)
-- **Database**: MySQL/MariaDB
-- **QR Code**: Endroid QR Code Library
-- **PDF Processing**: TCPDF/DomPDF
+-   **Backend**: Laravel 10+, PHP 8.1+
+-   **Kriptografi**: OpenSSL (RSA 2048-bit, SHA-256)
+-   **Database**: MySQL/MariaDB
+-   **QR Code**: Endroid QR Code Library
+-   **PDF Processing**: TCPDF/DomPDF
 
 ---
 
@@ -47,6 +48,7 @@ Sistem Digital Signature ini dirancang untuk memberikan mekanisme tanda tangan d
 **Deskripsi**: Menyimpan data permintaan persetujuan dokumen dari mahasiswa/user.
 
 **Kolom Utama**:
+
 ```sql
 - id                      (Primary Key)
 - user_id                 (FK -> users)
@@ -70,6 +72,7 @@ Sistem Digital Signature ini dirancang untuk memberikan mekanisme tanda tangan d
 ```
 
 **Status Flow**:
+
 ```
 pending → approved → sign_approved
    ↓
@@ -77,9 +80,10 @@ rejected
 ```
 
 **Indexes**:
-- `user_id` (untuk query dokumen per user)
-- `status` (untuk filter status)
-- `approved_by` (untuk query per kaprodi)
+
+-   `user_id` (untuk query dokumen per user)
+-   `status` (untuk filter status)
+-   `approved_by` (untuk query per kaprodi)
 
 ---
 
@@ -88,6 +92,7 @@ rejected
 **Deskripsi**: Menyimpan data tanda tangan digital untuk setiap dokumen.
 
 **Kolom Utama**:
+
 ```sql
 - id                       (Primary Key)
 - approval_request_id      (FK -> approval_requests, UNIQUE 1-to-1)
@@ -108,6 +113,7 @@ rejected
 ```
 
 **Status Flow**:
+
 ```
 pending → signed → verified
    ↓
@@ -115,9 +121,10 @@ invalid (jika key dicabut)
 ```
 
 **Indexes**:
-- `approval_request_id` (foreign key)
-- `document_hash, signature_status` (composite untuk query verifikasi)
-- `signed_at, signature_status` (untuk reporting)
+
+-   `approval_request_id` (foreign key)
+-   `document_hash, signature_status` (composite untuk query verifikasi)
+-   `signed_at, signature_status` (untuk reporting)
 
 ---
 
@@ -126,11 +133,13 @@ invalid (jika key dicabut)
 **Deskripsi**: Menyimpan pasangan kunci RSA (public/private key) dan sertifikat X.509 untuk setiap dokumen.
 
 **Konsep Penting**:
-- **1-to-1 Relationship dengan `document_signatures`**
-- **Setiap dokumen memiliki kunci unik** (tidak sharing key antar dokumen)
-- **Auto-generated** saat proses signing
+
+-   **1-to-1 Relationship dengan `document_signatures`**
+-   **Setiap dokumen memiliki kunci unik** (tidak sharing key antar dokumen)
+-   **Auto-generated** saat proses signing
 
 **Kolom Utama**:
+
 ```sql
 - id                       (Primary Key)
 - signature_id             (String unik: SIG-XXXXXXXXXXXX)
@@ -150,6 +159,7 @@ invalid (jika key dicabut)
 ```
 
 **Status Flow**:
+
 ```
 active → expired (otomatis setelah valid_until)
    ↓
@@ -157,13 +167,15 @@ revoked (manual oleh kaprodi)
 ```
 
 **Security Features**:
-- Private key di-encrypt menggunakan Laravel encryption (APP_KEY)
-- Certificate menggunakan standar X.509 v3 dengan DN (Distinguished Name) yang personalized
+
+-   Private key di-encrypt menggunakan Laravel encryption (APP_KEY)
+-   Certificate menggunakan standar X.509 v3 dengan DN (Distinguished Name) yang personalized
 
 **Indexes**:
-- `signature_id` (untuk quick lookup)
-- `document_signature_id` (foreign key, unique)
-- `status, valid_from, valid_until` (composite untuk query validity check)
+
+-   `signature_id` (untuk quick lookup)
+-   `document_signature_id` (foreign key, unique)
+-   `status, valid_from, valid_until` (composite untuk query validity check)
 
 ---
 
@@ -172,6 +184,7 @@ revoked (manual oleh kaprodi)
 **Deskripsi**: Mencatat semua aktivitas verifikasi publik terhadap dokumen yang ditandatangani.
 
 **Kolom Utama**:
+
 ```sql
 - id                          (Primary Key)
 - document_signature_id       (FK -> document_signatures, nullable)
@@ -190,16 +203,18 @@ revoked (manual oleh kaprodi)
 ```
 
 **Tujuan Logging**:
-- **Audit Trail**: Siapa, kapan, dari mana melakukan verifikasi
-- **Security Monitoring**: Deteksi brute force atau suspicious activity
-- **Analytics**: Statistik penggunaan sistem verifikasi
-- **Compliance**: Bukti audit untuk akreditasi
+
+-   **Audit Trail**: Siapa, kapan, dari mana melakukan verifikasi
+-   **Security Monitoring**: Deteksi brute force atau suspicious activity
+-   **Analytics**: Statistik penggunaan sistem verifikasi
+-   **Compliance**: Bukti audit untuk akreditasi
 
 **Indexes**:
-- `document_signature_id, verified_at` (untuk query verifikasi per dokumen)
-- `is_valid, verified_at` (untuk statistik success/failed)
-- `ip_address, verified_at` (untuk deteksi abuse)
-- `verification_method, verified_at` (untuk analytics metode verifikasi)
+
+-   `document_signature_id, verified_at` (untuk query verifikasi per dokumen)
+-   `is_valid, verified_at` (untuk statistik success/failed)
+-   `ip_address, verified_at` (untuk deteksi abuse)
+-   `verification_method, verified_at` (untuk analytics metode verifikasi)
 
 ---
 
@@ -208,6 +223,7 @@ revoked (manual oleh kaprodi)
 **Deskripsi**: Mencatat semua aktivitas internal sistem terkait signing dan management.
 
 **Kolom Utama**:
+
 ```sql
 - id                          (Primary Key)
 - document_signature_id       (FK -> document_signatures, nullable)
@@ -226,6 +242,7 @@ revoked (manual oleh kaprodi)
 ```
 
 **Action Constants**:
+
 ```php
 - signature_initiated              // Proses signing dimulai
 - document_signed                  // Dokumen berhasil ditandatangani
@@ -238,9 +255,10 @@ revoked (manual oleh kaprodi)
 ```
 
 **Indexes**:
-- `user_id, performed_at` (query log per user)
-- `action, performed_at` (query per jenis aktivitas)
-- `document_signature_id, action` (query log per dokumen)
+
+-   `user_id, performed_at` (query log per user)
+-   `action, performed_at` (query per jenis aktivitas)
+-   `document_signature_id, action` (query log per dokumen)
 
 ---
 
@@ -320,6 +338,7 @@ public function markUserSigned($signPath): void
 ```
 
 **Status Constants**:
+
 ```php
 const STATUS_PENDING = 'pending';           // Menunggu approval kaprodi
 const STATUS_APPROVED = 'approved';         // Disetujui, siap ditandatangani
@@ -397,6 +416,7 @@ public function saveQRPositioning($positioningData): bool
 ```
 
 **Status Constants**:
+
 ```php
 const STATUS_PENDING = 'pending';   // Belum ditandatangani
 const STATUS_SIGNED = 'signed';     // Sudah ditandatangani
@@ -405,8 +425,9 @@ const STATUS_INVALID = 'invalid';   // Tidak valid (key revoked)
 ```
 
 **Auto-Generated Fields** (via Model Events):
-- `verification_token`: 64 karakter random string (saat create)
-- Audit log otomatis tercatat saat create
+
+-   `verification_token`: 64 karakter random string (saat create)
+-   Audit log otomatis tercatat saat create
 
 ---
 
@@ -457,12 +478,14 @@ public function getPrivateKeyAttribute($value)
 ```
 
 **Auto-Generated Fields** (via Model Events):
-- `signature_id`: Format `SIG-XXXXXXXXXXXX` (12 karakter random uppercase)
-- `valid_from`: Default `now()`
-- `valid_until`: Default `now()->addYears(3)` (3 tahun)
+
+-   `signature_id`: Format `SIG-XXXXXXXXXXXX` (12 karakter random uppercase)
+-   `valid_from`: Default `now()`
+-   `valid_until`: Default `now()->addYears(3)` (3 tahun)
 
 **Hidden Fields** (tidak di-expose dalam JSON response):
-- `private_key`: Untuk keamanan, tidak pernah di-expose via API
+
+-   `private_key`: Untuk keamanan, tidak pernah di-expose via API
 
 ---
 
@@ -647,52 +670,58 @@ public static function createMetadata($customData = []): array
 **Langkah-langkah**:
 
 1. **Login ke Sistem**
-   - User login menggunakan kredensial (auth:web)
-   - Route: `POST /login`
+
+    - User login menggunakan kredensial (auth:web)
+    - Route: `POST /login`
 
 2. **Navigate ke Halaman Approval Request**
-   - User membuka halaman form pengajuan approval
-   - Route: `GET /user/signature/approval/request`
-   - Controller: `ApprovalRequestController@showUploadForm`
+
+    - User membuka halaman form pengajuan approval
+    - Route: `GET /user/signature/approval/request`
+    - Controller: `ApprovalRequestController@showUploadForm`
 
 3. **Upload Dokumen**
-   - User memilih file PDF yang akan ditandatangani
-   - User mengisi informasi:
-     - Nama dokumen
-     - Jenis dokumen (opsional)
-     - Catatan (opsional)
-   - Route: `POST /user/signature/approval/upload`
-   - Controller: `ApprovalRequestController@upload`
+
+    - User memilih file PDF yang akan ditandatangani
+    - User mengisi informasi:
+        - Nama dokumen
+        - Jenis dokumen (opsional)
+        - Catatan (opsional)
+    - Route: `POST /user/signature/approval/upload`
+    - Controller: `ApprovalRequestController@upload`
 
 4. **Sistem Memproses Upload**
-   - Validasi file (harus PDF, max 10MB)
-   - Simpan file ke `storage/public/documents/`
-   - Buat record di tabel `approval_requests`:
-     ```php
-     ApprovalRequest::create([
-         'user_id' => auth()->id(),
-         'document_name' => $request->document_name,
-         'document_path' => $filePath,
-         'notes' => $request->notes,
-         'status' => 'pending',
-         'document_type' => $request->document_type
-     ]);
-     ```
-   - Auto-create audit log (via model event)
+
+    - Validasi file (harus PDF, max 10MB)
+    - Simpan file ke `storage/public/documents/`
+    - Buat record di tabel `approval_requests`:
+        ```php
+        ApprovalRequest::create([
+            'user_id' => auth()->id(),
+            'document_name' => $request->document_name,
+            'document_path' => $filePath,
+            'notes' => $request->notes,
+            'status' => 'pending',
+            'document_type' => $request->document_type
+        ]);
+        ```
+    - Auto-create audit log (via model event)
 
 5. **User Melihat Status**
-   - User dapat melihat status dokumen di halaman "Status Pengajuan"
-   - Route: `GET /user/signature/approval/status`
-   - Controller: `ApprovalRequestController@status`
-   - Status awal: `pending` (Menunggu Persetujuan)
+
+    - User dapat melihat status dokumen di halaman "Status Pengajuan"
+    - Route: `GET /user/signature/approval/status`
+    - Controller: `ApprovalRequestController@status`
+    - Status awal: `pending` (Menunggu Persetujuan)
 
 6. **Notifikasi ke Kaprodi**
-   - Sistem mengirim email notifikasi ke Kaprodi
-   - Email berisi: nama dokumen, nama user, link approval
+    - Sistem mengirim email notifikasi ke Kaprodi
+    - Email berisi: nama dokumen, nama user, link approval
 
 **Database Changes**:
-- Insert 1 row ke `approval_requests` (status: pending)
-- Insert 1 row ke `signature_audit_logs` (action: signature_initiated)
+
+-   Insert 1 row ke `approval_requests` (status: pending)
+-   Insert 1 row ke `signature_audit_logs` (action: signature_initiated)
 
 ---
 
@@ -703,62 +732,69 @@ public static function createMetadata($customData = []): array
 **Langkah-langkah**:
 
 1. **Login sebagai Kaprodi**
-   - Kaprodi login menggunakan kredensial kaprodi
-   - Route: `POST /login`
+
+    - Kaprodi login menggunakan kredensial kaprodi
+    - Route: `POST /login`
 
 2. **Melihat Daftar Approval Request**
-   - Kaprodi membuka dashboard approval requests
-   - Route: `GET /admin/signature/approval-requests`
-   - Controller: `ApprovalRequestController@index`
-   - Melihat list dokumen yang status `pending`
+
+    - Kaprodi membuka dashboard approval requests
+    - Route: `GET /admin/signature/approval-requests`
+    - Controller: `ApprovalRequestController@index`
+    - Melihat list dokumen yang status `pending`
 
 3. **Melihat Detail Dokumen**
-   - Kaprodi klik salah satu dokumen untuk detail
-   - Route: `GET /admin/signature/approval-requests/{id}`
-   - Controller: `ApprovalRequestController@show`
-   - Kaprodi bisa preview PDF dokumen
-   - Route preview: `GET /admin/signature/approval-requests/{id}/download`
+
+    - Kaprodi klik salah satu dokumen untuk detail
+    - Route: `GET /admin/signature/approval-requests/{id}`
+    - Controller: `ApprovalRequestController@show`
+    - Kaprodi bisa preview PDF dokumen
+    - Route preview: `GET /admin/signature/approval-requests/{id}/download`
 
 4. **Approve Dokumen**
-   - Kaprodi klik tombol "Approve"
-   - Kaprodi bisa menambahkan catatan approval (opsional)
-   - Route: `POST /admin/signature/approval-requests/{id}/approve`
-   - Controller: `ApprovalRequestController@approve`
+
+    - Kaprodi klik tombol "Approve"
+    - Kaprodi bisa menambahkan catatan approval (opsional)
+    - Route: `POST /admin/signature/approval-requests/{id}/approve`
+    - Controller: `ApprovalRequestController@approve`
 
 5. **Sistem Memproses Approval**
-   ```php
-   // Update ApprovalRequest
-   $approvalRequest->update([
-       'status' => 'approved',
-       'approved_at' => now(),
-       'approved_by' => auth('kaprodi')->id(),
-       'approval_notes' => $notes
-   ]);
 
-   // Auto-create DocumentSignature record
-   $documentSignature = DocumentSignature::create([
-       'approval_request_id' => $approvalRequest->id,
-       'signature_status' => 'pending'
-   ]);
+    ```php
+    // Update ApprovalRequest
+    $approvalRequest->update([
+        'status' => 'approved',
+        'approved_at' => now(),
+        'approved_by' => auth('kaprodi')->id(),
+        'approval_notes' => $notes
+    ]);
 
-   // Auto-generate temporary QR code untuk drag & drop
-   $documentSignature->generateTemporaryQRCode();
-   ```
+    // Auto-create DocumentSignature record
+    $documentSignature = DocumentSignature::create([
+        'approval_request_id' => $approvalRequest->id,
+        'signature_status' => 'pending'
+    ]);
+
+    // Auto-generate temporary QR code untuk drag & drop
+    $documentSignature->generateTemporaryQRCode();
+    ```
 
 6. **Auto-Generate Temporary QR Code**
-   - Sistem membuat QR code sementara untuk preview
-   - QR code disimpan di `storage/public/temp-qrcodes/`
-   - Path disimpan di field `temporary_qr_code_path`
+
+    - Sistem membuat QR code sementara untuk preview
+    - QR code disimpan di `storage/public/temp-qrcodes/`
+    - Path disimpan di field `temporary_qr_code_path`
 
 7. **Notifikasi ke User**
-   - Sistem mengirim email notifikasi ke user
-   - Email berisi: dokumen disetujui, menunggu proses signing
+    - Sistem mengirim email notifikasi ke user
+    - Email berisi: dokumen disetujui, menunggu proses signing
 
 **Database Changes**:
-- Update 1 row di `approval_requests` (status: pending → approved)
-- Insert 1 row ke `document_signatures` (status: pending)
-- Insert 1 row ke `signature_audit_logs` (action: approved)
-- File temporary QR code dibuat di storage
+
+-   Update 1 row di `approval_requests` (status: pending → approved)
+-   Insert 1 row ke `document_signatures` (status: pending)
+-   Insert 1 row ke `signature_audit_logs` (action: approved)
+-   File temporary QR code dibuat di storage
 
 ---
 
@@ -769,160 +805,177 @@ public static function createMetadata($customData = []): array
 **Langkah-langkah**:
 
 1. **User Melihat Notifikasi/Status**
-   - User menerima email bahwa dokumen sudah disetujui
-   - User membuka halaman status
-   - Route: `GET /user/signature/approval/status`
-   - User melihat tombol "Tanda Tangani Dokumen"
+
+    - User menerima email bahwa dokumen sudah disetujui
+    - User membuka halaman status
+    - Route: `GET /user/signature/approval/status`
+    - User melihat tombol "Tanda Tangani Dokumen"
 
 2. **User Membuka Halaman Signing**
-   - User klik tombol "Tanda Tangani Dokumen"
-   - Route: `GET /user/signature/sign/{approvalRequestId}`
-   - Controller: `DigitalSignatureController@signDocument`
+
+    - User klik tombol "Tanda Tangani Dokumen"
+    - Route: `GET /user/signature/sign/{approvalRequestId}`
+    - Controller: `DigitalSignatureController@signDocument`
 
 3. **Halaman Signing di-Load**
-   - Sistem menampilkan:
-     - PDF viewer (canvas) dengan dokumen original
-     - QR code sementara (draggable)
-     - Zoom controls
-     - Page navigation (untuk multi-page PDF)
-   - User dapat drag-drop QR code ke posisi yang diinginkan
+
+    - Sistem menampilkan:
+        - PDF viewer (canvas) dengan dokumen original
+        - QR code sementara (draggable)
+        - Zoom controls
+        - Page navigation (untuk multi-page PDF)
+    - User dapat drag-drop QR code ke posisi yang diinginkan
 
 4. **User Menempatkan QR Code**
-   - User drag QR code ke posisi yang sesuai pada PDF
-   - User bisa zoom in/out untuk akurasi
-   - Sistem mencatat posisi (x, y, page, scale)
+
+    - User drag QR code ke posisi yang sesuai pada PDF
+    - User bisa zoom in/out untuk akurasi
+    - Sistem mencatat posisi (x, y, page, scale)
 
 5. **User Submit Positioning**
-   - User klik tombol "Proses Tanda Tangan"
-   - Konfirmasi dialog: "Apakah posisi QR code sudah sesuai?"
-   - Route: `POST /user/signature/sign/{approvalRequestId}/process`
-   - Controller: `DigitalSignatureController@processDocumentSigning`
+
+    - User klik tombol "Proses Tanda Tangan"
+    - Konfirmasi dialog: "Apakah posisi QR code sudah sesuai?"
+    - Route: `POST /user/signature/sign/{approvalRequestId}/process`
+    - Controller: `DigitalSignatureController@processDocumentSigning`
 
 6. **Sistem Memproses Signing** (Backend Heavy Process)
 
-   **Step 1: Save QR Positioning Data**
-   ```php
-   $documentSignature->saveQRPositioning([
-       'x' => $request->qr_x,
-       'y' => $request->qr_y,
-       'page' => $request->qr_page,
-       'scale' => $request->qr_scale
-   ]);
-   ```
+    **Step 1: Save QR Positioning Data**
 
-   **Step 2: Generate Verification URL & Token**
-   ```php
-   $token = $documentSignature->verification_token; // Already generated
-   $verificationUrl = route('signature.verify', ['token' => $token]);
-   ```
+    ```php
+    $documentSignature->saveQRPositioning([
+        'x' => $request->qr_x,
+        'y' => $request->qr_y,
+        'page' => $request->qr_page,
+        'scale' => $request->qr_scale
+    ]);
+    ```
 
-   **Step 3: Generate Final QR Code dengan Verification URL**
-   ```php
-   $qrCodeService->generateQRCode($verificationUrl, [
-       'size' => 300,
-       'margin' => 10,
-       'format' => 'png'
-   ]);
-   // Save to storage/public/qrcodes/
-   ```
+    **Step 2: Generate Verification URL & Token**
 
-   **Step 4: Embed QR Code ke PDF pada Posisi yang Dipilih**
-   ```php
-   $pdfService->embedQRCodeToPDF(
-       $originalPdfPath,
-       $qrCodeImagePath,
-       $positioningData,
-       $outputPath
-   );
-   ```
+    ```php
+    $token = $documentSignature->verification_token; // Already generated
+    $verificationUrl = route('signature.verify', ['token' => $token]);
+    ```
 
-   **Step 5: Generate Unique Digital Signature Key**
-   ```php
-   $digitalSignature = $digitalSignatureService
-       ->createDigitalSignatureForDocument($documentSignature);
+    **Step 3: Generate Final QR Code dengan Verification URL**
 
-   // Di dalam method ini:
-   // - Generate RSA key pair (2048-bit)
-   // - Generate X.509 certificate (self-signed, 3 years validity)
-   // - Personalize certificate dengan info signer
-   // - Save to digital_signatures table
-   ```
+    ```php
+    $qrCodeService->generateQRCode($verificationUrl, [
+        'size' => 300,
+        'margin' => 10,
+        'format' => 'png'
+    ]);
+    // Save to storage/public/qrcodes/
+    ```
 
-   **Step 6: Create CMS Signature**
-   ```php
-   $signatureData = $digitalSignatureService
-       ->createCMSSignature($finalPdfPath, $digitalSignature);
+    **Step 4: Embed QR Code ke PDF pada Posisi yang Dipilih**
 
-   // Di dalam method ini:
-   // - Read final PDF content
-   // - Generate SHA-256 hash dari dokumen
-   // - Sign hash dengan private key (RSA-SHA256)
-   // - Encode signature ke Base64 (CMS format)
-   // - Extract certificate fingerprint
-   // - Build comprehensive metadata
-   ```
+    ```php
+    $pdfService->embedQRCodeToPDF(
+        $originalPdfPath,
+        $qrCodeImagePath,
+        $positioningData,
+        $outputPath
+    );
+    ```
 
-   **Step 7: Update DocumentSignature**
-   ```php
-   $documentSignature->update([
-       'document_hash' => $signatureData['document_hash'],
-       'signature_value' => $signatureData['signature_value'],
-       'cms_signature' => $signatureData['cms_signature'],
-       'signed_at' => now(),
-       'signed_by' => $approvalRequest->approved_by,
-       'signature_status' => 'verified',
-       'signature_metadata' => $signatureData['metadata'],
-       'final_pdf_path' => $finalPdfPath,
-       'qr_code_path' => $qrCodeImagePath,
-       'verification_url' => $verificationUrl
-   ]);
-   ```
+    **Step 5: Generate Unique Digital Signature Key**
 
-   **Step 8: Update ApprovalRequest Status**
-   ```php
-   $approvalRequest->update([
-       'status' => 'sign_approved',
-       'user_signed_at' => now(),
-       'sign_approved_at' => now(),
-       'sign_approved_by' => $approvalRequest->approved_by,
-       'signed_document_path' => $finalPdfPath
-   ]);
-   ```
+    ```php
+    $digitalSignature = $digitalSignatureService
+        ->createDigitalSignatureForDocument($documentSignature);
 
-   **Step 9: Clear Temporary QR Code**
-   ```php
-   $documentSignature->clearTemporaryQRCode();
-   ```
+    // Di dalam method ini:
+    // - Generate RSA key pair (2048-bit)
+    // - Generate X.509 certificate (self-signed, 3 years validity)
+    // - Personalize certificate dengan info signer
+    // - Save to digital_signatures table
+    ```
 
-   **Step 10: Create Audit Log**
-   ```php
-   SignatureAuditLog::create([
-       'action' => 'document_signed',
-       'status_from' => 'pending',
-       'status_to' => 'verified',
-       'description' => 'Document signed with unique key',
-       // ... metadata lengkap
-   ]);
-   ```
+    **Step 6: Create CMS Signature**
+
+    ```php
+    $signatureData = $digitalSignatureService
+        ->createCMSSignature($finalPdfPath, $digitalSignature);
+
+    // Di dalam method ini:
+    // - Read final PDF content
+    // - Generate SHA-256 hash dari dokumen
+    // - Sign hash dengan private key (RSA-SHA256)
+    // - Encode signature ke Base64 (CMS format)
+    // - Extract certificate fingerprint
+    // - Build comprehensive metadata
+    ```
+
+    **Step 7: Update DocumentSignature**
+
+    ```php
+    $documentSignature->update([
+        'document_hash' => $signatureData['document_hash'],
+        'signature_value' => $signatureData['signature_value'],
+        'cms_signature' => $signatureData['cms_signature'],
+        'signed_at' => now(),
+        'signed_by' => $approvalRequest->approved_by,
+        'signature_status' => 'verified',
+        'signature_metadata' => $signatureData['metadata'],
+        'final_pdf_path' => $finalPdfPath,
+        'qr_code_path' => $qrCodeImagePath,
+        'verification_url' => $verificationUrl
+    ]);
+    ```
+
+    **Step 8: Update ApprovalRequest Status**
+
+    ```php
+    $approvalRequest->update([
+        'status' => 'sign_approved',
+        'user_signed_at' => now(),
+        'sign_approved_at' => now(),
+        'sign_approved_by' => $approvalRequest->approved_by,
+        'signed_document_path' => $finalPdfPath
+    ]);
+    ```
+
+    **Step 9: Clear Temporary QR Code**
+
+    ```php
+    $documentSignature->clearTemporaryQRCode();
+    ```
+
+    **Step 10: Create Audit Log**
+
+    ```php
+    SignatureAuditLog::create([
+        'action' => 'document_signed',
+        'status_from' => 'pending',
+        'status_to' => 'verified',
+        'description' => 'Document signed with unique key',
+        // ... metadata lengkap
+    ]);
+    ```
 
 7. **User Melihat Hasil**
-   - User diarahkan ke halaman sukses
-   - User dapat download dokumen yang sudah ditandatangani
-   - User dapat melihat QR code untuk verifikasi
+    - User diarahkan ke halaman sukses
+    - User dapat download dokumen yang sudah ditandatangani
+    - User dapat melihat QR code untuk verifikasi
 
 **Database Changes**:
-- Insert 1 row ke `digital_signatures` (kunci RSA + certificate)
-- Update 1 row di `document_signatures` (status: pending → verified)
-- Update 1 row di `approval_requests` (status: approved → sign_approved)
-- Insert 1 row ke `signature_audit_logs` (action: document_signed)
-- Delete temporary QR code file
-- Create final QR code file
-- Create final signed PDF file
+
+-   Insert 1 row ke `digital_signatures` (kunci RSA + certificate)
+-   Update 1 row di `document_signatures` (status: pending → verified)
+-   Update 1 row di `approval_requests` (status: approved → sign_approved)
+-   Insert 1 row ke `signature_audit_logs` (action: document_signed)
+-   Delete temporary QR code file
+-   Create final QR code file
+-   Create final signed PDF file
 
 **File Changes**:
-- `storage/public/temp-qrcodes/temp_qr_X.png` → DELETED
-- `storage/public/qrcodes/qr_X.png` → CREATED
-- `storage/public/signed_documents/signed_X.pdf` → CREATED
+
+-   `storage/public/temp-qrcodes/temp_qr_X.png` → DELETED
+-   `storage/public/qrcodes/qr_X.png` → CREATED
+-   `storage/public/signed_documents/signed_X.pdf` → CREATED
 
 ---
 
@@ -931,6 +984,7 @@ public static function createMetadata($customData = []): array
 **Aktor**: Siapa saja (tidak perlu login)
 
 **Metode Verifikasi**:
+
 1. **Scan QR Code** (paling umum)
 2. **Input Token Manual**
 3. **Input URL Verifikasi**
@@ -941,192 +995,208 @@ public static function createMetadata($customData = []): array
 #### Metode 1: Scan QR Code
 
 1. **User Scan QR Code**
-   - User menggunakan smartphone atau QR scanner
-   - QR code berisi URL verifikasi lengkap
-   - Format: `https://domain.com/signature/verify/{token}`
+
+    - User menggunakan smartphone atau QR scanner
+    - QR code berisi URL verifikasi lengkap
+    - Format: `https://domain.com/signature/verify/{token}`
 
 2. **Browser Membuka URL**
-   - URL otomatis terbuka di browser
-   - Route: `GET /signature/verify/{token}`
-   - Controller: `VerificationController@verifyByToken`
+
+    - URL otomatis terbuka di browser
+    - Route: `GET /signature/verify/{token}`
+    - Controller: `VerificationController@verifyByToken`
 
 3. **Sistem Memproses Verifikasi**
 
-   **Step 1: Rate Limiting Check**
-   ```php
-   // Max 10 attempts per 5 minutes per IP
-   if (RateLimiter::tooManyAttempts($key, 10)) {
-       return view('rate-limited');
-   }
-   ```
+    **Step 1: Rate Limiting Check**
 
-   **Step 2: Verify Token**
-   ```php
-   $verificationService->verifyByToken($token);
+    ```php
+    // Max 10 attempts per 5 minutes per IP
+    if (RateLimiter::tooManyAttempts($key, 10)) {
+        return view('rate-limited');
+    }
+    ```
 
-   // Di dalam method ini:
-   // 1. Find DocumentSignature by verification_token
-   // 2. Check signature_status (harus 'verified')
-   // 3. Check DigitalSignature exists
-   // 4. Check key status (harus 'active', tidak 'revoked')
-   // 5. Check key validity (belum expired)
-   // 6. Verify CMS signature (re-hash dokumen & verify dengan public key)
-   // 7. Build verification result array
-   ```
+    **Step 2: Verify Token**
 
-   **Step 3: Create Verification Log**
-   ```php
-   SignatureVerificationLog::create([
-       'document_signature_id' => $docSig->id,
-       'approval_request_id' => $docSig->approval_request_id,
-       'user_id' => auth()->id(), // null jika anonymous
-       'verification_method' => 'token',
-       'verification_token_hash' => hash('sha256', $token),
-       'is_valid' => $isValid,
-       'result_status' => $isValid ? 'success' : 'failed',
-       'ip_address' => request()->ip(),
-       'user_agent' => request()->userAgent(),
-       'referrer' => request()->header('Referer'),
-       'metadata' => [
-           'device_type' => 'mobile/desktop',
-           'browser' => 'Chrome',
-           'message' => $verificationMessage
-       ],
-       'verified_at' => now()
-   ]);
-   ```
+    ```php
+    $verificationService->verifyByToken($token);
+
+    // Di dalam method ini:
+    // 1. Find DocumentSignature by verification_token
+    // 2. Check signature_status (harus 'verified')
+    // 3. Check DigitalSignature exists
+    // 4. Check key status (harus 'active', tidak 'revoked')
+    // 5. Check key validity (belum expired)
+    // 6. Verify CMS signature (re-hash dokumen & verify dengan public key)
+    // 7. Build verification result array
+    ```
+
+    **Step 3: Create Verification Log**
+
+    ```php
+    SignatureVerificationLog::create([
+        'document_signature_id' => $docSig->id,
+        'approval_request_id' => $docSig->approval_request_id,
+        'user_id' => auth()->id(), // null jika anonymous
+        'verification_method' => 'token',
+        'verification_token_hash' => hash('sha256', $token),
+        'is_valid' => $isValid,
+        'result_status' => $isValid ? 'success' : 'failed',
+        'ip_address' => request()->ip(),
+        'user_agent' => request()->userAgent(),
+        'referrer' => request()->header('Referer'),
+        'metadata' => [
+            'device_type' => 'mobile/desktop',
+            'browser' => 'Chrome',
+            'message' => $verificationMessage
+        ],
+        'verified_at' => now()
+    ]);
+    ```
 
 4. **User Melihat Hasil Verifikasi**
-   - View: `resources/views/digital-signature/verification/result.blade.php`
-   - Informasi yang ditampilkan:
 
-   **Jika Valid** ✅:
-   ```
-   ✅ Tanda Tangan Digital Valid
+    - View: `resources/views/digital-signature/verification/result.blade.php`
+    - Informasi yang ditampilkan:
 
-   Informasi Dokumen:
-   - Nama Dokumen: [nama]
-   - Nomor Dokumen: [nomor]
-   - Ditandatangani Oleh: [nama kaprodi]
-   - Tanggal Tanda Tangan: [tanggal]
-   - Hash Dokumen: [hash] ✅ Cocok
+    **Jika Valid** ✅:
 
-   Informasi Signature:
-   - Algorithm: RSA-SHA256
-   - Key Length: 2048 bit
-   - Status: Active ✅
-   - Berlaku Hingga: [tanggal] (Sisa X hari)
+    ```
+    ✅ Tanda Tangan Digital Valid
 
-   Tombol Aksi:
-   - [Lihat Sertifikat] → Modal sertifikat X.509
-   - [Lihat Dokumen] → Preview PDF
-   - [Download Dokumen]
-   ```
+    Informasi Dokumen:
+    - Nama Dokumen: [nama]
+    - Nomor Dokumen: [nomor]
+    - Ditandatangani Oleh: [nama kaprodi]
+    - Tanggal Tanda Tangan: [tanggal]
+    - Hash Dokumen: [hash] ✅ Cocok
 
-   **Jika Invalid** ❌:
-   ```
-   ❌ Tanda Tangan Digital Tidak Valid
+    Informasi Signature:
+    - Algorithm: RSA-SHA256
+    - Key Length: 2048 bit
+    - Status: Active ✅
+    - Berlaku Hingga: [tanggal] (Sisa X hari)
 
-   Alasan:
-   - [Dokumen telah dimodifikasi]
-   - [Kunci digital telah dicabut]
-   - [Token verifikasi tidak valid]
-   - [Signature sudah expired]
+    Tombol Aksi:
+    - [Lihat Sertifikat] → Modal sertifikat X.509
+    - [Lihat Dokumen] → Preview PDF
+    - [Download Dokumen]
+    ```
 
-   Peringatan Keamanan:
-   ⚠️ Dokumen ini mungkin telah diubah atau dipalsukan.
-   Jangan percaya keaslian dokumen ini.
-   ```
+    **Jika Invalid** ❌:
+
+    ```
+    ❌ Tanda Tangan Digital Tidak Valid
+
+    Alasan:
+    - [Dokumen telah dimodifikasi]
+    - [Kunci digital telah dicabut]
+    - [Token verifikasi tidak valid]
+    - [Signature sudah expired]
+
+    Peringatan Keamanan:
+    ⚠️ Dokumen ini mungkin telah diubah atau dipalsukan.
+    Jangan percaya keaslian dokumen ini.
+    ```
 
 5. **User Melihat Sertifikat Digital** (Opsional)
-   - User klik tombol "Lihat Sertifikat"
-   - JavaScript fetch AJAX request
-   - Route: `GET /signature/certificate/view/{token}`
-   - Controller: `VerificationController@viewPublicCertificate`
+
+    - User klik tombol "Lihat Sertifikat"
+    - JavaScript fetch AJAX request
+    - Route: `GET /signature/certificate/view/{token}`
+    - Controller: `VerificationController@viewPublicCertificate`
 
 6. **Sistem Menampilkan Sertifikat (Public Safe Info)**
-   ```php
-   // Parse certificate with security masking
-   $certInfo = $this->parsePublicCertificateInfo($certificate, $digitalSignature);
 
-   // Return JSON dengan informasi SAFE:
-   return json([
-       'version' => 'v3',
-       'serial_number' => '****12345678', // Masked
-       'subject' => [
-           'CN' => 'Dr. Ahmad Wijaya',
-           'OU' => 'Program Studi Teknik Informatika',
-           'O' => 'Universitas Muhammadiyah Tangerang',
-           'C' => 'ID'
-           // NO EMAIL - Privacy
-       ],
-       'issuer' => [...],
-       'valid_from' => '01 January 2025',
-       'valid_until' => '01 January 2028',
-       'days_remaining' => 1095,
-       'fingerprint_sha256' => 'AA:BB:CC:DD:**:**:**:...:WW:XX:YY:ZZ', // Masked
-       'is_self_signed' => true,
-       'status' => 'active'
-       // NO private key
-       // NO full serial number
-       // NO IP addresses
-       // NO metadata
-   ]);
-   ```
+    ```php
+    // Parse certificate with security masking
+    $certInfo = $this->parsePublicCertificateInfo($certificate, $digitalSignature);
+
+    // Return JSON dengan informasi SAFE:
+    return json([
+        'version' => 'v3',
+        'serial_number' => '****12345678', // Masked
+        'subject' => [
+            'CN' => 'Dr. Ahmad Wijaya',
+            'OU' => 'Program Studi Teknik Informatika',
+            'O' => 'Universitas Muhammadiyah Tangerang',
+            'C' => 'ID'
+            // NO EMAIL - Privacy
+        ],
+        'issuer' => [...],
+        'valid_from' => '01 January 2025',
+        'valid_until' => '01 January 2028',
+        'days_remaining' => 1095,
+        'fingerprint_sha256' => 'AA:BB:CC:DD:**:**:**:...:WW:XX:YY:ZZ', // Masked
+        'is_self_signed' => true,
+        'status' => 'active'
+        // NO private key
+        // NO full serial number
+        // NO IP addresses
+        // NO metadata
+    ]);
+    ```
 
 7. **Modal Sertifikat Ditampilkan**
-   - JavaScript menampilkan modal Bootstrap
-   - Informasi sertifikat ditampilkan dalam format yang mudah dibaca
-   - User dapat melihat:
-     - Subject (pemilik sertifikat)
-     - Issuer (penerbit sertifikat)
-     - Validity period
-     - Fingerprint (masked)
-     - Status
+    - JavaScript menampilkan modal Bootstrap
+    - Informasi sertifikat ditampilkan dalam format yang mudah dibaca
+    - User dapat melihat:
+        - Subject (pemilik sertifikat)
+        - Issuer (penerbit sertifikat)
+        - Validity period
+        - Fingerprint (masked)
+        - Status
 
 #### Metode 2: Input Manual
 
 1. **User Membuka Halaman Verifikasi**
-   - Route: `GET /signature/verify`
-   - Controller: `VerificationController@verificationPage`
+
+    - Route: `GET /signature/verify`
+    - Controller: `VerificationController@verificationPage`
 
 2. **User Input Token/URL/ID**
-   - Form input dengan dropdown:
-     - Token (64 karakter)
-     - URL (full verification URL)
-     - QR Code Data
-     - Document ID (numeric)
+
+    - Form input dengan dropdown:
+        - Token (64 karakter)
+        - URL (full verification URL)
+        - QR Code Data
+        - Document ID (numeric)
 
 3. **User Submit Form**
-   - Route: `POST /signature/verify`
-   - Controller: `VerificationController@verifyPublic`
-   - Rate limit: 5 attempts per 5 minutes per IP
+
+    - Route: `POST /signature/verify`
+    - Controller: `VerificationController@verifyPublic`
+    - Rate limit: 5 attempts per 5 minutes per IP
 
 4. **Sistem Extract Token dari Input**
-   ```php
-   switch ($type) {
-       case 'token':
-           $token = $input;
-           break;
-       case 'url':
-           $token = extractTokenFromUrl($input);
-           break;
-       case 'id':
-           $token = findTokenById($input);
-           break;
-   }
-   ```
+
+    ```php
+    switch ($type) {
+        case 'token':
+            $token = $input;
+            break;
+        case 'url':
+            $token = extractTokenFromUrl($input);
+            break;
+        case 'id':
+            $token = findTokenById($input);
+            break;
+    }
+    ```
 
 5. **Proses Verifikasi Sama dengan Metode 1**
-   - Verify token → Create log → Show result
+    - Verify token → Create log → Show result
 
 **Database Changes per Verification**:
-- Insert 1 row ke `signature_verification_logs`
+
+-   Insert 1 row ke `signature_verification_logs`
 
 **Performance**:
-- Average response time: 200-500ms
-- Rate limiting mencegah abuse
-- Caching dapat diimplementasikan untuk token yang sering diakses
+
+-   Average response time: 200-500ms
+-   Rate limiting mencegah abuse
+-   Caching dapat diimplementasikan untuk token yang sering diakses
 
 ---
 
@@ -1305,10 +1375,11 @@ private function generateSelfSignedCertificate(OpenSSLAsymmetricKey $privateKey,
 7. **Serial Number**: Unique timestamp-based
 
 **Security Notes**:
-- Private key TIDAK PERNAH dikirim ke client
-- Private key di-encrypt menggunakan Laravel encryption (APP_KEY) saat disimpan
-- Certificate adalah public information (aman untuk ditampilkan)
-- Fingerprint SHA-256 untuk quick identification
+
+-   Private key TIDAK PERNAH dikirim ke client
+-   Private key di-encrypt menggunakan Laravel encryption (APP_KEY) saat disimpan
+-   Certificate adalah public information (aman untuk ditampilkan)
+-   Fingerprint SHA-256 untuk quick identification
 
 ---
 
@@ -1444,16 +1515,18 @@ CMS adalah standar RFC 5652 untuk signing dan encrypting data. Dalam sistem ini:
 3. **Base64 Encoding**: Signature binary di-encode ke base64 untuk storage (string)
 
 **Verification Process** (akan dibahas di flow berikutnya):
+
 1. Re-hash dokumen yang akan diverifikasi
 2. Decrypt signature dengan public key
 3. Bandingkan hasil decrypt dengan hash dokumen
 4. Jika cocok → Valid ✅, jika tidak → Invalid ❌
 
 **Security Properties**:
-- **Integrity**: Dokumen tidak bisa diubah tanpa terdeteksi
-- **Authenticity**: Signature hanya bisa dibuat dengan private key tertentu
-- **Non-repudiation**: Signer tidak bisa menyangkal telah menandatangani
-- **Confidentiality**: Private key tidak pernah terekspos
+
+-   **Integrity**: Dokumen tidak bisa diubah tanpa terdeteksi
+-   **Authenticity**: Signature hanya bisa dibuat dengan private key tertentu
+-   **Non-repudiation**: Signer tidak bisa menyangkal telah menandatangani
+-   **Confidentiality**: Private key tidak pernah terekspos
 
 ---
 
@@ -1703,15 +1776,15 @@ private function verifyCMSSignature($documentSignature, $digitalSignature)
 
 **Verification Checks Summary**:
 
-| Check | Apa yang Dicek | Tujuan |
-|-------|----------------|---------|
-| 1. Token Valid | Token ada di database | Mencegah token palsu |
-| 2. Signature Status | Status = 'verified' | Mencegah verifikasi dokumen pending/invalid |
-| 3. Key Exists | Digital signature ada | Mencegah orphaned document signature |
-| 4. Key Not Revoked | Status ≠ 'revoked' | Mencegah verifikasi setelah key dicabut |
-| 5. Key Valid Period | now() antara valid_from dan valid_until | Mencegah verifikasi expired key |
-| 6. Document Hash Match | Current hash = Stored hash | Deteksi modifikasi dokumen |
-| 7. Signature Verify | openssl_verify() = 1 | Verifikasi signature dengan public key |
+| Check                  | Apa yang Dicek                          | Tujuan                                      |
+| ---------------------- | --------------------------------------- | ------------------------------------------- |
+| 1. Token Valid         | Token ada di database                   | Mencegah token palsu                        |
+| 2. Signature Status    | Status = 'verified'                     | Mencegah verifikasi dokumen pending/invalid |
+| 3. Key Exists          | Digital signature ada                   | Mencegah orphaned document signature        |
+| 4. Key Not Revoked     | Status ≠ 'revoked'                      | Mencegah verifikasi setelah key dicabut     |
+| 5. Key Valid Period    | now() antara valid_from dan valid_until | Mencegah verifikasi expired key             |
+| 6. Document Hash Match | Current hash = Stored hash              | Deteksi modifikasi dokumen                  |
+| 7. Signature Verify    | openssl_verify() = 1                    | Verifikasi signature dengan public key      |
 
 **Jika SEMUA check passed** → ✅ Valid
 **Jika SALAH SATU gagal** → ❌ Invalid
@@ -1790,16 +1863,17 @@ public function embedQRCodeToPDF($originalPdfPath, $qrCodeImagePath,
 
 ```json
 {
-    "x": 150,          // Pixels dari kiri (dalam canvas koordinat)
-    "y": 200,          // Pixels dari atas (dalam canvas koordinat)
-    "page": 1,         // Nomor halaman (1-based)
+    "x": 150, // Pixels dari kiri (dalam canvas koordinat)
+    "y": 200, // Pixels dari atas (dalam canvas koordinat)
+    "page": 1, // Nomor halaman (1-based)
     "scale": 0.264583, // Scale factor (pixels to mm: 1px ≈ 0.264583mm untuk 96 DPI)
-    "width": 30,       // Width dalam mm
-    "height": 30       // Height dalam mm
+    "width": 30, // Width dalam mm
+    "height": 30 // Height dalam mm
 }
 ```
 
 **Conversion Formula**:
+
 ```
 PDF coordinates (mm) = Canvas coordinates (pixels) × Scale factor
 Scale factor = 25.4 mm/inch ÷ DPI
@@ -1818,9 +1892,10 @@ PDF: x=39.69mm, y=52.92mm
 ### 1. Private Key Protection
 
 **Encryption**:
-- Private key di-encrypt menggunakan Laravel encryption (AES-256-CBC)
-- Key encryption: `APP_KEY` dari `.env` (32 karakter random)
-- Mutator otomatis encrypt saat save, decrypt saat load
+
+-   Private key di-encrypt menggunakan Laravel encryption (AES-256-CBC)
+-   Key encryption: `APP_KEY` dari `.env` (32 karakter random)
+-   Mutator otomatis encrypt saat save, decrypt saat load
 
 ```php
 // Model: DigitalSignature
@@ -1836,9 +1911,10 @@ public function getPrivateKeyAttribute($value)
 ```
 
 **Never Exposed**:
-- Hidden dari JSON response
-- Tidak pernah dikirim ke client
-- Hanya diakses di server-side untuk signing
+
+-   Hidden dari JSON response
+-   Tidak pernah dikirim ke client
+-   Hanya diakses di server-side untuk signing
 
 ---
 
@@ -1847,21 +1923,23 @@ public function getPrivateKeyAttribute($value)
 **Untuk Verifikasi Publik** (VerificationController@viewPublicCertificate):
 
 **Data yang Ditampilkan** ✅:
-- Subject CN, OU, O, C (tanpa email)
-- Issuer CN, OU, O, C
-- Validity period
-- Public key algorithm
-- Signature algorithm
-- Fingerprint (masked)
-- Status (active/revoked)
+
+-   Subject CN, OU, O, C (tanpa email)
+-   Issuer CN, OU, O, C
+-   Validity period
+-   Public key algorithm
+-   Signature algorithm
+-   Fingerprint (masked)
+-   Status (active/revoked)
 
 **Data yang Di-HIDE** ❌:
-- ❌ Email addresses (privacy)
-- ❌ Full serial number (hanya show last 8 digits)
-- ❌ Full fingerprint (masked middle part)
-- ❌ IP addresses
-- ❌ Metadata (signing context, user agent, dll)
-- ❌ Private key (obviously)
+
+-   ❌ Email addresses (privacy)
+-   ❌ Full serial number (hanya show last 8 digits)
+-   ❌ Full fingerprint (masked middle part)
+-   ❌ IP addresses
+-   ❌ Metadata (signing context, user agent, dll)
+-   ❌ Private key (obviously)
 
 **Masking Implementation**:
 
@@ -1909,12 +1987,12 @@ RateLimiter::for('verification', function (Request $request) {
 
 **Rate Limit Details**:
 
-| Endpoint | Max Attempts | Time Window | Decay |
-|----------|--------------|-------------|-------|
-| `/signature/verify/{token}` (GET) | 10 | per IP | 5 minutes |
-| `/signature/verify` (POST form) | 5 | per IP | 5 minutes |
-| `/api/signature/verify` | 20 | per IP | 5 minutes |
-| `/api/signature/bulk-verify` | 3 | per IP | 10 minutes |
+| Endpoint                          | Max Attempts | Time Window | Decay      |
+| --------------------------------- | ------------ | ----------- | ---------- |
+| `/signature/verify/{token}` (GET) | 10           | per IP      | 5 minutes  |
+| `/signature/verify` (POST form)   | 5            | per IP      | 5 minutes  |
+| `/api/signature/verify`           | 20           | per IP      | 5 minutes  |
+| `/api/signature/bulk-verify`      | 3            | per IP      | 10 minutes |
 
 **Implementation**:
 
@@ -1931,6 +2009,7 @@ RateLimiter::hit($key, 300); // 300 seconds = 5 minutes
 ```
 
 **Response saat Rate Limit Exceeded**:
+
 ```
 HTTP 429 Too Many Requests
 
@@ -1946,8 +2025,9 @@ HTTP 429 Too Many Requests
 ### 4. Token Hashing dalam Logs
 
 **Privacy Protection**:
-- Verification token (64 char) tidak disimpan plain dalam logs
-- Token di-hash menggunakan SHA-256 sebelum log
+
+-   Verification token (64 char) tidak disimpan plain dalam logs
+-   Token di-hash menggunakan SHA-256 sebelum log
 
 ```php
 SignatureVerificationLog::create([
@@ -1957,9 +2037,10 @@ SignatureVerificationLog::create([
 ```
 
 **Tujuan**:
-- Mencegah token leakage jika database compromised
-- Token tetap bisa di-track untuk audit (via hash)
-- Impossible untuk reverse-engineer token dari hash
+
+-   Mencegah token leakage jika database compromised
+-   Token tetap bisa di-track untuk audit (via hash)
+-   Impossible untuk reverse-engineer token dari hash
 
 ---
 
@@ -1997,9 +2078,10 @@ try {
 ```
 
 **Benefit**:
-- Jika ada error di tengah proses, semua perubahan di-rollback
-- Tidak ada orphaned records
-- Data consistency terjaga
+
+-   Jika ada error di tengah proses, semua perubahan di-rollback
+-   Tidak ada orphaned records
+-   Data consistency terjaga
 
 ---
 
@@ -2008,20 +2090,21 @@ try {
 **Semua Aktivitas Tercatat**:
 
 1. **SignatureAuditLog** (Internal Activities):
-   - Signature key generated
-   - Document signed
-   - Key revoked
-   - Template created/updated
-   - Approval/rejection
+
+    - Signature key generated
+    - Document signed
+    - Key revoked
+    - Template created/updated
+    - Approval/rejection
 
 2. **SignatureVerificationLog** (Public Verifications):
-   - Verification attempts (success/failed)
-   - IP address
-   - User agent
-   - Device type
-   - Browser
-   - Referrer
-   - Timestamp
+    - Verification attempts (success/failed)
+    - IP address
+    - User agent
+    - Device type
+    - Browser
+    - Referrer
+    - Timestamp
 
 **Metadata Standardized**:
 
@@ -2049,11 +2132,13 @@ SignatureAuditLog::createMetadata([
 **Deskripsi**: Verifikasi dokumen melalui token (dari QR code)
 
 **Parameters**:
-- `token` (path): Verification token (64 characters)
+
+-   `token` (path): Verification token (64 characters)
 
 **Rate Limit**: 10 requests per 5 minutes per IP
 
 **Response Success** (200):
+
 ```json
 {
     "is_valid": true,
@@ -2093,6 +2178,7 @@ SignatureAuditLog::createMetadata([
 ```
 
 **Response Invalid** (200):
+
 ```json
 {
     "is_valid": false,
@@ -2107,6 +2193,7 @@ SignatureAuditLog::createMetadata([
 ```
 
 **Response Not Found** (404):
+
 ```json
 {
     "is_valid": false,
@@ -2116,6 +2203,7 @@ SignatureAuditLog::createMetadata([
 ```
 
 **Response Rate Limited** (429):
+
 ```json
 {
     "error": "Rate limit exceeded",
@@ -2133,12 +2221,14 @@ SignatureAuditLog::createMetadata([
 **Deskripsi**: Verifikasi dokumen melalui form input
 
 **Parameters** (Form Data):
-- `verification_input` (required, string): Token/URL/ID
-- `verification_type` (required, enum): token|url|qr|id
+
+-   `verification_input` (required, string): Token/URL/ID
+-   `verification_type` (required, enum): token|url|qr|id
 
 **Rate Limit**: 5 requests per 5 minutes per IP
 
 **Request Example**:
+
 ```json
 {
     "verification_input": "a1b2c3d4e5f6...",
@@ -2157,13 +2247,16 @@ SignatureAuditLog::createMetadata([
 **Deskripsi**: Lihat informasi sertifikat X.509 (public safe info only)
 
 **Parameters**:
-- `token` (path): Verification token
+
+-   `token` (path): Verification token
 
 **Headers**:
-- `Accept: application/json`
-- `X-Requested-With: XMLHttpRequest`
+
+-   `Accept: application/json`
+-   `X-Requested-With: XMLHttpRequest`
 
 **Response Success** (200):
+
 ```json
 {
     "success": true,
@@ -2201,6 +2294,7 @@ SignatureAuditLog::createMetadata([
 ```
 
 **Response Failed** (404):
+
 ```json
 {
     "success": false,
@@ -2219,6 +2313,7 @@ SignatureAuditLog::createMetadata([
 **Rate Limit**: 20 requests per 5 minutes per IP
 
 **Response** (200):
+
 ```json
 {
     "success": true,
@@ -2263,22 +2358,21 @@ SignatureAuditLog::createMetadata([
 **Rate Limit**: 3 requests per 10 minutes per IP
 
 **Request**:
+
 ```json
 {
-    "tokens": [
-        "token1_64chars",
-        "token2_64chars",
-        "token3_64chars"
-    ],
+    "tokens": ["token1_64chars", "token2_64chars", "token3_64chars"],
     "api_key": "your-api-key-here"
 }
 ```
 
 **Validation**:
-- `tokens`: max 10 items
-- `api_key`: required, must match `config('app.verification_api_key')`
+
+-   `tokens`: max 10 items
+-   `api_key`: required, must match `config('app.verification_api_key')`
 
 **Response** (200):
+
 ```json
 {
     "success": true,
@@ -2316,6 +2410,7 @@ SignatureAuditLog::createMetadata([
 **Auth**: `auth:kaprodi`
 
 **Response**:
+
 ```json
 {
     "data": [
@@ -2347,6 +2442,7 @@ SignatureAuditLog::createMetadata([
 **Auth**: `auth:kaprodi`
 
 **Request**:
+
 ```json
 {
     "notes": "Disetujui untuk ditandatangani"
@@ -2354,6 +2450,7 @@ SignatureAuditLog::createMetadata([
 ```
 
 **Response** (200):
+
 ```json
 {
     "success": true,
@@ -2378,6 +2475,7 @@ SignatureAuditLog::createMetadata([
 **Auth**: `auth:web`
 
 **Request**:
+
 ```json
 {
     "qr_x": 150,
@@ -2390,6 +2488,7 @@ SignatureAuditLog::createMetadata([
 ```
 
 **Response** (200):
+
 ```json
 {
     "success": true,
@@ -2569,35 +2668,35 @@ $suspicious = SignatureVerificationLog::suspiciousActivity(5, 24)
 
 ### 1. Keamanan
 
-- **JANGAN PERNAH** expose private key ke client
-- **SELALU** encrypt private key saat simpan di database
-- **GUNAKAN** rate limiting untuk semua public endpoints
-- **HASH** token di logs (jangan simpan plain text)
-- **MASK** data sensitif di public certificate viewer
-- **VALIDATE** semua input dari user (XSS, SQL Injection, dll)
+-   **JANGAN PERNAH** expose private key ke client
+-   **SELALU** encrypt private key saat simpan di database
+-   **GUNAKAN** rate limiting untuk semua public endpoints
+-   **HASH** token di logs (jangan simpan plain text)
+-   **MASK** data sensitif di public certificate viewer
+-   **VALIDATE** semua input dari user (XSS, SQL Injection, dll)
 
 ### 2. Performance
 
-- **INDEX** semua foreign keys dan frequently queried columns
-- **CACHE** verification results untuk token yang sering diakses
-- **LAZY LOAD** relations untuk menghindari N+1 query problem
-- **QUEUE** heavy processes (PDF generation, email sending)
-- **PAGINATE** large result sets
+-   **INDEX** semua foreign keys dan frequently queried columns
+-   **CACHE** verification results untuk token yang sering diakses
+-   **LAZY LOAD** relations untuk menghindari N+1 query problem
+-   **QUEUE** heavy processes (PDF generation, email sending)
+-   **PAGINATE** large result sets
 
 ### 3. Maintenance
 
-- **BACKUP** database secara berkala
-- **ROTATE** APP_KEY dengan hati-hati (private keys akan invalid!)
-- **MONITOR** logs untuk detect abuse/attacks
-- **UPDATE** dependencies secara berkala (security patches)
-- **AUDIT** access logs secara periodik
+-   **BACKUP** database secara berkala
+-   **ROTATE** APP_KEY dengan hati-hati (private keys akan invalid!)
+-   **MONITOR** logs untuk detect abuse/attacks
+-   **UPDATE** dependencies secara berkala (security patches)
+-   **AUDIT** access logs secara periodik
 
 ### 4. Compliance
 
-- **GDPR/Privacy**: Jangan simpan data pribadi unnecessary
-- **Audit Trail**: Keep logs minimal 1 year untuk compliance
-- **Data Retention**: Clear old verification logs setelah retention period
-- **Access Control**: Implement proper RBAC (Role-Based Access Control)
+-   **GDPR/Privacy**: Jangan simpan data pribadi unnecessary
+-   **Audit Trail**: Keep logs minimal 1 year untuk compliance
+-   **Data Retention**: Clear old verification logs setelah retention period
+-   **Access Control**: Implement proper RBAC (Role-Based Access Control)
 
 ---
 
@@ -2606,26 +2705,29 @@ $suspicious = SignatureVerificationLog::suspiciousActivity(5, 24)
 Sistem Digital Signature ini menyediakan solusi end-to-end untuk penandatanganan dan verifikasi dokumen digital yang aman, menggunakan standar industri (RSA-2048, SHA-256, X.509 v3, CMS Signature).
 
 **Key Features**:
-- ✅ Unique key per document (tidak sharing key)
-- ✅ Self-signed certificate dengan DN personalized
-- ✅ CMS signature untuk document integrity
-- ✅ Public verification dengan QR code
-- ✅ Comprehensive audit trail
-- ✅ Security-first design (encryption, rate limiting, masking)
-- ✅ User-friendly QR positioning (drag & drop)
+
+-   ✅ Unique key per document (tidak sharing key)
+-   ✅ Self-signed certificate dengan DN personalized
+-   ✅ CMS signature untuk document integrity
+-   ✅ Public verification dengan QR code
+-   ✅ Comprehensive audit trail
+-   ✅ Security-first design (encryption, rate limiting, masking)
+-   ✅ User-friendly QR positioning (drag & drop)
 
 **Use Cases**:
-- Surat keterangan mahasiswa
-- Transkrip nilai
-- Sertifikat
-- Surat keputusan
-- Dokumen akademik lainnya
+
+-   Surat keterangan mahasiswa
+-   Transkrip nilai
+-   Sertifikat
+-   Surat keputusan
+-   Dokumen akademik lainnya
 
 **Scalability**:
-- Dapat handle ribuan dokumen per hari
-- Rate limiting mencegah abuse
-- Database indexes untuk performa query
-- Cacheable verification results
+
+-   Dapat handle ribuan dokumen per hari
+-   Rate limiting mencegah abuse
+-   Database indexes untuk performa query
+-   Cacheable verification results
 
 ---
 

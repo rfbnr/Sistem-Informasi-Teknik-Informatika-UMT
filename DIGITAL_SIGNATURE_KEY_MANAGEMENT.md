@@ -156,9 +156,10 @@ $digitalSignature->revoke('Security breach detected');
 ```
 
 **Analysis**:
-- ✅ Mudah rotate keys secara periodic
-- ✅ Clear separation antara "signing capability" vs "verification capability"
-- ✅ Revoked key tidak menghapus history verification
+
+-   ✅ Mudah rotate keys secara periodic
+-   ✅ Clear separation antara "signing capability" vs "verification capability"
+-   ✅ Revoked key tidak menghapus history verification
 
 #### 3. **Performance**
 
@@ -205,9 +206,10 @@ ORDER BY ds.created_at DESC;
 ```
 
 **Benefits**:
-- ✅ Easy to track berapa dokumen ditandatangani per key
-- ✅ Easy to identify key usage patterns
-- ✅ Simplified audit reporting
+
+-   ✅ Easy to track berapa dokumen ditandatangani per key
+-   ✅ Easy to identify key usage patterns
+-   ✅ Simplified audit reporting
 
 #### 5. **Certificate Authority Model**
 
@@ -286,9 +288,10 @@ Verification:
 ```
 
 **Analysis**:
-- ✅ System supports multiple keys per Kaprodi
-- ✅ Old keys tetap bisa verify dokumen lama
-- ✅ Smooth transition tanpa break verifikasi
+
+-   ✅ System supports multiple keys per Kaprodi
+-   ✅ Old keys tetap bisa verify dokumen lama
+-   ✅ Smooth transition tanpa break verifikasi
 
 #### 3. **Non-Repudiation**
 
@@ -341,111 +344,120 @@ Setiap dokumen punya content berbeda
 #### ✅ IMPLEMENTED
 
 1. **Key Generation**
-   ```php
-   // File: app/Services/DigitalSignatureService.php (Line 19-63)
 
-   ✓ RSA-2048 (industry standard)
-   ✓ SHA-256 hashing
-   ✓ Self-signed certificate generation
-   ✓ Key fingerprint generation
-   ✓ Configurable key length (default 2048)
-   ✓ Configurable algorithm (default RSA-SHA256)
-   ```
+    ```php
+    // File: app/Services/DigitalSignatureService.php (Line 19-63)
+
+    ✓ RSA-2048 (industry standard)
+    ✓ SHA-256 hashing
+    ✓ Self-signed certificate generation
+    ✓ Key fingerprint generation
+    ✓ Configurable key length (default 2048)
+    ✓ Configurable algorithm (default RSA-SHA256)
+    ```
 
 2. **Key Storage**
-   ```php
-   // File: app/Models/DigitalSignature.php
 
-   ✓ Private key encrypted at rest (Laravel Crypt)
-   ✓ Public key stored plain (no sensitivity)
-   ✓ Metadata storage (JSON field)
-   ✓ Created_by tracking
-   ✓ Validity period tracking
-   ```
+    ```php
+    // File: app/Models/DigitalSignature.php
+
+    ✓ Private key encrypted at rest (Laravel Crypt)
+    ✓ Public key stored plain (no sensitivity)
+    ✓ Metadata storage (JSON field)
+    ✓ Created_by tracking
+    ✓ Validity period tracking
+    ```
 
 3. **Key Lifecycle**
-   ```php
-   // File: app/Models/DigitalSignature.php
 
-   ✓ Status tracking (active/expired/revoked)
-   ✓ Expiration checking (isValid() method)
-   ✓ Expiry warning (isExpiringSoon($days))
-   ✓ Revocation mechanism with reason
-   ✓ Revocation timestamp tracking
-   ```
+    ```php
+    // File: app/Models/DigitalSignature.php
+
+    ✓ Status tracking (active/expired/revoked)
+    ✓ Expiration checking (isValid() method)
+    ✓ Expiry warning (isExpiringSoon($days))
+    ✓ Revocation mechanism with reason
+    ✓ Revocation timestamp tracking
+    ```
 
 4. **Key Usage Tracking**
-   ```php
-   // File: app/Models/DigitalSignature.php
 
-   ✓ Usage statistics (getUsageStats() method)
-   ✓ Last used tracking (via documentSignatures relationship)
-   ✓ Total documents signed count
-   ```
+    ```php
+    // File: app/Models/DigitalSignature.php
+
+    ✓ Usage statistics (getUsageStats() method)
+    ✓ Last used tracking (via documentSignatures relationship)
+    ✓ Total documents signed count
+    ```
 
 5. **Audit Logging**
-   ```php
-   // File: app/Models/SignatureAuditLog.php
 
-   ✓ Key generation logging
-   ✓ Key revocation logging
-   ✓ Document signing logging
-   ✓ IP address tracking
-   ✓ User agent tracking
-   ✓ Metadata tracking (standardized)
-   ```
+    ```php
+    // File: app/Models/SignatureAuditLog.php
+
+    ✓ Key generation logging
+    ✓ Key revocation logging
+    ✓ Document signing logging
+    ✓ IP address tracking
+    ✓ User agent tracking
+    ✓ Metadata tracking (standardized)
+    ```
 
 #### 🔶 PARTIALLY IMPLEMENTED
 
 1. **Key Rotation**
-   ```
-   Current: Manual rotation (Kaprodi must generate new key manually)
 
-   Improvement: Automatic rotation reminders
-   ✓ isExpiringSoon() method exists
-   ✗ No automatic notification system
-   ✗ No automatic rotation workflow
+    ```
+    Current: Manual rotation (Kaprodi must generate new key manually)
 
-   Recommendation:
-   - Add scheduled job to check expiring keys
-   - Send email notification 30/15/7 days before expiry
-   - Provide one-click key rotation from notification
-   ```
+    Improvement: Automatic rotation reminders
+    ✓ isExpiringSoon() method exists
+    ✗ No automatic notification system
+    ✗ No automatic rotation workflow
+
+    Recommendation:
+    - Add scheduled job to check expiring keys
+    - Send email notification 30/15/7 days before expiry
+    - Provide one-click key rotation from notification
+    ```
 
 2. **Key Backup**
-   ```
-   Current: Keys stored in database only
 
-   Improvement: Encrypted backup mechanism
-   ✗ No backup export functionality
-   ✗ No offline storage option
+    ```
+    Current: Keys stored in database only
 
-   Recommendation:
-   - Add key export functionality (encrypted)
-   - Store backup in secure offline location
-   - Document key recovery procedures
-   ```
+    Improvement: Encrypted backup mechanism
+    ✗ No backup export functionality
+    ✗ No offline storage option
+
+    Recommendation:
+    - Add key export functionality (encrypted)
+    - Store backup in secure offline location
+    - Document key recovery procedures
+    ```
 
 #### ❌ NOT IMPLEMENTED (But Not Critical)
 
 1. **Hardware Security Module (HSM)**
-   ```
-   Current: Keys stored in database (software-based)
 
-   Improvement: HSM integration for high-security environments
-   - Not critical for academic environment
-   - Overkill untuk use case saat ini
-   - Bisa jadi future enhancement jika needed
-   ```
+    ```
+    Current: Keys stored in database (software-based)
+
+    Improvement: HSM integration for high-security environments
+    - Not critical for academic environment
+    - Overkill untuk use case saat ini
+    - Bisa jadi future enhancement jika needed
+    ```
 
 2. **Key Ceremony**
-   ```
-   Current: Single Kaprodi generates key
 
-   Improvement: Multi-party key generation (key ceremony)
-   - Not necessary untuk single-signer model
-   - Bisa dipertimbangkan jika ada multi-signature requirement
-   ```
+    ```
+    Current: Single Kaprodi generates key
+
+    Improvement: Multi-party key generation (key ceremony)
+    - Not necessary untuk single-signer model
+    - Bisa dipertimbangkan jika ada multi-signature requirement
+    ```
 
 ---
 
@@ -479,11 +491,11 @@ ORDER BY total_documents_signed DESC;
 
 **Expected Output Example**:
 
-| signature_id | kaprodi_name | total_docs | verified_docs | days_until_expiry |
-|--------------|--------------|------------|---------------|-------------------|
-| SIG-001 | Dr. John Doe | 156 | 156 | 245 |
-| SIG-002 | Dr. Jane Smith | 89 | 87 | 312 |
-| SIG-003 | Dr. Bob Wilson | 34 | 34 | 28 ⚠️ |
+| signature_id | kaprodi_name   | total_docs | verified_docs | days_until_expiry |
+| ------------ | -------------- | ---------- | ------------- | ----------------- |
+| SIG-001      | Dr. John Doe   | 156        | 156           | 245               |
+| SIG-002      | Dr. Jane Smith | 89         | 87            | 312               |
+| SIG-003      | Dr. Bob Wilson | 34         | 34            | 28 ⚠️             |
 
 ---
 
@@ -538,29 +550,32 @@ Key Rotation Process:
 
 ### Summary
 
-| Aspect | Implementation | Score |
-|--------|----------------|-------|
-| **Key Reuse Model** | 1 Key → Many Documents | ✅ Optimal |
-| **Security** | Encrypted storage + audit trail | ✅ Strong (8/10) |
-| **Lifecycle Management** | Status tracking + expiration | ✅ Good |
-| **Rotation** | Manual (with helper methods) | 🔶 Adequate |
-| **Audit Trail** | Comprehensive logging | ✅ Excellent |
-| **Non-Repudiation** | Unique CMS per document | ✅ Maintained |
-| **Performance** | Key reuse = faster signing | ✅ Optimal |
+| Aspect                   | Implementation                  | Score            |
+| ------------------------ | ------------------------------- | ---------------- |
+| **Key Reuse Model**      | 1 Key → Many Documents          | ✅ Optimal       |
+| **Security**             | Encrypted storage + audit trail | ✅ Strong (8/10) |
+| **Lifecycle Management** | Status tracking + expiration    | ✅ Good          |
+| **Rotation**             | Manual (with helper methods)    | 🔶 Adequate      |
+| **Audit Trail**          | Comprehensive logging           | ✅ Excellent     |
+| **Non-Repudiation**      | Unique CMS per document         | ✅ Maintained    |
+| **Performance**          | Key reuse = faster signing      | ✅ Optimal       |
 
 ### Rekomendasi
 
 #### Must Have (Priority: HIGH)
+
 1. ✅ **Already implemented**: Key encryption at rest
 2. ✅ **Already implemented**: Audit logging
 3. 🔶 **Improve**: Automated key expiry notifications
 
 #### Nice to Have (Priority: MEDIUM)
+
 4. ❌ **Add**: Key backup/export functionality
 5. ❌ **Add**: Key rotation guided workflow
 6. ❌ **Add**: Key usage analytics dashboard
 
 #### Future Enhancement (Priority: LOW)
+
 7. ❌ **Consider**: HSM integration (jika required)
 8. ❌ **Consider**: Multi-signature support (jika required)
 
