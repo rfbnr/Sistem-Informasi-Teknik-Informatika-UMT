@@ -103,6 +103,9 @@ ENV APP_ENV=production \
 
 EXPOSE 8080
 
+HEALTHCHECK --interval=30s --timeout=10s --retries=5 \
+  CMD php /app/artisan queue:listen --once >/dev/null 2>&1 || exit 1
+
 # Jalankan via supervisor (menjalankan nginx + php-fpm)
 CMD ["/entrypoint.sh"]
 

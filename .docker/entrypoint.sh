@@ -3,6 +3,26 @@ set -e
 
 cd /app
 
+# 🔧 Reinitialize storage structure if missing (because of mounted volume)
+mkdir -p \
+  storage/app/public \
+  storage/app/temp \
+  storage/framework/cache/data \
+  storage/framework/sessions \
+  storage/framework/views \
+  storage/logs
+
+chmod -R 775 storage bootstrap/cache || true
+chown -R www-data:www-data storage bootstrap/cache || true
+
+# Pastikan symlink public/storage → storage/app/public
+if [ ! -L "public/storage" ]; then
+    ln -s ../storage/app/public public/storage || true
+fi
+
+touch storage/logs/queue.log
+chmod 666 storage/logs/queue.log
+
 # 1) Siapkan .env
 if [ ! -f .env ]; then
   if [ -f .env.example ]; then
@@ -29,7 +49,7 @@ EOF
   fi
 fi
 
-# 2) Inject APP_KEY dari env kalau ada
+# 2) Inject APP_KEY
 if [ -n "${APP_KEY}" ]; then
   if grep -q "^APP_KEY=" .env; then
     sed -i "s#^APP_KEY=.*#APP_KEY=${APP_KEY}#g" .env
@@ -38,7 +58,7 @@ if [ -n "${APP_KEY}" ]; then
   fi
 fi
 
-# 3) Generate key jika belum ada
+# 3) Generate APP_KEY if missing
 grep -q "^APP_KEY=base64:" .env || php artisan key:generate --force || true
 
 echo "🔧 Clearing old caches..."
@@ -46,20 +66,17 @@ php artisan config:clear || true
 php artisan route:clear || true
 php artisan view:clear || true
 
-# 4) Pastikan symlink & permission OK
 php artisan storage:link || true
-chmod -R 775 storage bootstrap/cache || true
-chown -R www-data:www-data storage bootstrap/cache || true
 
 # 5) Cache config & routes
 echo "🔐 Rebuilding caches..."
 php artisan config:cache || true
 php artisan route:cache || true
 
-# 6) Migrate (tidak bikin crash kalau DB belum siap)
+# 6) Run migrations (ignore errors if DB not ready yet)
 echo "🔄 Running migrations..."
 php artisan migrate --force || true
 
-# 7) Jalanin supervisor (nginx + php-fpm)
+# 7) Start Supervisor
 echo "🚀 Starting Supervisor..."
 exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
