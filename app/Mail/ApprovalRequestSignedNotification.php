@@ -11,9 +11,12 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
-class ApprovalRequestSignedNotification extends Mailable
+class ApprovalRequestSignedNotification extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
+
+    public $tries = 3;
+    public $timeout = 90;
 
     public $approvalRequest;
     public $documentSignature;

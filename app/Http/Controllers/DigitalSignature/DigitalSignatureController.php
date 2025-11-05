@@ -407,7 +407,7 @@ class DigitalSignatureController extends Controller
             try {
                 // Send success notification to student with signed PDF and QR code
                 if ($approvalRequest->user) {
-                    Mail::to($approvalRequest->user->email)->send(
+                    Mail::to($approvalRequest->user->email)->queue(
                         new ApprovalRequestSignedNotification(
                             $approvalRequest,
                             $signedDocumentSignature

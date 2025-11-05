@@ -489,7 +489,7 @@ class ApprovalRequestController extends Controller
 
             // Send notification to student
             try {
-                Mail::to($approvalRequest->user->email)->send(
+                Mail::to($approvalRequest->user->email)->queue(
                     new ApprovalRequestApprovedNotification($approvalRequest)
                 );
 
@@ -557,7 +557,7 @@ class ApprovalRequestController extends Controller
             $approvalRequest->reject($request->rejection_reason, Auth::id());
 
             // Send notification to student
-            Mail::to($approvalRequest->user->email)->send(
+            Mail::to($approvalRequest->user->email)->queue(
                 new ApprovalRequestRejectedNotification($approvalRequest)
             );
 

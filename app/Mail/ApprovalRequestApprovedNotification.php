@@ -7,10 +7,14 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Mail\Mailables\Envelope;
+use Illuminate\Contracts\Queue\ShouldQueue;
 
-class ApprovalRequestApprovedNotification extends Mailable
+class ApprovalRequestApprovedNotification extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
+
+    public $tries = 3;
+    public $timeout = 90;
 
     public $approvalRequest;
     public $qrCodeUrl;
