@@ -34,6 +34,7 @@ RUN apt-get update && apt-get install -y \
     libzip-dev \
     libpng-dev libjpeg-dev libfreetype6-dev \
     libicu-dev \
+    ca-certificates \
  && docker-php-ext-configure gd --with-jpeg --with-freetype \
  && docker-php-ext-install -j"$(nproc)" intl zip gd pdo_mysql opcache \
  && rm -rf /var/lib/apt/lists/*
@@ -63,9 +64,12 @@ RUN apt-get update && apt-get install -y \
     libzip-dev \
     libpng-dev libjpeg-dev libfreetype6-dev \
     libicu-dev \
+    ca-certificates \
  && docker-php-ext-configure gd --with-jpeg --with-freetype \
  && docker-php-ext-install -j"$(nproc)" intl zip gd pdo_mysql opcache \
  && rm -rf /var/lib/apt/lists/*
+
+RUN update-ca-certificates
 
 # Direktori app
 WORKDIR /app

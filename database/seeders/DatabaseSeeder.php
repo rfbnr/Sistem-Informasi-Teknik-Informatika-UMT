@@ -36,7 +36,7 @@ class DatabaseSeeder extends Seeder
 
         Kaprodi::create([
             'name' => 'Dr. Budi Santoso, M.Kom',
-            'email' => 'ridwanfebnur@umt.ac.id',
+            'email' => 'ridwanfebnur88@gmail.com',
             'password' => 'password', // akan di-hash otomatis oleh mutator
             'NIDN' => '0123456789',
         ]);
