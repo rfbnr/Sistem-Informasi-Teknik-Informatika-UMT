@@ -41,17 +41,25 @@ fi
 # 3) Generate key jika belum ada
 grep -q "^APP_KEY=base64:" .env || php artisan key:generate --force || true
 
+echo "🔧 Clearing old caches..."
+php artisan config:clear || true
+php artisan route:clear || true
+php artisan view:clear || true
+
 # 4) Pastikan symlink & permission OK
 php artisan storage:link || true
 chmod -R 775 storage bootstrap/cache || true
 chown -R www-data:www-data storage bootstrap/cache || true
 
 # 5) Cache config & routes
+echo "🔐 Rebuilding caches..."
 php artisan config:cache || true
 php artisan route:cache || true
 
 # 6) Migrate (tidak bikin crash kalau DB belum siap)
+echo "🔄 Running migrations..."
 php artisan migrate --force || true
 
 # 7) Jalanin supervisor (nginx + php-fpm)
+echo "🚀 Starting Supervisor..."
 exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf

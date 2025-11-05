@@ -186,21 +186,19 @@ class ApprovalRequestController extends Controller
             //     // Don't fail the entire process if email fails
             // }
             // Kirim email melalui queue supaya tidak memperlambat request upload
-            $kaprodiEmails = Kaprodi::pluck('email')->toArray();
-            if (!empty($kaprodiEmails)) {
-                Mail::to($kaprodiEmails)->queue(new NewApprovalRequestNotification($approvalRequest));
-                Log::info('Email queued for sending to Kaprodi', [
-                    'emails' => $kaprodiEmails,
-                    'approval_request_id' => $approvalRequest->id
-                ]);
+            $kaprodiEmails = Kaprodi::pluck('email')->filter()->unique()->values()->toArray();
+
+            if (empty($kaprodiEmails)) {
+                Log::warning('No Kaprodi emails configured; skipping mail queue.', ['approval_request_id' => $approvalRequest->id]);
+            } else {
+                try {
+                    Mail::to($kaprodiEmails)->queue(new NewApprovalRequestNotification($approvalRequest));
+                    Log::info('Email queued', ['emails' => $kaprodiEmails, 'approval_request_id' => $approvalRequest->id]);
+                } catch (\Throwable $e) {
+                    Log::error('Queue push for email failed', ['err' => $e->getMessage()]);
+                }
             }
 
-            Log::info('Document uploaded for approval successfully', [
-                'approval_request_id' => $approvalRequest->id,
-                'user_id' => Auth::id(),
-                'document_name' => $approvalRequest->document_name,
-                'file_size' => $uploadedFile->getSize()
-            ]);
 
             // Redirect dengan route name yang benar
             return redirect()->route('user.signature.approval.status')
