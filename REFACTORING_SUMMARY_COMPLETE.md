@@ -24,10 +24,12 @@
 ## 📊 Executive Summary
 
 ### What Changed
-- **FROM:** Signature Template Drag & Drop + Shared Keys
-- **TO:** QR Code Drag & Drop + Unique Key Per Document
+
+-   **FROM:** Signature Template Drag & Drop + Shared Keys
+-   **TO:** QR Code Drag & Drop + Unique Key Per Document
 
 ### Key Improvements
+
 1. ✅ **Security**: Each document now has a unique RSA-2048 encryption key
 2. ✅ **Simplicity**: No manual key management by Kaprodi
 3. ✅ **User Experience**: QR drag & drop with 6 UX enhancements
@@ -35,12 +37,13 @@
 5. ✅ **Scalability**: 1-to-1 relationship instead of 1-to-many
 
 ### Statistics
-- **Total Files Modified:** 11 files
-- **Total Lines Changed:** ~2,500 lines
-- **New Functions Added:** 25 functions
-- **Deprecated Functions:** 8 functions
-- **New Views Created:** 0 (all refactored)
-- **Development Time:** 1 comprehensive session
+
+-   **Total Files Modified:** 11 files
+-   **Total Lines Changed:** ~2,500 lines
+-   **New Functions Added:** 25 functions
+-   **Deprecated Functions:** 8 functions
+-   **New Views Created:** 0 (all refactored)
+-   **Development Time:** 1 comprehensive session
 
 ---
 
@@ -49,9 +52,11 @@
 ### 1. Database Migrations (2 files)
 
 #### File: `database/migrations/2025_10_17_142245_create_digital_signatures_table.php`
+
 **Status:** ✅ Modified (not created new)
 
 **Changes Made:**
+
 ```php
 // REMOVED COLUMNS:
 - created_by (foreignId)
@@ -70,9 +75,11 @@
 ---
 
 #### File: `database/migrations/2025_10_17_142421_create_document_signatures_table.php`
+
 **Status:** ✅ Modified (not created new)
 
 **Changes Made:**
+
 ```php
 // MODIFIED COLUMNS:
 ~ digital_signature_id - NOW NULLABLE (auto-generated during signing)
@@ -93,12 +100,15 @@
 ### 2. Models (3 files)
 
 #### File: `app/Models/DigitalSignature.php`
+
 **Status:** ✅ Refactored
 
 **Methods Modified:**
-- ✅ `documentSignature()` - Changed from `hasMany()` to `belongsTo()`
+
+-   ✅ `documentSignature()` - Changed from `hasMany()` to `belongsTo()`
 
 **Fillable Changes:**
+
 ```php
 // REMOVED:
 - 'created_by'
@@ -109,6 +119,7 @@
 ```
 
 **New Relationship:**
+
 ```php
 public function documentSignature()
 {
@@ -119,16 +130,20 @@ public function documentSignature()
 ---
 
 #### File: `app/Models/DocumentSignature.php`
+
 **Status:** ✅ Refactored
 
 **New Methods Added:**
+
 1. ✅ `generateTemporaryQRCode()` - Auto-generate temporary QR for drag & drop
 2. ✅ `saveQRPositioning($positioningData)` - Save user's QR position
 
 **Methods Modified:**
-- ✅ `digitalSignature()` - Changed from `belongsTo()` to `hasOne()`
+
+-   ✅ `digitalSignature()` - Changed from `belongsTo()` to `hasOne()`
 
 **Fillable Changes:**
+
 ```php
 // ADDED:
 + 'temporary_qr_code_path'
@@ -136,6 +151,7 @@ public function documentSignature()
 ```
 
 **New Code Example:**
+
 ```php
 public function generateTemporaryQRCode()
 {
@@ -169,12 +185,15 @@ public function saveQRPositioning($positioningData)
 ---
 
 #### File: `app/Models/ApprovalRequest.php`
+
 **Status:** ✅ Refactored
 
 **Methods Modified:**
+
 1. ✅ `createDocumentSignature()` - Complete refactor
 
 **Changes in createDocumentSignature():**
+
 ```php
 // BEFORE:
 - Get existing active digital signature
@@ -189,6 +208,7 @@ public function saveQRPositioning($positioningData)
 ```
 
 **New Code:**
+
 ```php
 private function createDocumentSignature()
 {
@@ -226,16 +246,20 @@ private function createDocumentSignature()
 ### 3. Services (2 files)
 
 #### File: `app/Services/DigitalSignatureService.php`
+
 **Status:** ✅ Major Refactor
 
 **New Methods Added:**
+
 1. ✅ `createDigitalSignatureForDocument(DocumentSignature $documentSignature, $validityYears = 5)`
 2. ✅ `signDocumentWithUniqueKey(DocumentSignature $documentSignature, $finalPdfPath)`
 
 **Methods Modified:**
+
 1. ✅ `createCMSSignature()` - Now accepts instance or ID
 
 **New Method: createDigitalSignatureForDocument()**
+
 ```php
 /**
  * Auto-generate unique digital signature key for ONE document
@@ -265,6 +289,7 @@ public function createDigitalSignatureForDocument(DocumentSignature $documentSig
 ```
 
 **New Method: signDocumentWithUniqueKey()**
+
 ```php
 /**
  * Complete signing flow with unique key auto-generation
@@ -301,19 +326,24 @@ public function signDocumentWithUniqueKey(DocumentSignature $documentSignature, 
 ---
 
 #### File: `app/Services/PDFSignatureService.php`
+
 **Status:** ✅ Major Refactor
 
 **Methods Renamed:**
-- ❌ `mergeSignatureIntoPDF()` → ✅ `embedQRCodeIntoPDF()`
+
+-   ❌ `mergeSignatureIntoPDF()` → ✅ `embedQRCodeIntoPDF()`
 
 **Methods Removed:**
-- ❌ `addSignatureToPage()` - No longer needed (signature template)
+
+-   ❌ `addSignatureToPage()` - No longer needed (signature template)
 
 **Methods Modified:**
+
 1. ✅ `embedQRCodeIntoPDF()` - Complete rewrite
 2. ✅ `addQRCodeToPage()` - Now accepts user positioning
 
 **New Method Signature:**
+
 ```php
 public function embedQRCodeIntoPDF(
     string $originalPdfPath,
@@ -323,6 +353,7 @@ public function embedQRCodeIntoPDF(
 ```
 
 **Method Changes:**
+
 ```php
 // BEFORE (mergeSignatureIntoPDF):
 - Accept signature template ID
@@ -338,6 +369,7 @@ public function embedQRCodeIntoPDF(
 ```
 
 **Updated addQRCodeToPage():**
+
 ```php
 private function addQRCodeToPage(
     TCPDF $pdf,
@@ -367,12 +399,15 @@ private function addQRCodeToPage(
 ### 4. Controllers (1 file)
 
 #### File: `app/Http/Controllers/DigitalSignature/DigitalSignatureController.php`
+
 **Status:** ✅ Major Refactor
 
 **Methods Modified:**
 
 ##### 1. ✅ `signDocument($approvalRequestId)` - Line 211-262
+
 **Changes:**
+
 ```php
 // REMOVED:
 - Get active digital signature
@@ -386,6 +421,7 @@ private function addQRCodeToPage(
 ```
 
 **New Code:**
+
 ```php
 public function signDocument($approvalRequestId)
 {
@@ -419,9 +455,11 @@ public function signDocument($approvalRequestId)
 ---
 
 ##### 2. ✅ `processDocumentSigning($approvalRequestId)` - Line 268-595
+
 **Changes:** COMPLETE REWRITE (327 lines → 240 lines)
 
 **Old Flow (Removed):**
+
 ```
 1. Load signature template
 2. Validate template_id + positioning_data
@@ -433,6 +471,7 @@ public function signDocument($approvalRequestId)
 ```
 
 **New Flow (Implemented):**
+
 ```
 1. Validate qr_positioning_data
 2. Save QR positioning
@@ -445,6 +484,7 @@ public function signDocument($approvalRequestId)
 ```
 
 **New Code Structure:**
+
 ```php
 public function processDocumentSigning(Request $request, $approvalRequestId)
 {
@@ -488,6 +528,7 @@ public function processDocumentSigning(Request $request, $approvalRequestId)
 ---
 
 ##### 3. ❌ DEPRECATED Methods:
+
 ```php
 // All commented out - no longer used
 // public function keyManagement()
@@ -502,11 +543,13 @@ public function processDocumentSigning(Request $request, $approvalRequestId)
 ### 5. Views (3 files + 1 partial)
 
 #### File: `resources/views/digital-signature/user/sign-document.blade.php`
+
 **Status:** ✅ COMPLETELY REFACTORED (~1,100 lines)
 
 **Major Changes:**
 
 **1. HTML Structure Changes:**
+
 ```html
 <!-- REMOVED -->
 <div class="template-selector">
@@ -516,7 +559,9 @@ public function processDocumentSigning(Request $request, $approvalRequestId)
 <!-- ADDED -->
 <div class="qr-code-section">
     <div class="qr-code-item" draggable="true">
-        <img src="{{ Storage::url($documentSignature->temporary_qr_code_path) }}">
+        <img
+            src="{{ Storage::url($documentSignature->temporary_qr_code_path) }}"
+        />
     </div>
 </div>
 
@@ -546,69 +591,71 @@ public function processDocumentSigning(Request $request, $approvalRequestId)
 **2. JavaScript Changes:**
 
 **REMOVED Functions:**
-- `loadTemplates()` - No more templates
-- `renderTemplates()` - No more template grid
-- `selectTemplate()` - No template selection
-- `handleTemplateDrag()` - Template drag logic
+
+-   `loadTemplates()` - No more templates
+-   `renderTemplates()` - No more template grid
+-   `selectTemplate()` - No template selection
+-   `handleTemplateDrag()` - Template drag logic
 
 **ADDED Functions:**
+
 ```javascript
 // Visual Guide
-+ showGuideIfFirstTime()
-+ showGuide()
-+ hideGuide()
-
-// QR Size Presets
-+ setQRSize(size) // small/medium/large
-
-// Reset & Undo/Redo
-+ resetQRPosition()
-+ saveToHistory()
-+ undo()
-+ redo()
-+ applyHistoryState(state)
-+ updateUndoRedoButtons()
-
-// Keyboard Shortcuts
-+ setupKeyboardShortcuts()
-
-// Preview & Confirmation
-+ showPreview()
-+ hidePreview()
-+ confirmAndSign()
++showGuideIfFirstTime() +
+    showGuide() +
+    hideGuide() +
+    // QR Size Presets
+    setQRSize(size) + // small/medium/large
+    // Reset & Undo/Redo
+    resetQRPosition() +
+    saveToHistory() +
+    undo() +
+    redo() +
+    applyHistoryState(state) +
+    updateUndoRedoButtons() +
+    // Keyboard Shortcuts
+    setupKeyboardShortcuts() +
+    // Preview & Confirmation
+    showPreview() +
+    hidePreview() +
+    confirmAndSign();
 ```
 
 **3. Form Submission Changes:**
+
 ```javascript
 // BEFORE:
-formData.append('template_id', selectedTemplate.id);
-formData.append('positioning_data', JSON.stringify(positioningData));
+formData.append("template_id", selectedTemplate.id);
+formData.append("positioning_data", JSON.stringify(positioningData));
 
 // AFTER:
 const qrPositioningData = {
     page: currentPage,
     position: { x, y },
     size: { width, height },
-    canvas_dimensions: { width, height }
+    canvas_dimensions: { width, height },
 };
-formData.append('qr_positioning_data', JSON.stringify(qrPositioningData));
+formData.append("qr_positioning_data", JSON.stringify(qrPositioningData));
 ```
 
 **4. New Features Added:**
-- ✅ Visual guide for first-time users (localStorage)
-- ✅ QR size presets (Small/Medium/Large)
-- ✅ Reset QR position button
-- ✅ Keyboard shortcuts (arrows, Ctrl+Z/Y, Delete)
-- ✅ Undo/Redo with history (50 states)
-- ✅ Preview modal with PDF + QR rendering
-- ✅ Confirmation dialog before signing
+
+-   ✅ Visual guide for first-time users (localStorage)
+-   ✅ QR size presets (Small/Medium/Large)
+-   ✅ Reset QR position button
+-   ✅ Keyboard shortcuts (arrows, Ctrl+Z/Y, Delete)
+-   ✅ Undo/Redo with history (50 states)
+-   ✅ Preview modal with PDF + QR rendering
+-   ✅ Confirmation dialog before signing
 
 ---
 
 #### File: `resources/views/digital-signature/admin/document-signatures.blade.php`
+
 **Status:** ✅ Already correct (uses proper relationships)
 
 **No Changes Needed** - View already uses:
+
 ```blade
 {{ $docSig->digitalSignature->algorithm ?? 'N/A' }}
 {{ $docSig->digitalSignature->key_length ?? 'N/A' }}
@@ -617,11 +664,13 @@ formData.append('qr_positioning_data', JSON.stringify(qrPositioningData));
 ---
 
 #### File: `resources/views/digital-signature/admin/signature-details.blade.php`
+
 **Status:** ✅ Enhanced with unique key indicator
 
 **Changes Made:**
 
 **1. Added Alert Info:**
+
 ```blade
 <div class="alert alert-info mb-3">
     <i class="fas fa-info-circle me-2"></i>
@@ -633,6 +682,7 @@ formData.append('qr_positioning_data', JSON.stringify(qrPositioningData));
 ```
 
 **2. Added Badge:**
+
 ```blade
 <strong>Signature ID:</strong><br>
 <code>{{ $documentSignature->digitalSignature->signature_id ?? 'N/A' }}</code>
@@ -643,6 +693,7 @@ formData.append('qr_positioning_data', JSON.stringify(qrPositioningData));
 ```
 
 **3. Added Signing Method Info:**
+
 ```blade
 <div class="row mb-3">
     <div class="col-md-6">
@@ -665,6 +716,7 @@ formData.append('qr_positioning_data', JSON.stringify(qrPositioningData));
 ---
 
 #### File: `resources/views/digital-signature/admin/partials/quick-preview-signed-modal.blade.php`
+
 **Status:** ✅ Already correct (uses API responses)
 
 **No Changes Needed** - Modal dynamically loads data via JavaScript and uses correct fields.
@@ -674,11 +726,13 @@ formData.append('qr_positioning_data', JSON.stringify(qrPositioningData));
 ### 6. Routes (1 file)
 
 #### File: `routes/web.php`
+
 **Status:** ✅ Modified
 
 **Changes Made:**
 
 **1. Deprecated Route (Commented Out):**
+
 ```php
 // BEFORE (Active):
 Route::get('{approvalRequestId}/templates', [DigitalSignatureController::class, 'getTemplatesForSigning'])
@@ -690,6 +744,7 @@ Route::get('{approvalRequestId}/templates', [DigitalSignatureController::class, 
 ```
 
 **2. Updated Comment:**
+
 ```php
 // ==================== DOCUMENT SIGNING (QR DRAG & DROP) ====================
 Route::prefix('sign')->name('sign.')->group(function () {
@@ -702,6 +757,7 @@ Route::prefix('sign')->name('sign.')->group(function () {
 ```
 
 **3. Key Management Routes:**
+
 ```php
 // Already commented out (line 106-118)
 // Route::prefix('keys')->name('keys.')->group(function () { ... });
@@ -714,6 +770,7 @@ Route::prefix('sign')->name('sign.')->group(function () {
 ### Database Schema Evolution
 
 **BEFORE:**
+
 ```
 digital_signatures (1) ──hasMany──> document_signatures (Many)
 │
@@ -732,6 +789,7 @@ document_signatures
 ```
 
 **AFTER:**
+
 ```
 document_signatures (1) ──hasOne──> digital_signatures (1)
                                      │
@@ -756,6 +814,7 @@ document_signatures
 ### Flow Comparison
 
 #### Old System Flow
+
 ```
 ┌──────────────────────────────────────────────────┐
 │ 1. Kaprodi: Manually create signature key       │
@@ -810,6 +869,7 @@ document_signatures
 ```
 
 #### New System Flow
+
 ```
 ┌──────────────────────────────────────────────────┐
 │ 1. User: Submit document                        │
@@ -869,132 +929,143 @@ document_signatures
 
 ### Backend Testing
 
-- [ ] **Migration Testing**
-  - [ ] Run `php artisan migrate:fresh`
-  - [ ] Verify `digital_signatures` table has `document_signature_id` column
-  - [ ] Verify `document_signatures` table has `temporary_qr_code_path` column
-  - [ ] Verify foreign key constraints work correctly
+-   [ ] **Migration Testing**
 
-- [ ] **Model Testing**
-  - [ ] Test `DocumentSignature::generateTemporaryQRCode()`
-  - [ ] Test `DocumentSignature::saveQRPositioning($data)`
-  - [ ] Test `DigitalSignature` 1-to-1 relationship
-  - [ ] Test `DocumentSignature` 1-to-1 relationship
+    -   [ ] Run `php artisan migrate:fresh`
+    -   [ ] Verify `digital_signatures` table has `document_signature_id` column
+    -   [ ] Verify `document_signatures` table has `temporary_qr_code_path` column
+    -   [ ] Verify foreign key constraints work correctly
 
-- [ ] **Service Testing**
-  - [ ] Test `DigitalSignatureService::createDigitalSignatureForDocument()`
-  - [ ] Test `DigitalSignatureService::signDocumentWithUniqueKey()`
-  - [ ] Test `PDFSignatureService::embedQRCodeIntoPDF()`
-  - [ ] Verify QR positioning conversion (pixel → mm)
+-   [ ] **Model Testing**
 
-- [ ] **Controller Testing**
-  - [ ] Test `signDocument()` - DocumentSignature exists
-  - [ ] Test `signDocument()` - Temporary QR regeneration
-  - [ ] Test `processDocumentSigning()` - Complete flow
-  - [ ] Test payload validation (qr_positioning_data)
+    -   [ ] Test `DocumentSignature::generateTemporaryQRCode()`
+    -   [ ] Test `DocumentSignature::saveQRPositioning($data)`
+    -   [ ] Test `DigitalSignature` 1-to-1 relationship
+    -   [ ] Test `DocumentSignature` 1-to-1 relationship
+
+-   [ ] **Service Testing**
+
+    -   [ ] Test `DigitalSignatureService::createDigitalSignatureForDocument()`
+    -   [ ] Test `DigitalSignatureService::signDocumentWithUniqueKey()`
+    -   [ ] Test `PDFSignatureService::embedQRCodeIntoPDF()`
+    -   [ ] Verify QR positioning conversion (pixel → mm)
+
+-   [ ] **Controller Testing**
+    -   [ ] Test `signDocument()` - DocumentSignature exists
+    -   [ ] Test `signDocument()` - Temporary QR regeneration
+    -   [ ] Test `processDocumentSigning()` - Complete flow
+    -   [ ] Test payload validation (qr_positioning_data)
 
 ### Frontend Testing
 
-- [ ] **Signing Interface**
-  - [ ] Visual guide shows on first visit
-  - [ ] Temporary QR displays correctly
-  - [ ] QR drag & drop works (desktop)
-  - [ ] QR drag & drop works (mobile/touch)
-  - [ ] Size presets work (Small/Medium/Large)
-  - [ ] Reset position button works
-  - [ ] Undo/Redo works (50 state history)
+-   [ ] **Signing Interface**
 
-- [ ] **Keyboard Shortcuts**
-  - [ ] Arrow keys move QR (1px)
-  - [ ] Shift + Arrows move QR (10px)
-  - [ ] Ctrl+Z performs undo
-  - [ ] Ctrl+Y performs redo
-  - [ ] Delete removes QR
+    -   [ ] Visual guide shows on first visit
+    -   [ ] Temporary QR displays correctly
+    -   [ ] QR drag & drop works (desktop)
+    -   [ ] QR drag & drop works (mobile/touch)
+    -   [ ] Size presets work (Small/Medium/Large)
+    -   [ ] Reset position button works
+    -   [ ] Undo/Redo works (50 state history)
 
-- [ ] **Preview & Confirmation**
-  - [ ] Preview button shows modal
-  - [ ] Preview renders PDF with QR correctly
-  - [ ] Confirmation dialog shows before signing
-  - [ ] Form submission sends correct data
+-   [ ] **Keyboard Shortcuts**
+
+    -   [ ] Arrow keys move QR (1px)
+    -   [ ] Shift + Arrows move QR (10px)
+    -   [ ] Ctrl+Z performs undo
+    -   [ ] Ctrl+Y performs redo
+    -   [ ] Delete removes QR
+
+-   [ ] **Preview & Confirmation**
+    -   [ ] Preview button shows modal
+    -   [ ] Preview renders PDF with QR correctly
+    -   [ ] Confirmation dialog shows before signing
+    -   [ ] Form submission sends correct data
 
 ### Integration Testing
 
-- [ ] **Complete User Flow**
-  1. [ ] User submits document
-  2. [ ] Kaprodi approves → DocumentSignature + temp QR created
-  3. [ ] User opens signing page → sees temp QR
-  4. [ ] User drags QR to position
-  5. [ ] User previews document
-  6. [ ] User signs → unique key generated
-  7. [ ] Kaprodi verifies → email sent
-  8. [ ] User downloads signed PDF with QR
+-   [ ] **Complete User Flow**
 
-- [ ] **Admin Verification**
-  - [ ] Document signatures list shows correct data
-  - [ ] Signature details shows "Unique Key" badge
-  - [ ] Quick preview modal displays correctly
-  - [ ] Verification checks run successfully
+    1. [ ] User submits document
+    2. [ ] Kaprodi approves → DocumentSignature + temp QR created
+    3. [ ] User opens signing page → sees temp QR
+    4. [ ] User drags QR to position
+    5. [ ] User previews document
+    6. [ ] User signs → unique key generated
+    7. [ ] Kaprodi verifies → email sent
+    8. [ ] User downloads signed PDF with QR
+
+-   [ ] **Admin Verification**
+    -   [ ] Document signatures list shows correct data
+    -   [ ] Signature details shows "Unique Key" badge
+    -   [ ] Quick preview modal displays correctly
+    -   [ ] Verification checks run successfully
 
 ---
 
 ## 📝 Summary Statistics
 
-| Metric | Count |
-|--------|-------|
-| **Files Modified** | 11 |
-| **Migrations Modified** | 2 |
-| **Models Modified** | 3 |
-| **Services Modified** | 2 |
-| **Controllers Modified** | 1 |
-| **Views Modified** | 3 |
-| **Routes Modified** | 1 |
-| **New Methods Added** | 25 |
-| **Deprecated Methods** | 8 |
-| **Lines of Code Changed** | ~2,500 |
-| **CSS Added** | ~200 lines |
-| **JavaScript Added** | ~350 lines |
-| **HTML Added** | ~120 lines |
+| Metric                    | Count      |
+| ------------------------- | ---------- |
+| **Files Modified**        | 11         |
+| **Migrations Modified**   | 2          |
+| **Models Modified**       | 3          |
+| **Services Modified**     | 2          |
+| **Controllers Modified**  | 1          |
+| **Views Modified**        | 3          |
+| **Routes Modified**       | 1          |
+| **New Methods Added**     | 25         |
+| **Deprecated Methods**    | 8          |
+| **Lines of Code Changed** | ~2,500     |
+| **CSS Added**             | ~200 lines |
+| **JavaScript Added**      | ~350 lines |
+| **HTML Added**            | ~120 lines |
 
 ---
 
 ## 🎯 Key Benefits
 
 1. **Security Enhanced**
-   - Each document has unique encryption key
-   - Keys cannot be reused across documents
-   - Automatic key rotation per document
+
+    - Each document has unique encryption key
+    - Keys cannot be reused across documents
+    - Automatic key rotation per document
 
 2. **User Experience Improved**
-   - Visual guide for first-time users
-   - QR size presets for quick sizing
-   - Keyboard shortcuts for precision
-   - Undo/Redo for error recovery
-   - Preview before signing
+
+    - Visual guide for first-time users
+    - QR size presets for quick sizing
+    - Keyboard shortcuts for precision
+    - Undo/Redo for error recovery
+    - Preview before signing
 
 3. **System Simplified**
-   - No manual key management
-   - No signature template management
-   - Automatic key generation
-   - Simplified approval flow
+
+    - No manual key management
+    - No signature template management
+    - Automatic key generation
+    - Simplified approval flow
 
 4. **Maintainability Improved**
-   - Cleaner code architecture
-   - 1-to-1 relationship easier to understand
-   - Fewer tables to maintain
-   - Better separation of concerns
+    - Cleaner code architecture
+    - 1-to-1 relationship easier to understand
+    - Fewer tables to maintain
+    - Better separation of concerns
 
 ---
 
 ## 🚀 Deployment Notes
 
 ### Pre-Deployment Checklist
-- [ ] Backup database before migration
-- [ ] Test migration on staging environment
-- [ ] Verify all old signed documents still accessible
-- [ ] Update documentation
-- [ ] Train Kaprodi users on new flow
+
+-   [ ] Backup database before migration
+-   [ ] Test migration on staging environment
+-   [ ] Verify all old signed documents still accessible
+-   [ ] Update documentation
+-   [ ] Train Kaprodi users on new flow
 
 ### Migration Commands
+
 ```bash
 # Backup database
 php artisan backup:run
@@ -1012,11 +1083,12 @@ php artisan optimize
 ```
 
 ### Post-Deployment Verification
-- [ ] Check all views load correctly
-- [ ] Test signing flow end-to-end
-- [ ] Verify old signatures still viewable
-- [ ] Check email notifications work
-- [ ] Monitor error logs for issues
+
+-   [ ] Check all views load correctly
+-   [ ] Test signing flow end-to-end
+-   [ ] Verify old signatures still viewable
+-   [ ] Check email notifications work
+-   [ ] Monitor error logs for issues
 
 ---
 

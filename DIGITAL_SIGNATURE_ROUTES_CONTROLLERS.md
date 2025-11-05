@@ -25,9 +25,10 @@ GET /signature/verify
 **Returns**: Blade view with verification form
 
 **Usage**:
-- User opens this page to manually verify a signature
-- Input: verification code or token
-- Submit ke `POST /signature/verify`
+
+-   User opens this page to manually verify a signature
+-   Input: verification code or token
+-   Submit ke `POST /signature/verify`
 
 ---
 
@@ -42,11 +43,13 @@ GET /signature/verify/{token}
 **Purpose**: Verify signature via QR code scan
 
 **Parameters**:
-- `token` (string): Short code (e.g., "A1B2-C3D4-E5F6") atau full encrypted token
+
+-   `token` (string): Short code (e.g., "A1B2-C3D4-E5F6") atau full encrypted token
 
 **Access**: Public
 
 **Process**:
+
 1. Decrypt token via `QRCodeService::decryptVerificationData()`
 2. Verify via `VerificationService::verifyByToken()`
 3. Log attempt ke `signature_verification_logs`
@@ -55,6 +58,7 @@ GET /signature/verify/{token}
 **Returns**: Verification result page (valid/invalid)
 
 **Example URLs**:
+
 ```
 https://domain.com/signature/verify/A1B2-C3D4-E5F6
 https://domain.com/signature/verify/eyJpdiI6ImlubGl...
@@ -73,9 +77,10 @@ POST /signature/verify
 **Purpose**: Manual verification form submission
 
 **Request Body**:
+
 ```json
 {
-  "verification_code": "A1B2-C3D4-E5F6"
+    "verification_code": "A1B2-C3D4-E5F6"
 }
 ```
 
@@ -100,34 +105,36 @@ GET /signature/api/verify/{token}
 **Purpose**: Get verification details via API (JSON response)
 
 **Parameters**:
-- `token` (string): Verification token
+
+-   `token` (string): Verification token
 
 **Access**: Public API
 
 **Response**:
+
 ```json
 {
-  "success": true,
-  "data": {
-    "is_valid": true,
-    "document_name": "Surat Permohonan PKL",
-    "document_number": "001/PKL/2025",
-    "signed_by": "Dr. John Doe",
-    "signed_at": "2025-10-30 12:30:00",
-    "verification_checks": {
-      "document_exists": true,
-      "digital_signature_valid": true,
-      "document_integrity": true,
-      "cms_signature_valid": true,
-      "timestamp_valid": true
-    },
-    "verification_summary": {
-      "overall_status": "VALID",
-      "checks_passed": 7,
-      "checks_failed": 0,
-      "success_rate": 100
+    "success": true,
+    "data": {
+        "is_valid": true,
+        "document_name": "Surat Permohonan PKL",
+        "document_number": "001/PKL/2025",
+        "signed_by": "Dr. John Doe",
+        "signed_at": "2025-10-30 12:30:00",
+        "verification_checks": {
+            "document_exists": true,
+            "digital_signature_valid": true,
+            "document_integrity": true,
+            "cms_signature_valid": true,
+            "timestamp_valid": true
+        },
+        "verification_summary": {
+            "overall_status": "VALID",
+            "checks_passed": 7,
+            "checks_failed": 0,
+            "success_rate": 100
+        }
     }
-  }
 }
 ```
 
@@ -146,44 +153,42 @@ POST /signature/api/bulk-verify
 **Purpose**: Verify multiple signatures at once
 
 **Request Body**:
+
 ```json
 {
-  "tokens": [
-    "A1B2-C3D4-E5F6",
-    "G7H8-I9J0-K1L2",
-    "M3N4-O5P6-Q7R8"
-  ]
+    "tokens": ["A1B2-C3D4-E5F6", "G7H8-I9J0-K1L2", "M3N4-O5P6-Q7R8"]
 }
 ```
 
 **Access**: Public API
 
 **Response**:
+
 ```json
 {
-  "success": true,
-  "data": {
-    "total": 3,
-    "valid": 2,
-    "invalid": 1,
-    "results": [
-      {
-        "token": "A1B2-C3D4-E5F6",
-        "is_valid": true,
-        "document_name": "Doc A"
-      },
-      {
-        "token": "G7H8-I9J0-K1L2",
-        "is_valid": true,
-        "document_name": "Doc B"
-      },
-      {
-        "token": "M3N4-O5P6-Q7R8",
-        "is_valid": false,
-        "error": "Document has been modified"
-      }
-    ]
-  }
+    "success": true,
+    "data": {
+        "total": 3,
+        "valid": 2,
+        "invalid": 1,
+        "results": [
+            {
+                "token": "A1B2-C3D4-E5F6",
+                "is_valid": true,
+                "document_name": "Doc A"
+            },
+            {
+                "token": "G7H8-I9J0-K1L2",
+                "is_valid": true,
+                "document_name": "Doc B"
+            },
+            {
+                "token": "M3N4-O5P6-Q7R8",
+                "is_valid": false,
+                "error": "Document has been modified"
+            }
+        ]
+    }
 }
 ```
 
@@ -202,15 +207,16 @@ GET /signature/api/statistics
 **Access**: Public API
 
 **Response**:
+
 ```json
 {
-  "success": true,
-  "data": {
-    "total_signatures": 1234,
-    "total_verifications": 5678,
-    "verification_rate": 4.6,
-    "period_days": 30
-  }
+    "success": true,
+    "data": {
+        "total_signatures": 1234,
+        "total_verifications": 5678,
+        "verification_rate": 4.6,
+        "period_days": 30
+    }
 }
 ```
 
@@ -227,11 +233,13 @@ GET /signature/certificate/{token}
 **Purpose**: Download verification certificate (PDF report)
 
 **Parameters**:
-- `token` (string): Verification token
+
+-   `token` (string): Verification token
 
 **Access**: Public
 
 **Process**:
+
 1. Verify signature
 2. Generate PDF certificate with verification details
 3. Return PDF download
@@ -261,11 +269,12 @@ GET /admin/signature/dashboard
 **Access**: Authenticated Kaprodi only
 
 **Returns**: Dashboard view with:
-- Total keys generated
-- Total documents signed
-- Recent signature activities
-- Key expiration warnings
-- Verification statistics
+
+-   Total keys generated
+-   Total documents signed
+-   Recent signature activities
+-   Key expiration warnings
+-   Verification statistics
 
 ---
 
@@ -286,8 +295,9 @@ GET /admin/signature/keys
 **Access**: Authenticated Kaprodi
 
 **Query Parameters**:
-- `status` (optional): 'active', 'expired', 'revoked'
-- `sort` (optional): 'created_at', 'valid_until'
+
+-   `status` (optional): 'active', 'expired', 'revoked'
+-   `sort` (optional): 'created_at', 'valid_until'
 
 **Returns**: List view dengan pagination
 
@@ -304,17 +314,19 @@ POST /admin/signature/keys/generate
 **Purpose**: Generate new RSA key pair
 
 **Request Body**:
+
 ```json
 {
-  "key_length": 2048,
-  "validity_years": 1,
-  "purpose": "Document Signing"
+    "key_length": 2048,
+    "validity_years": 1,
+    "purpose": "Document Signing"
 }
 ```
 
 **Access**: Authenticated Kaprodi
 
 **Process**:
+
 1. Call `DigitalSignatureService::createDigitalSignature()`
 2. Generate RSA-2048 key pair
 3. Create self-signed certificate
@@ -322,17 +334,18 @@ POST /admin/signature/keys/generate
 5. Create audit log
 
 **Response**:
+
 ```json
 {
-  "success": true,
-  "message": "Digital signature key generated successfully",
-  "data": {
-    "signature_id": "SIG-ABC123",
-    "algorithm": "RSA-SHA256",
-    "key_length": 2048,
-    "valid_from": "2025-10-30",
-    "valid_until": "2026-10-30"
-  }
+    "success": true,
+    "message": "Digital signature key generated successfully",
+    "data": {
+        "signature_id": "SIG-ABC123",
+        "algorithm": "RSA-SHA256",
+        "key_length": 2048,
+        "valid_from": "2025-10-30",
+        "valid_until": "2026-10-30"
+    }
 }
 ```
 
@@ -349,16 +362,18 @@ GET /admin/signature/keys/{id}
 **Purpose**: View detailed info tentang specific key
 
 **Parameters**:
-- `id` (int): digital_signatures.id
+
+-   `id` (int): digital_signatures.id
 
 **Access**: Authenticated Kaprodi (own keys only)
 
 **Returns**: Key details view with:
-- Public key (truncated)
-- Certificate info
-- Usage statistics
-- List of documents signed with this key
-- Expiration countdown
+
+-   Public key (truncated)
+-   Certificate info
+-   Usage statistics
+-   List of documents signed with this key
+-   Expiration countdown
 
 ---
 
@@ -373,34 +388,38 @@ POST /admin/signature/keys/{id}/revoke
 **Purpose**: Revoke a digital signature key
 
 **Parameters**:
-- `id` (int): digital_signatures.id
+
+-   `id` (int): digital_signatures.id
 
 **Request Body**:
+
 ```json
 {
-  "reason": "Security breach detected"
+    "reason": "Security breach detected"
 }
 ```
 
 **Access**: Authenticated Kaprodi (own keys only)
 
 **Process**:
+
 1. Call `DigitalSignatureService::revokeSignature()`
 2. Update status to 'revoked'
 3. Invalidate all associated document signatures
 4. Create audit log
 
 **Response**:
+
 ```json
 {
-  "success": true,
-  "message": "Key revoked successfully",
-  "data": {
-    "signature_id": "SIG-ABC123",
-    "revoked_at": "2025-10-30 15:00:00",
-    "reason": "Security breach detected",
-    "affected_documents": 45
-  }
+    "success": true,
+    "message": "Key revoked successfully",
+    "data": {
+        "signature_id": "SIG-ABC123",
+        "revoked_at": "2025-10-30 15:00:00",
+        "reason": "Security breach detected",
+        "affected_documents": 45
+    }
 }
 ```
 
@@ -417,7 +436,8 @@ GET /admin/signature/keys/{id}/public-key
 **Purpose**: Download public key (PEM format)
 
 **Parameters**:
-- `id` (int): digital_signatures.id
+
+-   `id` (int): digital_signatures.id
 
 **Access**: Authenticated Kaprodi
 
@@ -436,27 +456,29 @@ GET /admin/signature/keys/{id}/statistics
 **Purpose**: Get usage statistics untuk specific key
 
 **Parameters**:
-- `id` (int): digital_signatures.id
+
+-   `id` (int): digital_signatures.id
 
 **Access**: Authenticated Kaprodi
 
 **Response**:
+
 ```json
 {
-  "success": true,
-  "data": {
-    "signature_id": "SIG-ABC123",
-    "total_documents_signed": 156,
-    "successful_signatures": 156,
-    "pending_signatures": 0,
-    "last_used": "2025-10-30 14:00:00",
-    "days_until_expiry": 245,
-    "usage_stats": {
-      "avg_per_day": 5.2,
-      "peak_day": "2025-10-15",
-      "peak_count": 23
+    "success": true,
+    "data": {
+        "signature_id": "SIG-ABC123",
+        "total_documents_signed": 156,
+        "successful_signatures": 156,
+        "pending_signatures": 0,
+        "last_used": "2025-10-30 14:00:00",
+        "days_until_expiry": 245,
+        "usage_stats": {
+            "avg_per_day": 5.2,
+            "peak_day": "2025-10-15",
+            "peak_count": 23
+        }
     }
-  }
 }
 ```
 
@@ -479,9 +501,10 @@ GET /admin/signature/documents/pending
 **Access**: Authenticated Kaprodi
 
 **Query Parameters**:
-- `page` (optional): Pagination
-- `per_page` (optional): Items per page
-- `search` (optional): Search by document name
+
+-   `page` (optional): Pagination
+-   `per_page` (optional): Items per page
+-   `search` (optional): Search by document name
 
 **Returns**: List of ApprovalRequests dengan status 'approved'
 
@@ -498,16 +521,18 @@ GET /admin/signature/sign/{approvalRequestId}
 **Purpose**: Display signing interface
 
 **Parameters**:
-- `approvalRequestId` (int): approval_requests.id
+
+-   `approvalRequestId` (int): approval_requests.id
 
 **Access**: Authenticated Kaprodi
 
 **Returns**: Vue/React component view with:
-- PDF viewer/canvas
-- Signature template selector
-- Key selector dropdown
-- Position controls
-- Sign button
+
+-   PDF viewer/canvas
+-   Signature template selector
+-   Key selector dropdown
+-   Position controls
+-   Sign button
 
 ---
 
@@ -522,23 +547,25 @@ POST /admin/signature/sign
 **Purpose**: Perform digital signing operation
 
 **Request Body**:
+
 ```json
 {
-  "approval_request_id": 123,
-  "digital_signature_id": 5,
-  "template_id": 2,
-  "positioning_data": {
-    "page": 1,
-    "position": {"x": 450, "y": 650},
-    "size": {"width": 200, "height": 80},
-    "canvas_dimensions": {"width": 595, "height": 842}
-  }
+    "approval_request_id": 123,
+    "digital_signature_id": 5,
+    "template_id": 2,
+    "positioning_data": {
+        "page": 1,
+        "position": { "x": 450, "y": 650 },
+        "size": { "width": 200, "height": 80 },
+        "canvas_dimensions": { "width": 595, "height": 842 }
+    }
 }
 ```
 
 **Access**: Authenticated Kaprodi
 
 **Process** (Complex):
+
 1. Validate inputs
 2. Create CMS signature (`DigitalSignatureService::createCMSSignature()`)
 3. Create DocumentSignature record
@@ -549,17 +576,18 @@ POST /admin/signature/sign
 8. Send notification to user
 
 **Response**:
+
 ```json
 {
-  "success": true,
-  "message": "Document signed successfully",
-  "data": {
-    "document_signature_id": 42,
-    "signed_pdf_url": "/storage/signed-documents/signed_xxx.pdf",
-    "qr_code_url": "/storage/qrcodes/qr_42.png",
-    "verification_url": "https://domain.com/signature/verify/A1B2-C3D4",
-    "signed_at": "2025-10-30 12:30:00"
-  }
+    "success": true,
+    "message": "Document signed successfully",
+    "data": {
+        "document_signature_id": 42,
+        "signed_pdf_url": "/storage/signed-documents/signed_xxx.pdf",
+        "qr_code_url": "/storage/qrcodes/qr_42.png",
+        "verification_url": "https://domain.com/signature/verify/A1B2-C3D4",
+        "signed_at": "2025-10-30 12:30:00"
+    }
 }
 ```
 
@@ -592,7 +620,8 @@ GET /admin/signature/download/{documentSignatureId}
 **Purpose**: Download signed PDF
 
 **Parameters**:
-- `documentSignatureId` (int): document_signatures.id
+
+-   `documentSignatureId` (int): document_signatures.id
 
 **Access**: Authenticated Kaprodi
 
@@ -611,17 +640,19 @@ GET /admin/signature/documents/{id}
 **Purpose**: View details tentang specific signed document
 
 **Parameters**:
-- `id` (int): document_signatures.id
+
+-   `id` (int): document_signatures.id
 
 **Access**: Authenticated Kaprodi
 
 **Returns**: Detail view with:
-- Document info
-- Signature metadata
-- Verification status
-- QR code
-- Verification logs
-- Download links
+
+-   Document info
+-   Signature metadata
+-   Verification status
+-   QR code
+-   Verification logs
+-   Download links
 
 ---
 
@@ -656,14 +687,16 @@ POST /admin/signature/templates
 **Purpose**: Upload dan create new signature template
 
 **Request**: Multipart form data
-- `template_name` (string)
-- `signature_image` (file): PNG/JPG image
-- `layout_config` (JSON)
-- `style_config` (JSON)
+
+-   `template_name` (string)
+-   `signature_image` (file): PNG/JPG image
+-   `layout_config` (JSON)
+-   `style_config` (JSON)
 
 **Access**: Authenticated Kaprodi
 
 **Process**:
+
 1. Upload image ke storage
 2. Create SignatureTemplate record
 3. Return template_id
@@ -681,7 +714,8 @@ PUT /admin/signature/templates/{id}
 **Purpose**: Update template settings
 
 **Parameters**:
-- `id` (int): signature_templates.id
+
+-   `id` (int): signature_templates.id
 
 **Access**: Authenticated Kaprodi (own templates only)
 
@@ -698,7 +732,8 @@ DELETE /admin/signature/templates/{id}
 **Purpose**: Delete template
 
 **Parameters**:
-- `id` (int): signature_templates.id
+
+-   `id` (int): signature_templates.id
 
 **Access**: Authenticated Kaprodi (own templates only)
 
@@ -721,9 +756,10 @@ GET /admin/signature/logs/audit
 **Access**: Authenticated Kaprodi
 
 **Query Parameters**:
-- `action` (optional): Filter by action type
-- `date_from` (optional): Filter by date range
-- `date_to` (optional): Filter by date range
+
+-   `action` (optional): Filter by action type
+-   `date_from` (optional): Filter by date range
+-   `date_to` (optional): Filter by date range
 
 **Returns**: Paginated audit logs table
 
@@ -742,10 +778,11 @@ GET /admin/signature/logs/verification
 **Access**: Authenticated Kaprodi
 
 **Returns**: Verification logs with:
-- Timestamp
-- IP address
-- Result (valid/invalid)
-- Document name
+
+-   Timestamp
+-   IP address
+-   Result (valid/invalid)
+-   Document name
 
 ---
 
@@ -780,10 +817,11 @@ GET /admin/signature/analytics
 **Access**: Authenticated Kaprodi
 
 **Returns**: Charts and statistics:
-- Documents signed over time
-- Verification attempts over time
-- Key usage distribution
-- Success rates
+
+-   Documents signed over time
+-   Verification attempts over time
+-   Key usage distribution
+-   Success rates
 
 ---
 
@@ -798,10 +836,11 @@ GET /admin/signature/export
 **Purpose**: Export data untuk reporting
 
 **Query Parameters**:
-- `type`: 'signatures', 'verifications', 'audit'
-- `format`: 'csv', 'xlsx', 'pdf'
-- `date_from`: Start date
-- `date_to`: End date
+
+-   `type`: 'signatures', 'verifications', 'audit'
+-   `format`: 'csv', 'xlsx', 'pdf'
+-   `date_from`: Start date
+-   `date_to`: End date
 
 **Access**: Authenticated Kaprodi
 
@@ -840,15 +879,17 @@ POST /approval-requests
 **Purpose**: Submit new document untuk approval
 
 **Request**: Multipart form data
-- `document_name`
-- `document_type`
-- `document_number`
-- `document_file` (PDF)
-- `notes`
+
+-   `document_name`
+-   `document_type`
+-   `document_number`
+-   `document_file` (PDF)
+-   `notes`
 
 **Access**: Authenticated User
 
 **Process**:
+
 1. Validate PDF
 2. Store file
 3. Create ApprovalRequest
@@ -858,17 +899,17 @@ POST /approval-requests
 
 ## 📋 Route Groups Summary
 
-| Group | Base Path | Routes Count | Authentication | Purpose |
-|-------|-----------|--------------|----------------|---------|
-| Public Verification | `/signature/verify` | 6 | None | Verify signatures |
-| Verification API | `/signature/api` | 3 | None | API access |
-| Admin Dashboard | `/admin/signature` | 1 | Kaprodi | Overview |
-| Key Management | `/admin/signature/keys` | 6 | Kaprodi | Manage keys |
-| Document Signing | `/admin/signature/documents` | 5 | Kaprodi | Sign documents |
-| Template Management | `/admin/signature/templates` | 4 | Kaprodi | Manage templates |
-| Logs & Audit | `/admin/signature/logs` | 3 | Kaprodi | View logs |
-| Analytics | `/admin/signature/analytics` | 2 | Kaprodi | Reports |
-| User Requests | `/approval-requests` | 2+ | User | Submit docs |
+| Group               | Base Path                    | Routes Count | Authentication | Purpose           |
+| ------------------- | ---------------------------- | ------------ | -------------- | ----------------- |
+| Public Verification | `/signature/verify`          | 6            | None           | Verify signatures |
+| Verification API    | `/signature/api`             | 3            | None           | API access        |
+| Admin Dashboard     | `/admin/signature`           | 1            | Kaprodi        | Overview          |
+| Key Management      | `/admin/signature/keys`      | 6            | Kaprodi        | Manage keys       |
+| Document Signing    | `/admin/signature/documents` | 5            | Kaprodi        | Sign documents    |
+| Template Management | `/admin/signature/templates` | 4            | Kaprodi        | Manage templates  |
+| Logs & Audit        | `/admin/signature/logs`      | 3            | Kaprodi        | View logs         |
+| Analytics           | `/admin/signature/analytics` | 2            | Kaprodi        | Reports           |
+| User Requests       | `/approval-requests`         | 2+           | User           | Submit docs       |
 
 **Total Routes**: ~32 endpoints
 
@@ -877,12 +918,14 @@ POST /approval-requests
 ## 🔐 Middleware Stack
 
 ### Public Routes
+
 ```php
 // No middleware
 Route::get('signature/verify/{token}', ...)
 ```
 
 ### Kaprodi Routes
+
 ```php
 Route::middleware(['auth:kaprodi'])->group(function () {
     // All admin routes
@@ -890,6 +933,7 @@ Route::middleware(['auth:kaprodi'])->group(function () {
 ```
 
 ### User Routes
+
 ```php
 Route::middleware(['auth'])->group(function () {
     // User approval request routes
@@ -901,24 +945,26 @@ Route::middleware(['auth'])->group(function () {
 ## 🎯 API Response Format (Standardized)
 
 ### Success Response
+
 ```json
 {
-  "success": true,
-  "message": "Operation successful",
-  "data": {
-    // Response data
-  }
+    "success": true,
+    "message": "Operation successful",
+    "data": {
+        // Response data
+    }
 }
 ```
 
 ### Error Response
+
 ```json
 {
-  "success": false,
-  "message": "Error message",
-  "errors": {
-    "field_name": ["Validation error message"]
-  }
+    "success": false,
+    "message": "Error message",
+    "errors": {
+        "field_name": ["Validation error message"]
+    }
 }
 ```
 

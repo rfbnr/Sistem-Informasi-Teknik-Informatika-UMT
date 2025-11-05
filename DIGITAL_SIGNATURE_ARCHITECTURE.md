@@ -141,31 +141,33 @@
 
 **Purpose**: Menyimpan RSA key pairs untuk signing operations
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `id` | bigint | Primary key |
-| `signature_id` | string (UK) | Unique identifier untuk signature |
-| `public_key` | text | RSA public key (PEM format) |
-| `private_key` | text | RSA private key (encrypted, PEM format) |
-| `algorithm` | string | Algoritma: 'RSA-SHA256' |
-| `key_length` | integer | Panjang kunci: 2048 |
-| `certificate` | text | Self-signed X.509 certificate |
-| `valid_from` | timestamp | Tanggal mulai berlaku |
-| `valid_until` | timestamp | Tanggal kadaluarsa |
-| `status` | enum | 'active', 'expired', 'revoked' |
-| `revocation_reason` | text | Alasan pencabutan jika revoked |
-| `revoked_at` | timestamp | Waktu pencabutan |
-| `created_by` | FK | Kaprodi yang generate key |
-| `signature_purpose` | text | Tujuan penggunaan |
-| `metadata` | JSON | Additional data |
+| Column              | Type        | Description                             |
+| ------------------- | ----------- | --------------------------------------- |
+| `id`                | bigint      | Primary key                             |
+| `signature_id`      | string (UK) | Unique identifier untuk signature       |
+| `public_key`        | text        | RSA public key (PEM format)             |
+| `private_key`       | text        | RSA private key (encrypted, PEM format) |
+| `algorithm`         | string      | Algoritma: 'RSA-SHA256'                 |
+| `key_length`        | integer     | Panjang kunci: 2048                     |
+| `certificate`       | text        | Self-signed X.509 certificate           |
+| `valid_from`        | timestamp   | Tanggal mulai berlaku                   |
+| `valid_until`       | timestamp   | Tanggal kadaluarsa                      |
+| `status`            | enum        | 'active', 'expired', 'revoked'          |
+| `revocation_reason` | text        | Alasan pencabutan jika revoked          |
+| `revoked_at`        | timestamp   | Waktu pencabutan                        |
+| `created_by`        | FK          | Kaprodi yang generate key               |
+| `signature_purpose` | text        | Tujuan penggunaan                       |
+| `metadata`          | JSON        | Additional data                         |
 
 **Indexes**:
-- `signature_id` (unique)
-- `(status, valid_from, valid_until)`
+
+-   `signature_id` (unique)
+-   `(status, valid_from, valid_until)`
 
 **Relationships**:
-- `belongsTo(Kaprodi)` via `created_by`
-- `hasMany(DocumentSignature)`
+
+-   `belongsTo(Kaprodi)` via `created_by`
+-   `hasMany(DocumentSignature)`
 
 ---
 
@@ -173,36 +175,38 @@
 
 **Purpose**: Record setiap dokumen yang telah ditandatangani
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `id` | bigint | Primary key |
-| `approval_request_id` | FK | Dokumen yang ditandatangani |
-| `digital_signature_id` | FK | Key yang digunakan untuk sign |
-| `document_hash` | string | SHA-256 hash dokumen |
-| `signature_value` | text | Hash dari signature binary |
-| `cms_signature` | text | CMS signature (base64) |
-| `signed_at` | timestamp | Waktu penandatanganan |
-| `signed_by` | FK | Kaprodi yang menandatangani |
-| `signature_status` | enum | 'pending', 'signed', 'verified', 'invalid', 'rejected' |
-| `qr_code_path` | string | Path ke QR code image |
-| `verification_token` | text | Token untuk verifikasi |
-| `verification_url` | text | URL verifikasi |
-| `final_pdf_path` | string | Path PDF yang sudah signed |
-| `positioning_data` | JSON | Posisi signature dan QR di PDF |
-| `canvas_data_path` | string | Canvas positioning data |
-| `signature_metadata` | JSON | Metadata tambahan |
-| `verified_at` | timestamp | Waktu verifikasi |
-| `verified_by` | FK | Yang melakukan verifikasi |
+| Column                 | Type      | Description                                            |
+| ---------------------- | --------- | ------------------------------------------------------ |
+| `id`                   | bigint    | Primary key                                            |
+| `approval_request_id`  | FK        | Dokumen yang ditandatangani                            |
+| `digital_signature_id` | FK        | Key yang digunakan untuk sign                          |
+| `document_hash`        | string    | SHA-256 hash dokumen                                   |
+| `signature_value`      | text      | Hash dari signature binary                             |
+| `cms_signature`        | text      | CMS signature (base64)                                 |
+| `signed_at`            | timestamp | Waktu penandatanganan                                  |
+| `signed_by`            | FK        | Kaprodi yang menandatangani                            |
+| `signature_status`     | enum      | 'pending', 'signed', 'verified', 'invalid', 'rejected' |
+| `qr_code_path`         | string    | Path ke QR code image                                  |
+| `verification_token`   | text      | Token untuk verifikasi                                 |
+| `verification_url`     | text      | URL verifikasi                                         |
+| `final_pdf_path`       | string    | Path PDF yang sudah signed                             |
+| `positioning_data`     | JSON      | Posisi signature dan QR di PDF                         |
+| `canvas_data_path`     | string    | Canvas positioning data                                |
+| `signature_metadata`   | JSON      | Metadata tambahan                                      |
+| `verified_at`          | timestamp | Waktu verifikasi                                       |
+| `verified_by`          | FK        | Yang melakukan verifikasi                              |
 
 **Indexes**:
-- `(document_hash, signature_status)`
-- `(signed_at, signature_status)`
+
+-   `(document_hash, signature_status)`
+-   `(signed_at, signature_status)`
 
 **Relationships**:
-- `belongsTo(ApprovalRequest)`
-- `belongsTo(DigitalSignature)`
-- `belongsTo(Kaprodi, 'signed_by')`
-- `belongsTo(Kaprodi, 'verified_by')`
+
+-   `belongsTo(ApprovalRequest)`
+-   `belongsTo(DigitalSignature)`
+-   `belongsTo(Kaprodi, 'signed_by')`
+-   `belongsTo(Kaprodi, 'verified_by')`
 
 ---
 
@@ -210,23 +214,24 @@
 
 **Purpose**: Dokumen yang perlu approval dan signature
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `id` | bigint | Primary key |
-| `user_id` | FK | User yang submit dokumen |
-| `document_name` | string | Nama dokumen |
-| `document_type` | string | Jenis dokumen |
-| `document_number` | string | Nomor dokumen |
-| `document_path` | string | Path PDF original |
-| `status` | enum | 'pending', 'approved', 'rejected', 'sign_approved', dsb |
-| `notes` | text | Catatan |
-| `approved_by` | FK | Kaprodi yang approve |
-| `approved_at` | timestamp | Waktu approval |
+| Column            | Type      | Description                                             |
+| ----------------- | --------- | ------------------------------------------------------- |
+| `id`              | bigint    | Primary key                                             |
+| `user_id`         | FK        | User yang submit dokumen                                |
+| `document_name`   | string    | Nama dokumen                                            |
+| `document_type`   | string    | Jenis dokumen                                           |
+| `document_number` | string    | Nomor dokumen                                           |
+| `document_path`   | string    | Path PDF original                                       |
+| `status`          | enum      | 'pending', 'approved', 'rejected', 'sign_approved', dsb |
+| `notes`           | text      | Catatan                                                 |
+| `approved_by`     | FK        | Kaprodi yang approve                                    |
+| `approved_at`     | timestamp | Waktu approval                                          |
 
 **Relationships**:
-- `belongsTo(User)`
-- `belongsTo(Kaprodi, 'approved_by')`
-- `hasOne(DocumentSignature)`
+
+-   `belongsTo(User)`
+-   `belongsTo(Kaprodi, 'approved_by')`
+-   `hasOne(DocumentSignature)`
 
 ---
 
@@ -234,17 +239,18 @@
 
 **Purpose**: Template visual untuk signature yang di-embed ke PDF
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `id` | bigint | Primary key |
-| `template_name` | string | Nama template |
-| `signature_image_path` | string | Path gambar signature |
-| `layout_config` | JSON | Konfigurasi layout (posisi, ukuran) |
-| `style_config` | JSON | Konfigurasi style (warna, font) |
-| `created_by` | FK | Kaprodi pembuat template |
+| Column                 | Type   | Description                         |
+| ---------------------- | ------ | ----------------------------------- |
+| `id`                   | bigint | Primary key                         |
+| `template_name`        | string | Nama template                       |
+| `signature_image_path` | string | Path gambar signature               |
+| `layout_config`        | JSON   | Konfigurasi layout (posisi, ukuran) |
+| `style_config`         | JSON   | Konfigurasi style (warna, font)     |
+| `created_by`           | FK     | Kaprodi pembuat template            |
 
 **Relationships**:
-- `belongsTo(Kaprodi, 'created_by')`
+
+-   `belongsTo(Kaprodi, 'created_by')`
 
 ---
 
@@ -252,25 +258,26 @@
 
 **Purpose**: Logging semua operasi signature
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `id` | bigint | Primary key |
-| `kaprodi_id` | FK | Kaprodi yang melakukan action |
-| `action` | string | Action type (constants) |
-| `status_from` | string | Status sebelum |
-| `status_to` | string | Status sesudah |
-| `description` | text | Deskripsi action |
-| `metadata` | JSON | Data tambahan (standardized) |
-| `ip_address` | string | IP address |
-| `user_agent` | text | Browser/device info |
-| `performed_at` | timestamp | Waktu action |
+| Column         | Type      | Description                   |
+| -------------- | --------- | ----------------------------- |
+| `id`           | bigint    | Primary key                   |
+| `kaprodi_id`   | FK        | Kaprodi yang melakukan action |
+| `action`       | string    | Action type (constants)       |
+| `status_from`  | string    | Status sebelum                |
+| `status_to`    | string    | Status sesudah                |
+| `description`  | text      | Deskripsi action              |
+| `metadata`     | JSON      | Data tambahan (standardized)  |
+| `ip_address`   | string    | IP address                    |
+| `user_agent`   | text      | Browser/device info           |
+| `performed_at` | timestamp | Waktu action                  |
 
 **Action Constants**:
-- `ACTION_SIGNATURE_KEY_GENERATED`
-- `ACTION_SIGNATURE_KEY_REVOKED`
-- `ACTION_DOCUMENT_SIGNED`
-- `ACTION_SIGNATURE_VERIFIED`
-- dll
+
+-   `ACTION_SIGNATURE_KEY_GENERATED`
+-   `ACTION_SIGNATURE_KEY_REVOKED`
+-   `ACTION_DOCUMENT_SIGNED`
+-   `ACTION_SIGNATURE_VERIFIED`
+-   dll
 
 ---
 
@@ -278,21 +285,21 @@
 
 **Purpose**: Tracking semua verification attempts
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `id` | bigint | Primary key |
-| `document_signature_id` | FK | Dokumen yang diverifikasi |
-| `approval_request_id` | FK | Approval request terkait |
-| `user_id` | FK | User yang verify (nullable) |
-| `verification_method` | string | 'token' atau 'id' |
-| `verification_token_hash` | string | Hash dari token (privacy) |
-| `is_valid` | boolean | Hasil verifikasi |
-| `result_status` | enum | 'success', 'failed', 'expired', 'invalid', 'not_found' |
-| `ip_address` | string | IP verifier |
-| `user_agent` | text | Browser info |
-| `referrer` | string | HTTP referrer |
-| `metadata` | JSON | Verification details |
-| `verified_at` | timestamp | Waktu verifikasi |
+| Column                    | Type      | Description                                            |
+| ------------------------- | --------- | ------------------------------------------------------ |
+| `id`                      | bigint    | Primary key                                            |
+| `document_signature_id`   | FK        | Dokumen yang diverifikasi                              |
+| `approval_request_id`     | FK        | Approval request terkait                               |
+| `user_id`                 | FK        | User yang verify (nullable)                            |
+| `verification_method`     | string    | 'token' atau 'id'                                      |
+| `verification_token_hash` | string    | Hash dari token (privacy)                              |
+| `is_valid`                | boolean   | Hasil verifikasi                                       |
+| `result_status`           | enum      | 'success', 'failed', 'expired', 'invalid', 'not_found' |
+| `ip_address`              | string    | IP verifier                                            |
+| `user_agent`              | text      | Browser info                                           |
+| `referrer`                | string    | HTTP referrer                                          |
+| `metadata`                | JSON      | Verification details                                   |
+| `verified_at`             | timestamp | Waktu verifikasi                                       |
 
 ---
 
@@ -300,19 +307,20 @@
 
 **Purpose**: Mapping short code ke encrypted payload untuk QR codes
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `id` | bigint | Primary key |
-| `short_code` | string (UK) | Short code (e.g., 'A1B2-C3D4-E5F6') |
-| `encrypted_payload` | text | Full encrypted verification data |
-| `document_signature_id` | FK | Reference ke document signature |
-| `access_count` | integer | Berapa kali diakses |
-| `last_accessed_at` | timestamp | Akses terakhir |
-| `expires_at` | timestamp | Waktu kadaluarsa |
+| Column                  | Type        | Description                         |
+| ----------------------- | ----------- | ----------------------------------- |
+| `id`                    | bigint      | Primary key                         |
+| `short_code`            | string (UK) | Short code (e.g., 'A1B2-C3D4-E5F6') |
+| `encrypted_payload`     | text        | Full encrypted verification data    |
+| `document_signature_id` | FK          | Reference ke document signature     |
+| `access_count`          | integer     | Berapa kali diakses                 |
+| `last_accessed_at`      | timestamp   | Akses terakhir                      |
+| `expires_at`            | timestamp   | Waktu kadaluarsa                    |
 
 **Indexes**:
-- `short_code` (unique)
-- `expires_at`
+
+-   `short_code` (unique)
+-   `expires_at`
 
 ---
 
@@ -321,26 +329,30 @@
 ### One-to-Many Relationships
 
 1. **Kaprodi → DigitalSignatures** (1:N)
-   - Satu Kaprodi bisa punya multiple key pairs
+
+    - Satu Kaprodi bisa punya multiple key pairs
 
 2. **DigitalSignature → DocumentSignatures** (1:N)
-   - **Satu key digunakan untuk sign BANYAK dokumen**
+
+    - **Satu key digunakan untuk sign BANYAK dokumen**
 
 3. **ApprovalRequest → DocumentSignature** (1:1)
-   - Satu dokumen hanya punya 1 signature record
+
+    - Satu dokumen hanya punya 1 signature record
 
 4. **DocumentSignature → VerificationLogs** (1:N)
-   - Satu signed document bisa diverifikasi berkali-kali
+
+    - Satu signed document bisa diverifikasi berkali-kali
 
 5. **DocumentSignature → VerificationCodeMapping** (1:1)
-   - Satu signed document punya 1 short code
+    - Satu signed document punya 1 short code
 
 ### Foreign Key Cascades
 
-- **digital_signatures.created_by** → ON DELETE CASCADE
-- **document_signatures.approval_request_id** → ON DELETE CASCADE
-- **document_signatures.digital_signature_id** → ON DELETE CASCADE
-- **document_signatures.verified_by** → ON DELETE SET NULL
+-   **digital_signatures.created_by** → ON DELETE CASCADE
+-   **document_signatures.approval_request_id** → ON DELETE CASCADE
+-   **document_signatures.digital_signature_id** → ON DELETE CASCADE
+-   **document_signatures.verified_by** → ON DELETE SET NULL
 
 ---
 
@@ -446,40 +458,43 @@ DigitalSignatureService ──┬──> OpenSSL (key generation)
 ### Encryption Layers
 
 1. **Private Key Encryption** (at rest)
-   ```php
-   // Model Mutator
-   setPrivateKeyAttribute() → encrypt($value)
-   getPrivateKeyAttribute() → decrypt($value)
-   ```
+
+    ```php
+    // Model Mutator
+    setPrivateKeyAttribute() → encrypt($value)
+    getPrivateKeyAttribute() → decrypt($value)
+    ```
 
 2. **Document Hashing**
-   ```php
-   // SHA-256
-   document_hash = hash('sha256', $pdfContent)
-   ```
+
+    ```php
+    // SHA-256
+    document_hash = hash('sha256', $pdfContent)
+    ```
 
 3. **QR Code Payload Encryption**
-   ```php
-   // Laravel Crypt
-   Crypt::encryptString(json_encode($verificationData))
-   ```
+
+    ```php
+    // Laravel Crypt
+    Crypt::encryptString(json_encode($verificationData))
+    ```
 
 4. **Verification Token Hashing** (logs)
-   ```php
-   // SHA-256 for privacy
-   verification_token_hash = hash('sha256', $token)
-   ```
+    ```php
+    // SHA-256 for privacy
+    verification_token_hash = hash('sha256', $token)
+    ```
 
 ### Access Control Matrix
 
-| Resource | Public | User | Kaprodi |
-|----------|--------|------|---------|
-| View verification page | ✅ | ✅ | ✅ |
-| Verify signature | ✅ | ✅ | ✅ |
-| Generate key pair | ❌ | ❌ | ✅ |
-| Sign document | ❌ | ❌ | ✅ |
-| Revoke key | ❌ | ❌ | ✅ |
-| View audit logs | ❌ | ❌ | ✅ |
+| Resource               | Public | User | Kaprodi |
+| ---------------------- | ------ | ---- | ------- |
+| View verification page | ✅     | ✅   | ✅      |
+| Verify signature       | ✅     | ✅   | ✅      |
+| Generate key pair      | ❌     | ❌   | ✅      |
+| Sign document          | ❌     | ❌   | ✅      |
+| Revoke key             | ❌     | ❌   | ✅      |
+| View audit logs        | ❌     | ❌   | ✅      |
 
 ---
 

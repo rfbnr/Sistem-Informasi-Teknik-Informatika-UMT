@@ -5,7 +5,9 @@
 ### 1. **DigitalSignatureService.php**
 
 #### Location 1: `createDigitalSignature()` - Line 100
+
 **Current Implementation:**
+
 ```php
 SignatureAuditLog::create([
     'kaprodi_id' => $createdBy ?? Auth::id(),
@@ -26,7 +28,9 @@ SignatureAuditLog::create([
 ---
 
 #### Location 2: `revokeDigitalSignature()` - Line 445
+
 **Current Implementation:**
+
 ```php
 SignatureAuditLog::create([
     'kaprodi_id' => Auth::id(),
@@ -45,7 +49,9 @@ SignatureAuditLog::create([
 ### 2. **DigitalSignatureController.php**
 
 #### Location 1: `signDocument()` - Line 501
+
 **Current Implementation:**
+
 ```php
 SignatureAuditLog::create([
     'document_signature_id' => $documentSignature->id,
@@ -70,7 +76,9 @@ SignatureAuditLog::create([
 ---
 
 #### Location 2: `signDocument()` catch block - Line 537
+
 **Current Implementation:**
+
 ```php
 SignatureAuditLog::create([
     'document_signature_id' => $documentSignature->id ?? null,
@@ -96,7 +104,9 @@ SignatureAuditLog::create([
 ### 3. **SignatureTemplateController.php**
 
 #### Location 1: `update()` - Line 279
+
 **Current Implementation:**
+
 ```php
 SignatureAuditLog::create([
     'kaprodi_id' => Auth::id(),
@@ -117,7 +127,9 @@ SignatureAuditLog::create([
 ---
 
 #### Location 2: `destroy()` - Line 346
+
 **Current Implementation:**
+
 ```php
 SignatureAuditLog::create([
     'kaprodi_id' => Auth::id(),
@@ -140,14 +152,18 @@ SignatureAuditLog::create([
 ### 4. **Model Files (Observer Patterns)**
 
 #### ApprovalRequest.php - Line 95, 516
+
 #### DocumentSignature.php - Line 78, 468
+
 #### DigitalSignature.php - Line 117
+
 #### SignatureTemplate.php - Line 66, 177, 288
 
 **Common Pattern:**
-- All need to be updated to use `SignatureAuditLog::createMetadata()`
-- Some missing `ip_address` and `user_agent`
-- Need to standardize metadata structure
+
+-   All need to be updated to use `SignatureAuditLog::createMetadata()`
+-   Some missing `ip_address` and `user_agent`
+-   Need to standardize metadata structure
 
 ---
 
@@ -156,7 +172,9 @@ SignatureAuditLog::create([
 ### 1. **VerificationService.php**
 
 #### Location: `logVerificationAttempt()` - Line 483
+
 **Current Implementation:**
+
 ```php
 $logData = [
     'document_signature_id' => $documentSignature->id,
@@ -180,17 +198,19 @@ SignatureVerificationLog::create($logData);
 ```
 
 **✅ UPDATE NEEDED:**
-- Use `SignatureVerificationLog::createMetadata()` helper
-- Add `verification_duration_ms` tracking
-- Add `previous_verification_count`
-- Add `failed_reason` categorization using `categorizeFailedReason()`
-- Optionally add geolocation data
+
+-   Use `SignatureVerificationLog::createMetadata()` helper
+-   Add `verification_duration_ms` tracking
+-   Add `previous_verification_count`
+-   Add `failed_reason` categorization using `categorizeFailedReason()`
+-   Optionally add geolocation data
 
 ---
 
 ## 🔧 Update Strategy
 
 ### Phase 1: Create Helper Trait (Optional - for DRY)
+
 ```php
 // app/Traits/LogsActivity.php
 trait LogsActivity
@@ -223,6 +243,7 @@ trait LogsActivity
 ```
 
 ### Phase 2: Update Order
+
 1. ✅ Models enhanced (DONE)
 2. 🔄 Update VerificationService first (highest impact)
 3. 🔄 Update DigitalSignatureService
@@ -231,37 +252,40 @@ trait LogsActivity
 6. ✅ Test all changes
 
 ### Phase 3: Testing Checklist
-- [ ] Test signing document - check audit log
-- [ ] Test failed signing - check error metadata
-- [ ] Test verification - check verification log
-- [ ] Test failed verification - check failed_reason
-- [ ] Test template CRUD - check audit logs
-- [ ] Check computed properties work (device_type, browser_name, etc)
-- [ ] Check scope methods work
-- [ ] Test statistics methods
+
+-   [ ] Test signing document - check audit log
+-   [ ] Test failed signing - check error metadata
+-   [ ] Test verification - check verification log
+-   [ ] Test failed verification - check failed_reason
+-   [ ] Test template CRUD - check audit logs
+-   [ ] Check computed properties work (device_type, browser_name, etc)
+-   [ ] Check scope methods work
+-   [ ] Test statistics methods
 
 ---
 
 ## 📋 Summary of Required Changes
 
 ### SignatureAuditLog
-- **Total Locations:** ~16 occurrences
-- **Files to Update:** 9 files
-- **Main Changes:**
-  - Replace manual metadata with `SignatureAuditLog::createMetadata()`
-  - Add `duration_ms` tracking where applicable
-  - Add `error_code` for failed actions
-  - Ensure all logs have `ip_address` and `user_agent`
+
+-   **Total Locations:** ~16 occurrences
+-   **Files to Update:** 9 files
+-   **Main Changes:**
+    -   Replace manual metadata with `SignatureAuditLog::createMetadata()`
+    -   Add `duration_ms` tracking where applicable
+    -   Add `error_code` for failed actions
+    -   Ensure all logs have `ip_address` and `user_agent`
 
 ### SignatureVerificationLog
-- **Total Locations:** 1 main location (VerificationService)
-- **Files to Update:** 1 file
-- **Main Changes:**
-  - Use `SignatureVerificationLog::createMetadata()`
-  - Add `verification_duration_ms` tracking
-  - Add `previous_verification_count`
-  - Use `categorizeFailedReason()` for failed attempts
-  - Optionally add geolocation
+
+-   **Total Locations:** 1 main location (VerificationService)
+-   **Files to Update:** 1 file
+-   **Main Changes:**
+    -   Use `SignatureVerificationLog::createMetadata()`
+    -   Add `verification_duration_ms` tracking
+    -   Add `previous_verification_count`
+    -   Use `categorizeFailedReason()` for failed attempts
+    -   Optionally add geolocation
 
 ---
 
@@ -272,4 +296,3 @@ trait LogsActivity
 3. Begin Phase 2 updates
 4. Test incrementally
 5. Deploy
-
