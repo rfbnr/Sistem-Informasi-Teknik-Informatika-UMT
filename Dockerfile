@@ -88,11 +88,13 @@ COPY .docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY .docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-# Pastikan folder & permission benar
-RUN mkdir -p storage/app/public storage/app/temp public/storage \
+# Buat storage hanya jika belum ada (volume akan override folder ini)
+RUN mkdir -p storage/app/public storage/app/temp \
  && chmod -R 775 storage bootstrap/cache \
- && chown -R www-data:www-data storage bootstrap/cache \
- && ln -sf ../storage/app/public public/storage
+ && chown -R www-data:www-data storage bootstrap/cache
+
+# Pastikan symlink public/storage → storage/app/public
+RUN if [ ! -L "public/storage" ]; then ln -s ../storage/app/public public/storage; fi
 
 # ENV default (Railway bisa override)
 ENV APP_ENV=production \
