@@ -1,0 +1,12 @@
+# Abaikan vendor dan node_modules di host, tapi biarkan saat build
+/vendor
+/node_modules
+
+# Abaikan file build atau IDE
+.git
+.gitignore
+.env
+.env.*
+.DS_Store
+npm-debug.log
+yarn-error.log
