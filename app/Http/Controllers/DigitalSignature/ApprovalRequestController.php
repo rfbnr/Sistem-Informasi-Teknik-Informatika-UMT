@@ -144,8 +144,11 @@ class ApprovalRequestController extends Controller
             ]);
 
             // ENHANCEMENT: Generate document hash for future integrity verification
-            $documentContent = Storage::disk('public')->get($documentPath);
-            $documentHash = hash('sha256', $documentContent);
+            // $documentContent = Storage::disk('public')->get($documentPath);
+            // $documentHash = hash('sha256', $documentContent);
+
+            // Generate hash lebih efisien tanpa baca file ke RAM
+            $documentHash = hash_file('sha256', Storage::disk('public')->path($documentPath));
 
             // Store hash in metadata for integrity check during signing
             $approvalRequest->update([
@@ -166,21 +169,30 @@ class ApprovalRequestController extends Controller
             ]);
 
             // Send notification to Kaprodi
-            try {
-                $kaprodiEmails = Kaprodi::pluck('email')->toArray();
-                if (!empty($kaprodiEmails)) {
-                    Mail::to($kaprodiEmails)->send(new NewApprovalRequestNotification($approvalRequest));
-                    Log::info('Notification sent to Kaprodi', [
-                        'emails' => $kaprodiEmails,
-                        'approval_request_id' => $approvalRequest->id
-                    ]);
-                }
-            } catch (\Exception $mailException) {
-                Log::warning('Failed to send notification email', [
-                    'error' => $mailException->getMessage(),
+            // try {
+            //     $kaprodiEmails = Kaprodi::pluck('email')->toArray();
+            //     if (!empty($kaprodiEmails)) {
+            //         Mail::to($kaprodiEmails)->send(new NewApprovalRequestNotification($approvalRequest));
+            //         Log::info('Notification sent to Kaprodi', [
+            //             'emails' => $kaprodiEmails,
+            //             'approval_request_id' => $approvalRequest->id
+            //         ]);
+            //     }
+            // } catch (\Exception $mailException) {
+            //     Log::warning('Failed to send notification email', [
+            //         'error' => $mailException->getMessage(),
+            //         'approval_request_id' => $approvalRequest->id
+            //     ]);
+            //     // Don't fail the entire process if email fails
+            // }
+            // Kirim email melalui queue supaya tidak memperlambat request upload
+            $kaprodiEmails = Kaprodi::pluck('email')->toArray();
+            if (!empty($kaprodiEmails)) {
+                Mail::to($kaprodiEmails)->queue(new NewApprovalRequestNotification($approvalRequest));
+                Log::info('Email queued for sending to Kaprodi', [
+                    'emails' => $kaprodiEmails,
                     'approval_request_id' => $approvalRequest->id
                 ]);
-                // Don't fail the entire process if email fails
             }
 
             Log::info('Document uploaded for approval successfully', [
