@@ -468,11 +468,11 @@
                             </button> --}}
                         @endif
 
-                        @if(in_array($documentSignature->signature_status, ['signed', 'verified']))
+                        {{-- @if(in_array($documentSignature->signature_status, ['signed', 'verified']))
                             <button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#invalidateModal">
                                 <i class="fas fa-ban me-2"></i> Invalidate Signature
                             </button>
-                        @endif
+                        @endif --}}
                     </div>
                 </div>
             </div>
