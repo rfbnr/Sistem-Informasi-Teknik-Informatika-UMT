@@ -150,9 +150,9 @@
         }
 
         /* Document Preview Styling */
-        .modal-xl {
-            max-width: 50%;
-        }
+        /* .modal-xl {
+            max-width: 80%;
+        } */
 
         /* Compact button styling for document preview */
         .btn-sm.btn-outline-primary,
@@ -631,13 +631,15 @@
         function viewCertificate() {
             @if($verificationResult['is_valid'])
 
-                const extractedToken = extractTokenFromUrl('{{ request()->verification_input }}');
+                // const extractedToken = extractTokenFromUrl('{{ request()->verification_input }}');
 
-                var token = '{{ request()->route('token') ?? '' }}';
+                // var token = '{{ request()->route('token') ?? '' }}';
 
-                if(!token) token = extractedToken;
+                // if(!token) token = extractedToken;
 
-                if (!token) {
+                const tokenShortCode = '{{ $verificationResult["details"]['short_code_token'] ?? "" }}';
+
+                if (!tokenShortCode) {
                     alert('Token verifikasi tidak ditemukan');
                     return;
                 }
@@ -646,7 +648,7 @@
                 modal.show();
 
                 // Fetch certificate details via AJAX
-                fetch(`{{ route('signature.certificate.view', '') }}/${token}`, {
+                fetch(`{{ route('signature.certificate.view', '') }}/${tokenShortCode}`, {
                     headers: {
                         'Accept': 'application/json',
                         'X-Requested-With': 'XMLHttpRequest'

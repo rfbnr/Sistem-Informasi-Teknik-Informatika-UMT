@@ -174,7 +174,7 @@ class VerificationController extends Controller
                     throw new \Exception('Invalid verification type');
             }
 
-            
+
             if (!$verificationResult) {
                 throw new \Exception('Verification failed');
             }
@@ -720,5 +720,168 @@ class VerificationController extends Controller
         }
 
         return implode(':', $visible);
+    }
+
+    /**
+     * ✅ NEW: Verify uploaded PDF document with comprehensive checks
+     * Validates uploaded PDF against stored signature in database
+     */
+    public function verifyUploadedPDF(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'pdf_file' => 'required|file|mimes:pdf|max:10240' // 10MB max
+        ]);
+
+        if ($validator->fails()) {
+            return back()->withErrors($validator)->withInput()
+                ->with('error', 'File tidak valid. Pastikan file berformat PDF dan maksimal 10MB.');
+        }
+
+        // Rate limiting untuk upload
+        $key = 'verify_upload:' . request()->ip();
+        if (RateLimiter::tooManyAttempts($key, 5)) {
+            $seconds = RateLimiter::availableIn($key);
+            return back()->with('error', "Terlalu banyak percobaan upload. Mohon tunggu {$seconds} detik.");
+        }
+
+        RateLimiter::hit($key, 300); // 5 minutes decay
+
+        try {
+            $uploadedPdf = $request->file('pdf_file');
+
+            // STEP 1: Calculate uploaded PDF hash
+            $uploadedHash = hash_file('sha256', $uploadedPdf->getRealPath());
+
+            Log::info('PDF upload verification attempt', [
+                'filename' => $uploadedPdf->getClientOriginalName(),
+                'size' => $uploadedPdf->getSize(),
+                'hash' => $uploadedHash,
+                'ip_address' => request()->ip()
+            ]);
+
+            // STEP 2: Find signature in database by hash
+            $documentSignature = DocumentSignature::where('document_hash', $uploadedHash)
+                ->with(['digitalSignature', 'approvalRequest.user'])
+                ->first();
+
+            if (!$documentSignature) {
+                Log::warning('No matching signature found for uploaded PDF', [
+                    'hash' => $uploadedHash,
+                    'ip_address' => request()->ip()
+                ]);
+
+                return view('digital-signature.verification.result', [
+                    'verificationResult' => [
+                        'is_valid' => false,
+                        'message' => 'Tidak ditemukan tanda tangan digital yang cocok dengan dokumen ini.',
+                        'verified_at' => now(),
+                        'verification_id' => uniqid('verify_upload_'),
+                        'details' => [
+                            'upload_info' => [
+                                'filename' => $uploadedPdf->getClientOriginalName(),
+                                'size' => $uploadedPdf->getSize(),
+                                'hash' => $uploadedHash,
+                                'search_method' => 'hash_lookup'
+                            ],
+                            'checks' => [
+                                'hash_lookup' => [
+                                    'status' => false,
+                                    'message' => 'Dokumen tidak terdaftar dalam sistem atau belum pernah ditandatangani'
+                                ]
+                            ]
+                        ]
+                    ]
+                ]);
+            }
+
+            // STEP 3: Byte-by-byte comparison with stored PDF
+            $storedPdfPath = \Illuminate\Support\Facades\Storage::disk('public')->path($documentSignature->final_pdf_path);
+
+            if (!file_exists($storedPdfPath)) {
+                Log::error('Original signed document not found', [
+                    'document_signature_id' => $documentSignature->id,
+                    'expected_path' => $documentSignature->final_pdf_path
+                ]);
+
+                return view('digital-signature.verification.result', [
+                    'verificationResult' => [
+                        'is_valid' => false,
+                        'message' => 'Dokumen asli tidak ditemukan di sistem. Silakan hubungi administrator.',
+                        'verified_at' => now(),
+                        'verification_id' => uniqid('verify_upload_'),
+                        'details' => []
+                    ]
+                ]);
+            }
+
+            $storedContent = file_get_contents($storedPdfPath);
+            $uploadedContent = file_get_contents($uploadedPdf->getRealPath());
+
+            $contentIdentical = $storedContent === $uploadedContent;
+
+            // STEP 4: Comprehensive verification
+            $verificationResult = $this->verificationService->verifyById($documentSignature->id, true);
+
+            // STEP 5: Add upload-specific checks
+            $verificationResult['upload_verification'] = [
+                'hash_match' => hash_equals($documentSignature->document_hash, $uploadedHash),
+                'content_identical' => $contentIdentical,
+                'file_size_match' => filesize($storedPdfPath) === filesize($uploadedPdf->getRealPath()),
+                'uploaded_filename' => $uploadedPdf->getClientOriginalName(),
+                'uploaded_size' => $uploadedPdf->getSize(),
+                'uploaded_at' => now()->toIso8601String()
+            ];
+
+            // Add upload info to checks
+            if (!isset($verificationResult['details']['checks'])) {
+                $verificationResult['details']['checks'] = [];
+            }
+
+            // $verificationResult['details']['checks']['upload_verification'] = [
+            //     'status' => $contentIdentical && $verificationResult['upload_verification']['hash_match'],
+            //     'message' => $contentIdentical ? 'File yang diupload identik dengan dokumen yang ditandatangani' : 'File yang diupload berbeda dari dokumen asli',
+            //     'details' => $verificationResult['upload_verification']
+            // ];
+
+            // STEP 6: Log verification
+            Log::info('Uploaded PDF verification completed', [
+                'document_signature_id' => $documentSignature->id,
+                'is_valid' => $verificationResult['is_valid'],
+                'hash_match' => $verificationResult['upload_verification']['hash_match'],
+                'content_identical' => $contentIdentical,
+                'ip_address' => request()->ip()
+            ]);
+
+            // Create verification log
+            SignatureVerificationLog::create([
+                'document_signature_id' => $documentSignature->id,
+                'approval_request_id' => $documentSignature->approval_request_id,
+                'user_id' => Auth::id(),
+                'verification_method' => 'upload',
+                'verification_token_hash' => hash('sha256', $uploadedPdf->getClientOriginalName()),
+                'is_valid' => $verificationResult['is_valid'] && $contentIdentical,
+                'result_status' => $verificationResult['is_valid'] && $contentIdentical ?
+                    SignatureVerificationLog::STATUS_SUCCESS : SignatureVerificationLog::STATUS_FAILED,
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+                'referrer' => request()->header('Referer'),
+                'metadata' => [
+                    'upload_info' => $verificationResult['upload_verification'],
+                    'verification_method' => 'pdf_upload'
+                ],
+                'verified_at' => now()
+            ]);
+
+            return view('digital-signature.verification.result', compact('verificationResult'));
+
+        } catch (\Exception $e) {
+            Log::error('Uploaded PDF verification failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'ip_address' => request()->ip()
+            ]);
+
+            return back()->with('error', 'Terjadi kesalahan saat memverifikasi dokumen: ' . $e->getMessage());
+        }
     }
 }

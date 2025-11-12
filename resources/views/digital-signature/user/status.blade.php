@@ -404,6 +404,24 @@
                         </div>
                         @endif
 
+                        {{-- Invalidate Document Signature and Revoke Digital Signature Key --}}
+                        @if($request->documentSignature && $request->documentSignature->signature_status === 'invalid' && $request->documentSignature->digitalSignature->revocation_reason)
+                        <div class="alert alert-warning">
+                            <div class="d-flex align-items-start">
+                                <i class="fas fa-exclamation-triangle fa-2x me-3 mt-1"></i>
+                                <div>
+                                    <h6 class="alert-heading mb-2">Document Signature Invalidated</h6>
+                                    <p class="mb-2"><strong>Revocation Reason:</strong> {{ $request->documentSignature->digitalSignature->revocation_reason }}</p>
+                                    <hr class="my-2">
+                                    <p class="mb-0 small">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        The digital signature associated with this document has been revoked. Please contact support for further assistance.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        @endif
+
                         <!-- QR Code Display -->
                         @if($request->documentSignature && $request->documentSignature->qr_code_path && in_array($request->status, ['sign_approved']))
                         <div class="qr-code-display">

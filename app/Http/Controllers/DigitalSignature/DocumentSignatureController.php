@@ -93,7 +93,7 @@ class DocumentSignatureController extends Controller
             $documentSignature = DocumentSignature::with([
                 'approvalRequest.user',
                 'digitalSignature',
-                // 'signer',
+                'signer',
                 // 'verifier',
                 'auditLogs'
             ])->findOrFail($id);

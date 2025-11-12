@@ -112,6 +112,23 @@
             height: auto;
             margin-bottom: 1rem;
         }
+
+        .upload-area {
+            background: #f8f9fa;
+            border: 2px dashed #dee2e6 !important;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .upload-area:hover {
+            border-color: #667eea !important;
+            background: #f8f9ff;
+        }
+
+        .upload-area.drag-over {
+            border-color: #28a745 !important;
+            background: #f0fff4;
+        }
     </style>
 </head>
 <body>
@@ -158,6 +175,18 @@
                                     </div>
                                 </div>
 
+                                <div class="method-button" data-method="upload" onclick="selectMethod('upload')">
+                                    <div class="d-flex align-items-center">
+                                        <div class="me-3">
+                                            <i class="fas fa-file-pdf fa-2x text-danger"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-1">Upload PDF</h6>
+                                            <small class="text-muted">Upload file PDF yang sudah ditandatangani untuk diverifikasi</small>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 {{-- <div class="method-button" data-method="token" onclick="selectMethod('token')">
                                     <div class="d-flex align-items-center">
                                         <div class="me-3">
@@ -172,7 +201,7 @@
                             </div>
 
                             <!-- Verification Form -->
-                            <form id="verificationForm" action="{{ route('signature.verify.public') }}" method="POST">
+                            <form id="verificationForm" action="{{ route('signature.verify.public') }}" method="POST" enctype="multipart/form-data">
                                 @csrf
                                 <input type="hidden" name="verification_type" id="verificationType" value="qr">
 
@@ -203,6 +232,48 @@
                                                    placeholder="https://example.com/signature/verify/..." disabled data-method="url">
                                         </div>
                                         <small class="text-muted">Paste URL verifikasi yang Anda terima</small>
+                                    </div>
+                                </div>
+
+                                <!-- PDF Upload Section -->
+                                <div id="uploadSection" class="verification-section" style="display: none;">
+                                    <div class="form-group mb-3">
+                                        <label for="pdfFile" class="form-label font-weight-bold">Upload File PDF:</label>
+                                        <div class="upload-area border rounded p-4 text-center" id="uploadArea">
+                                            <input type="file" class="d-none" id="pdfFile" name="pdf_file" accept="application/pdf" disabled data-method="upload">
+                                            <div id="uploadPlaceholder">
+                                                <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>
+                                                <h6>Drag & Drop PDF atau Klik untuk Upload</h6>
+                                                <p class="text-muted mb-2">File PDF yang sudah ditandatangani digital</p>
+                                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="$('#pdfFile').click()">
+                                                    <i class="fas fa-folder-open"></i> Pilih File
+                                                </button>
+                                                <div class="mt-3">
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-info-circle"></i> Maks. 10MB | Format: PDF
+                                                    </small>
+                                                </div>
+                                            </div>
+                                            <div id="uploadPreview" style="display: none;">
+                                                <div class="alert alert-info mb-0">
+                                                    <div class="d-flex align-items-center justify-content-between">
+                                                        <div>
+                                                            <i class="fas fa-file-pdf text-danger fa-2x me-3"></i>
+                                                            <span id="fileName" class="font-weight-bold"></span>
+                                                            <br>
+                                                            <small class="text-muted" id="fileSize"></small>
+                                                        </div>
+                                                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="clearUpload()">
+                                                            <i class="fas fa-times"></i> Hapus
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <small class="text-muted d-block mt-2">
+                                            <i class="fas fa-shield-alt text-success"></i>
+                                            File Anda akan dianalisa untuk memverifikasi keaslian tanda tangan digital
+                                        </small>
                                     </div>
                                 </div>
 
@@ -313,7 +384,12 @@
             $('input[name="verification_input"]').prop('disabled', true).val('');
 
             // Enable only the input for the selected method
-            $(`input[name="verification_input"][data-method="${method}"]`).prop('disabled', false);
+            if (method === 'upload') {
+                $('#pdfFile').prop('disabled', false);
+            } else {
+                $(`input[name="verification_input"][data-method="${method}"]`).prop('disabled', false);
+                $('#pdfFile').prop('disabled', true);
+            }
 
             // Disable verify button until input is filled
             $('#verifyButton').prop('disabled', true);
@@ -432,16 +508,119 @@
             }
         });
 
+        // PDF File upload handlers
+        function clearUpload() {
+            $('#pdfFile').val('');
+            $('#uploadPlaceholder').show();
+            $('#uploadPreview').hide();
+            $('#verifyButton').prop('disabled', true);
+        }
+
+        // File input change handler
+        $('#pdfFile').on('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                handleFileSelect(file);
+            }
+        });
+
+        // Handle file selection
+        function handleFileSelect(file) {
+            // Validate file type
+            if (file.type !== 'application/pdf') {
+                alert('Format file tidak valid! Hanya file PDF yang diperbolehkan.');
+                clearUpload();
+                return;
+            }
+
+            // Validate file size (10MB = 10485760 bytes)
+            const maxSize = 10 * 1024 * 1024; // 10MB
+            if (file.size > maxSize) {
+                alert('Ukuran file terlalu besar! Maksimal 10MB.');
+                clearUpload();
+                return;
+            }
+
+            // Show file preview
+            $('#fileName').text(file.name);
+            $('#fileSize').text(formatFileSize(file.size));
+            $('#uploadPlaceholder').hide();
+            $('#uploadPreview').show();
+            $('#verifyButton').prop('disabled', false);
+        }
+
+        // Format file size
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        // Drag and drop handlers
+        $('#uploadArea').on('click', function(e) {
+            if (!$(e.target).closest('button').length) {
+                $('#pdfFile').click();
+            }
+        });
+
+        $('#uploadArea').on('dragover', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            $(this).addClass('drag-over');
+        });
+
+        $('#uploadArea').on('dragleave', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            $(this).removeClass('drag-over');
+        });
+
+        $('#uploadArea').on('drop', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            $(this).removeClass('drag-over');
+
+            const files = e.originalEvent.dataTransfer.files;
+            if (files.length > 0) {
+                const file = files[0];
+
+                // Set file to input element
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                document.getElementById('pdfFile').files = dataTransfer.files;
+
+                handleFileSelect(file);
+            }
+        });
+
         // Form submission
         $('#verificationForm').on('submit', function(e) {
-            // Validate that we have input in the active method
-            const activeInput = $('input[name="verification_input"]:not(:disabled)');
-            const value = activeInput.val().trim();
+            // Check if upload method
+            if (currentMethod === 'upload') {
+                const fileInput = document.getElementById('pdfFile');
+                if (!fileInput.files || fileInput.files.length === 0) {
+                    e.preventDefault();
+                    alert('Mohon upload file PDF terlebih dahulu.');
+                    return false;
+                }
 
-            if (value.length === 0) {
-                e.preventDefault();
-                alert('Mohon masukkan data verifikasi terlebih dahulu.');
-                return false;
+                // Change form action for upload
+                $(this).attr('action', '{{ route("signature.verify.upload") }}');
+            } else {
+                // Validate that we have input in the active method
+                const activeInput = $('input[name="verification_input"]:not(:disabled)');
+                const value = activeInput.val().trim();
+
+                if (value.length === 0) {
+                    e.preventDefault();
+                    alert('Mohon masukkan data verifikasi terlebih dahulu.');
+                    return false;
+                }
+
+                // Ensure form action is correct
+                $(this).attr('action', '{{ route("signature.verify.public") }}');
             }
 
             // Show loading state

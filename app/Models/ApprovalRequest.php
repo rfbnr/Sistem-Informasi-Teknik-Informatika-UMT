@@ -188,11 +188,38 @@ class ApprovalRequest extends Model
     {
         $oldStatus = $this->status;
 
+        // ✅ SECURITY FIX: Generate document hash at approval time
+        $documentPath = Storage::disk('public')->path($this->document_path);
+
+        if (!file_exists($documentPath)) {
+            throw new \Exception("Document file not found: {$this->document_path}");
+        }
+
+        $documentHash = hash_file('sha256', $documentPath);
+
+        if (!$documentHash) {
+            throw new \Exception("Failed to generate document hash");
+        }
+
+        // Store hash in workflow_metadata
+        $workflowMetadata = $this->workflow_metadata ?? [];
+        $workflowMetadata['document_hash'] = $documentHash;
+        $workflowMetadata['hash_generated_at'] = now()->toIso8601String();
+        $workflowMetadata['hash_algorithm'] = 'sha256';
+        $workflowMetadata['document_size_bytes'] = filesize($documentPath);
+
         $this->update([
             'status' => self::STATUS_APPROVED,
             'approved_at' => now(),
             'approved_by' => $approverId,
-            'approval_notes' => $notes
+            'approval_notes' => $notes,
+            'workflow_metadata' => $workflowMetadata
+        ]);
+
+        Log::info('Document hash generated at approval', [
+            'approval_request_id' => $this->id,
+            'document_hash' => $documentHash,
+            'document_size' => filesize($documentPath)
         ]);
 
         // FIX #7: Create DocumentSignature record dan return hasilnya
@@ -200,7 +227,10 @@ class ApprovalRequest extends Model
 
         // Log audit
         $this->logStatusChange('approved', $oldStatus, self::STATUS_APPROVED,
-            'Document has been approved for signing', ['notes' => $notes]);
+            'Document has been approved for signing', [
+                'notes' => $notes,
+                'document_hash' => $documentHash
+            ]);
 
         return $documentSignature;
     }

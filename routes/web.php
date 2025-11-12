@@ -80,6 +80,10 @@ Route::prefix('signature')->name('signature.')->group(function () {
     Route::post('verify', [VerificationController::class, 'verifyPublic'])
         ->name('verify.public');
 
+    // Verify uploaded PDF document
+    Route::post('verify-upload', [VerificationController::class, 'verifyUploadedPDF'])
+        ->name('verify.upload');
+
     // API endpoints for verification
     Route::prefix('api')->name('api.')->group(function () {
         Route::get('verify/{token}', [VerificationController::class, 'getVerificationDetails'])

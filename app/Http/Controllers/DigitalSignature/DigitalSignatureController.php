@@ -243,16 +243,31 @@ class DigitalSignatureController extends Controller
                 ], 400);
             }
 
-            // OPTIONAL ENHANCEMENT: Document integrity check before signing
+            // ✅ SECURITY FIX: MANDATORY document integrity check before signing
             $originalPdfPath = Storage::disk('public')->path($approvalRequest->document_path);
             $currentDocumentHash = hash_file('sha256', $originalPdfPath);
             $storedDocumentHash = $approvalRequest->workflow_metadata['document_hash'] ?? null;
 
-            if ($storedDocumentHash && $currentDocumentHash !== $storedDocumentHash) {
-                Log::error('Document integrity check failed', [
+            // ✅ CRITICAL: Stored hash MUST exist (no null bypass)
+            if (!$storedDocumentHash) {
+                Log::error('Document hash not found in workflow metadata', [
+                    'approval_request_id' => $approvalRequestId,
+                    'workflow_metadata' => $approvalRequest->workflow_metadata
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Document integrity data missing. This document was approved before hash verification was implemented. Please request a new approval.'
+                ], 400);
+            }
+
+            // ✅ Verify hash integrity
+            if ($currentDocumentHash !== $storedDocumentHash) {
+                Log::error('Document integrity check failed - hash mismatch', [
                     'approval_request_id' => $approvalRequestId,
                     'current_hash' => $currentDocumentHash,
-                    'stored_hash' => $storedDocumentHash
+                    'stored_hash' => $storedDocumentHash,
+                    'hash_generated_at' => $approvalRequest->workflow_metadata['hash_generated_at'] ?? 'unknown'
                 ]);
 
                 return response()->json([
@@ -407,7 +422,7 @@ class DigitalSignatureController extends Controller
             try {
                 // Send success notification to student with signed PDF and QR code
                 if ($approvalRequest->user) {
-                    Mail::to($approvalRequest->user->email)->queue(
+                    Mail::to($approvalRequest->user->email)->send(
                         new ApprovalRequestSignedNotification(
                             $approvalRequest,
                             $signedDocumentSignature

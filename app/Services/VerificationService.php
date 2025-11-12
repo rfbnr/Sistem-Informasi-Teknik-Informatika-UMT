@@ -10,6 +10,7 @@ use App\Models\DocumentSignature;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use App\Models\VerificationCodeMapping;
 use Illuminate\Support\Facades\Storage;
 use App\Models\SignatureVerificationLog;
 use App\Services\DigitalSignatureService;
@@ -63,7 +64,7 @@ class VerificationService
      * Verify document signature by ID
      */
     //! DIPAKAI DI CONTROLLER DocumentSignatureController method show, quickPreview, DI CONTROLLER ApprovalRequestController method show
-    public function verifyById($documentSignatureId)
+    public function verifyById($documentSignatureId, bool $isUploadedPdf = false)
     {
         $startTime = microtime(true); // Track verification duration
 
@@ -71,7 +72,7 @@ class VerificationService
             $documentSignature = DocumentSignature::findOrFail($documentSignatureId);
 
             // Perform comprehensive verification
-            $verificationResult = $this->performComprehensiveVerification($documentSignature);
+            $verificationResult = $this->performComprehensiveVerification($documentSignature, $isUploadedPdf);
 
             // Log verification attempt with duration tracking
             $this->logVerificationAttempt($documentSignature, $verificationResult, $documentSignature->verification_token, $startTime);
@@ -88,7 +89,7 @@ class VerificationService
      * Perform comprehensive verification
      */
     //! DIPAKAI DI verifyByToken DAN verifyById
-    private function performComprehensiveVerification($documentSignature)
+    private function performComprehensiveVerification($documentSignature, bool $isUploadedPdf = false)
     {
         $checks = [];
         $overallValid = true;
@@ -212,10 +213,22 @@ class VerificationService
                 }
             }
 
+            // 8. Special handling for uploaded PDF verification
+            if ($isUploadedPdf) {
+                $checks['upload_verification'] = [
+                    'status' => $overallValid,
+                    'message' => $overallValid ? 'Uploaded PDF matches the signed document' : 'Uploaded PDF does not match the signed document',
+                ];
+            }
+
+            // Get Short code from verification code mappings
+            $shortCode = VerificationCodeMapping::getShortCodeFromDocumentSignatureId($documentSignature->id);
+
             return $this->createVerificationResult(
                 $overallValid,
                 $overallValid ? 'Document signature is valid' : 'Document signature verification failed',
                 [
+                    'short_code_token' => $shortCode,
                     'checks' => $checks,
                     'warnings' => $warnings,
                     'document_signature' => $documentSignature,

@@ -205,6 +205,18 @@ class VerificationCodeMapping extends Model
     }
 
     /**
+     * Get short code from document signature id
+     *
+     * @return string|null
+     */
+    public static function getShortCodeFromDocumentSignatureId($documentSignatureId)
+    {
+        $mapping = self::where('document_signature_id', $documentSignatureId)->first();
+
+        return $mapping ? $mapping->short_code : null;
+    }
+
+    /**
      * Check if mapping has expired
      *
      * @return bool

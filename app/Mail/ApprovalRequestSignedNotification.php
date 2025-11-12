@@ -9,9 +9,9 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Mail\Mailables\Attachment;
-use Illuminate\Contracts\Queue\ShouldQueue;
+// use Illuminate\Contracts\Queue\ShouldQueue;
 
-class ApprovalRequestSignedNotification extends Mailable implements ShouldQueue
+class ApprovalRequestSignedNotification extends Mailable
 {
     use Queueable, SerializesModels;
 
