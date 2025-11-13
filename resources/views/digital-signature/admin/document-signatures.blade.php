@@ -134,49 +134,58 @@
                                     <input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)">
                                 </th> --}}
                                 <th>No</th>
+                                <th>Submitted By</th>
                                 <th>Document</th>
                                 <th>Signature ID</th>
-                                <th>Signed By</th>
+                                {{-- <th>Signed By</th> --}}
                                 <th>Algorithm</th>
-                                <th>Signed At</th>
+                                {{-- <th>Signed At</th> --}}
                                 <th>Status</th>
                                 <th>PDF Status</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach($documentSignatures as $docSig)
+                            @foreach($documentSignatures as $documentSignature)
                             <tr>
                                 {{-- <td>
-                                    <input type="checkbox" class="signature-checkbox" value="{{ $docSig->id }}">
+                                    <input type="checkbox" class="signature-checkbox" value="{{ $documentSignature->id }}">
                                 </td> --}}
-                                <td>{{ $loop->iteration + ($documentSignatures->currentPage() - 1) * $documentSignatures->perPage() }}</td>
                                 <td>
-                                    <strong>{{ $docSig->approvalRequest->document_name }}</strong><br>
-                                    <small class="text-muted">{{ $docSig->approvalRequest->full_document_number }}</small>
+                                    {{ $loop->iteration + ($documentSignatures->currentPage() - 1) * $documentSignatures->perPage() }}
                                 </td>
-                                <td>{{ $docSig->digitalSignature->signature_id ?? 'N/A' }}</td>
-                                <td>{{ $docSig->signer->name ?? 'Unknown' }}</td>
+                                <td>
+                                    {{ $documentSignature->approvalRequest->user->name ?? 'Unknown' }}<br>
+                                    <small class="text-muted">{{ $documentSignature->approvalRequest->user->NIM ?? '000000' }}</small>
+                                </td>
+                                <td>
+                                    <strong>{{ $documentSignature->approvalRequest->document_name }}</strong><br>
+                                    <small class="text-muted">{{ $documentSignature->approvalRequest->document_type }}</small>
+                                </td>
+                                <td>
+                                    {{ $documentSignature->digitalSignature->signature_id ?? 'N/A' }}
+                                </td>
+                                {{-- <td>{{ $documentSignature->signer->name ?? 'Unknown' }}</td> --}}
                                 <td>
                                     <span class="badge bg-info">
-                                        {{ $docSig->digitalSignature->algorithm ?? 'N/A' }}
+                                        {{ $documentSignature->digitalSignature->algorithm ?? 'N/A' }}
                                     </span>
                                 </td>
-                                <td>
-                                    @if($docSig->signed_at)
-                                        {{ $docSig->signed_at->format('d M Y H:i') }}
-                                        <br><small class="text-muted">{{ $docSig->signed_at->diffForHumans() }}</small>
+                                {{-- <td>
+                                    @if($documentSignature->signed_at)
+                                        {{ $documentSignature->signed_at->format('d M Y H:i') }}
+                                        <br><small class="text-muted">{{ $documentSignature->signed_at->diffForHumans() }}</small>
                                     @else
                                         <span class="text-muted">Not signed</span>
                                     @endif
-                                </td>
+                                </td> --}}
                                 <td>
-                                    <span class="status-badge status-{{ strtolower($docSig->signature_status) }}">
-                                        {{ ucfirst($docSig->signature_status) }}
+                                    <span class="status-badge status-{{ strtolower($documentSignature->signature_status) }}">
+                                        {{ ucfirst($documentSignature->signature_status) }}
                                     </span>
                                 </td>
                                 <td>
-                                    @if($docSig->final_pdf_path)
+                                    @if($documentSignature->final_pdf_path)
                                         <span class="badge bg-success" title="Signed PDF available">
                                             <i class="fas fa-file-pdf me-1"></i> Signed PDF
                                         </span>
@@ -188,37 +197,61 @@
                                 </td>
                                 <td>
                                     <div class="btn-group btn-group-sm">
-                                        @if($docSig->signature_status !== 'pending')
+                                        @if($documentSignature->signature_status === 'pending')
+                                            <button class="btn btn-outline-info"
+                                                onclick="viewDocument({{ $documentSignature->approvalRequest->id }}, '{{ Storage::url($documentSignature->approvalRequest->document_path) }}')"
+                                                title="View Document">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            {{-- <button class="btn btn-outline-success"
+                                                    onclick="verifySignature({{ $documentSignature->id }})"
+                                                    title="Verify Signature">
+                                                <i class="fas fa-check"></i>
+                                            </button> --}}
+                                            {{-- <button class="btn btn-outline-danger"
+                                                    onclick="rejectSignature({{ $documentSignature->id }})"
+                                                    title="Reject Signature">
+                                                <i class="fas fa-times"></i>
+                                            </button> --}}
+                                        @endif
+                                        @if($documentSignature->signature_status !== 'pending')
                                             {{-- <button class="btn btn-outline-warning"
-                                                    onclick="quickPreviewDocument({{ $docSig->id }})"
+                                                    onclick="quickPreviewDocument({{ $documentSignature->id }})"
                                                     title="Quick Preview & Verify">
                                                 <i class="fas fa-bolt"></i>
                                             </button> --}}
-                                            <a href="{{ route('admin.signature.documents.show', $docSig->id) }}"
+                                            <a href="{{ route('admin.signature.documents.show', $documentSignature->id) }}"
                                             class="btn btn-outline-primary" title="View Details">
                                                 <i class="fas fa-eye"></i>
                                             </a>
                                         @endif
-                                        @if($docSig->signature_status === 'signed')
+                                        {{-- @if($documentSignature->signature_status === 'signed')
                                             <button class="btn btn-outline-success"
-                                                    onclick="verifySignature({{ $docSig->id }})"
+                                                    onclick="verifySignature({{ $documentSignature->id }})"
                                                     title="Verify Signature">
                                                 <i class="fas fa-check"></i>
                                             </button>
                                             <button class="btn btn-outline-danger"
-                                                    onclick="rejectSignature({{ $docSig->id }})"
+                                                    onclick="rejectSignature({{ $documentSignature->id }})"
                                                     title="Reject Signature">
                                                 <i class="fas fa-times"></i>
                                             </button>
-                                        @endif
-                                        <a href="{{ route('admin.signature.documents.download', $docSig->id) }}"
+                                        @endif --}}
+                                        {{-- <a href="{{ route('admin.signature.documents.download', $documentSignature->id) }}"
                                            class="btn btn-outline-info" title="Download">
                                             <i class="fas fa-download"></i>
-                                        </a>
-                                        @if(in_array($docSig->signature_status, ['verified']))
+                                        </a> --}}
+                                        {{-- @if(in_array($documentSignature->signature_status, ['verified']))
                                             <button class="btn btn-outline-secondary"
-                                                    onclick="invalidateSignature({{ $docSig->id }})"
+                                                    onclick="invalidateSignature({{ $documentSignature->id }})"
                                                     title="Invalidate">
+                                                <i class="fas fa-ban"></i>
+                                            </button>
+                                        @endif --}}
+
+                                        @if(in_array($documentSignature->signature_status, ['signed', 'verified']))
+                                            <button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#invalidateModal"
+                                                title="Invalidate Signature">
                                                 <i class="fas fa-ban"></i>
                                             </button>
                                         @endif
@@ -246,7 +279,7 @@
 </div>
 
 <!-- Batch Verify Modal -->
-<div class="modal fade" id="batchVerifyModal" tabindex="-1">
+{{-- <div class="modal fade" id="batchVerifyModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -265,7 +298,7 @@
             </div>
         </div>
     </div>
-</div>
+</div> --}}
 
 <!-- Reject Signature Modal -->
 {{-- <div class="modal fade" id="rejectModal" tabindex="-1">
@@ -322,7 +355,7 @@
 </div> --}}
 
 <!-- Invalidate Modal -->
-<div class="modal fade" id="invalidateModal" tabindex="-1">
+{{-- <div class="modal fade" id="invalidateModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header bg-danger text-white">
@@ -350,10 +383,11 @@
             </form>
         </div>
     </div>
-</div>
+</div> --}}
 
-@include('digital-signature.admin.partials.quick-preview-signed-modal')
-@include('digital-signature.admin.partials.reject-signed-modal')
+@include('digital-signature.admin.partials.invalidate-signed-modal')
+@include('digital-signature.admin.approval-requests.partials.view-document-modal')
+
 
 <!-- Quick Preview Modal -->
 {{-- <div class="modal fade" id="quickPreviewModal" tabindex="-1" data-bs-backdrop="static">
@@ -478,6 +512,18 @@ function updateSelectedCount() {
     container.innerHTML = `<strong>${selected.length}</strong> signature(s) selected`;
 }
 
+// View Document in Modal
+function viewDocument(id, documentUrl) {
+    const modal = new bootstrap.Modal(document.getElementById('viewDocumentModal'));
+    const iframe = document.getElementById('documentIframe');
+    const downloadBtn = document.getElementById('downloadDocumentBtn');
+
+    iframe.src = documentUrl;
+    downloadBtn.href = documentUrl;
+
+    modal.show();
+}
+
 function verifySignature(id) {
     if (confirm('Verify this signature?')) {
         // Show loading state
@@ -519,65 +565,65 @@ function verifySignature(id) {
     }
 }
 
-function invalidateSignature(id) {
-    const modal = document.getElementById('invalidateModal');
-    const form = document.getElementById('invalidateForm');
+// function invalidateSignature(id) {
+//     const modal = document.getElementById('invalidateModal');
+//     const form = document.getElementById('invalidateForm');
 
-    // Set form action dynamically
-    form.action = `/admin/signature/documents/${id}/invalidate`;
+//     // Set form action dynamically
+//     form.action = `/admin/signature/documents/${id}/invalidate`;
 
-    // Clear previous input
-    document.getElementById('invalidate_reason').value = '';
+//     // Clear previous input
+//     document.getElementById('invalidate_reason').value = '';
 
-    // Show modal
-    new bootstrap.Modal(modal).show();
+//     // Show modal
+//     new bootstrap.Modal(modal).show();
 
-    // Handle form submission
-    form.onsubmit = function(e) {
-        e.preventDefault();
+//     // Handle form submission
+//     form.onsubmit = function(e) {
+//         e.preventDefault();
 
-        const reason = document.getElementById('invalidate_reason').value;
-        const submitBtn = form.querySelector('button[type="submit"]');
-        const originalBtnHtml = submitBtn.innerHTML;
+//         const reason = document.getElementById('invalidate_reason').value;
+//         const submitBtn = form.querySelector('button[type="submit"]');
+//         const originalBtnHtml = submitBtn.innerHTML;
 
-        // Show loading
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Processing...';
+//         // Show loading
+//         submitBtn.disabled = true;
+//         submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Processing...';
 
-        fetch(form.action, {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({ reason: reason })
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.success) {
-                alert('✅ Signature invalidated successfully!');
-                bootstrap.Modal.getInstance(modal).hide();
-                location.reload();
-            } else {
-                alert('❌ Invalidation failed: ' + (data.message || 'Unknown error'));
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = originalBtnHtml;
-            }
-        })
-        .catch(error => {
-            console.error('Invalidation error:', error);
-            alert('❌ Network error: Failed to invalidate signature. Please try again.');
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = originalBtnHtml;
-        });
-    };
-}
+//         fetch(form.action, {
+//             method: 'POST',
+//             headers: {
+//                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+//                 'Content-Type': 'application/json',
+//                 'Accept': 'application/json'
+//             },
+//             body: JSON.stringify({ reason: reason })
+//         })
+//         .then(response => {
+//             if (!response.ok) {
+//                 throw new Error(`HTTP error! status: ${response.status}`);
+//             }
+//             return response.json();
+//         })
+//         .then(data => {
+//             if (data.success) {
+//                 alert('✅ Signature invalidated successfully!');
+//                 bootstrap.Modal.getInstance(modal).hide();
+//                 location.reload();
+//             } else {
+//                 alert('❌ Invalidation failed: ' + (data.message || 'Unknown error'));
+//                 submitBtn.disabled = false;
+//                 submitBtn.innerHTML = originalBtnHtml;
+//             }
+//         })
+//         .catch(error => {
+//             console.error('Invalidation error:', error);
+//             alert('❌ Network error: Failed to invalidate signature. Please try again.');
+//             submitBtn.disabled = false;
+//             submitBtn.innerHTML = originalBtnHtml;
+//         });
+//     };
+// }
 
 function performBatchVerify() {
     const selected = Array.from(document.querySelectorAll('.signature-checkbox:checked'))

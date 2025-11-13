@@ -29,8 +29,8 @@ class Kaprodi extends Model
         return true;
     }
 
-    public function templates()
-    {
-        return $this->hasMany(SignatureTemplate::class);
-    }
+    // public function templates()
+    // {
+    //     return $this->hasMany(SignatureTemplate::class);
+    // }
 }

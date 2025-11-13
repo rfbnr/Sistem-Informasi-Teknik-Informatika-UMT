@@ -196,8 +196,8 @@
                                 <td>
                                     <div>
                                         {{ $request->user->name ?? 'Unknown' }}
-                                        @if($request->user && $request->user->nim)
-                                            <br><small class="text-muted">{{ $request->user->nim }}</small>
+                                        @if($request->user && $request->user->NIM)
+                                            <br><small class="text-muted">{{ $request->user->NIM }}</small>
                                         @endif
                                     </div>
                                 </td>

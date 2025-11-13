@@ -30,6 +30,8 @@ class DocumentSignature extends Model
         'cms_signature',
         'signed_at',
         'signed_by',
+        'invalidated_reason',
+        'invalidated_at',
         'signature_status',
         'qr_positioning_data', // RENAMED: from positioning_data
         'final_pdf_path',
@@ -38,6 +40,7 @@ class DocumentSignature extends Model
 
     protected $casts = [
         'signed_at' => 'datetime',
+        'invalidated_at' => 'datetime',
         'signature_metadata' => 'array',
         'qr_positioning_data' => 'array', // RENAMED: from positioning_data
     ];
@@ -318,7 +321,11 @@ class DocumentSignature extends Model
     {
         $oldStatus = $this->signature_status;
         $this->signature_status = self::STATUS_INVALID;
+        $this->invalidated_reason = $reason;
+        $this->invalidated_at = now();
         $this->save();
+
+        $this->approvalRequest->invalidateSignature();
 
         $this->logAudit('signature_invalidated', $oldStatus, self::STATUS_INVALID,
             'Signature has been invalidated. Reason: ' . ($reason ?? 'Not specified'));
@@ -569,5 +576,10 @@ class DocumentSignature extends Model
     {
         return $query->where('signature_status', self::STATUS_VERIFIED)
                     ->where('verified_at', '>=', now()->subDays($days));
+    }
+
+    public function scopeInvalidated($query)
+    {
+        return $query->where('signature_status', self::STATUS_INVALID);
     }
 };

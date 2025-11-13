@@ -103,6 +103,7 @@
 .status-approved { background: #d1ecf1; color: #0c5460; }
 .status-user_signed { background: #e2e3ff; color: #4c4cdb; }
 .status-sign_approved { background: #d4edda; color: #155724; }
+.status-invalid_sign { background: #343a40; color: #ffffff; }
 .status-rejected { background: #f8d7da; color: #721c24; }
 
 .priority-badge {
@@ -334,13 +335,13 @@
                             <div class="timeline-item">
                                 <div class="timeline-dot {{
                                     $request->status === 'approved' ? 'current' :
-                                    (in_array($request->status, ['user_signed', 'sign_approved']) ? 'completed' : 'pending')
+                                    (in_array($request->status, ['user_signed', 'sign_approved', 'invalid_sign']) ? 'completed' : 'pending')
                                 }}"></div>
                                 <div>
                                     <strong>Digital Signing</strong>
                                     @if($request->status === 'approved')
                                         <div class="small text-muted">Ready for your digital signature</div>
-                                    @elseif(in_array($request->status, ['user_signed', 'sign_approved']))
+                                    @elseif(in_array($request->status, ['user_signed', 'sign_approved', 'invalid_sign']))
                                         <div class="small text-success">Digitally signed</div>
                                         @if($request->user_signed_at)
                                         <div class="small text-muted">{{ $request->user_signed_at->format('d M Y H:i') }}</div>
@@ -351,8 +352,12 @@
 
                             <!-- Step 4: Final Approval -->
                             <div class="timeline-item">
-                                <div class="timeline-dot {{
+                                {{-- <div class="timeline-dot {{
                                     $request->status === 'sign_approved' ? 'completed' :
+                                    ($request->status === 'user_signed' ? 'current' : 'pending')
+                                }}"></div> --}}
+                                <div class="timeline-dot {{
+                                    in_array($request->status, ['sign_approved', 'invalid_sign']) ? 'completed' :
                                     ($request->status === 'user_signed' ? 'current' : 'pending')
                                 }}"></div>
                                 <div>
@@ -364,6 +369,11 @@
                                         @endif
                                     @elseif($request->status === 'user_signed')
                                         <div class="small text-muted">Waiting for final approval</div>
+                                    @elseif($request->status === 'invalid_sign')
+                                        <div class="small text-danger">Signature marked as invalid</div>
+                                        @if($request->documentSignature && $request->documentSignature->invalidated_at)
+                                        <div class="small text-muted">{{ $request->documentSignature->invalidated_at->format('d M Y H:i') }}</div>
+                                        @endif
                                     @else
                                         <div class="small text-muted">Pending completion of previous steps</div>
                                     @endif
@@ -404,18 +414,18 @@
                         </div>
                         @endif
 
-                        {{-- Invalidate Document Signature and Revoke Digital Signature Key --}}
-                        @if($request->documentSignature && $request->documentSignature->signature_status === 'invalid' && $request->documentSignature->digitalSignature->revocation_reason)
-                        <div class="alert alert-warning">
+                        {{-- Invalidate Document Signature  --}}
+                        @if($request->documentSignature && $request->documentSignature->signature_status === 'invalid')
+                        <div class="alert alert-danger">
                             <div class="d-flex align-items-start">
                                 <i class="fas fa-exclamation-triangle fa-2x me-3 mt-1"></i>
                                 <div>
                                     <h6 class="alert-heading mb-2">Document Signature Invalidated</h6>
-                                    <p class="mb-2"><strong>Revocation Reason:</strong> {{ $request->documentSignature->digitalSignature->revocation_reason }}</p>
+                                    <p class="mb-2"><strong>Invalidation Reason:</strong> {{ $request->documentSignature->invalidated_reason }}</p>
                                     <hr class="my-2">
                                     <p class="mb-0 small">
                                         <i class="fas fa-info-circle me-1"></i>
-                                        The digital signature associated with this document has been revoked. Please contact support for further assistance.
+                                        This signature has been marked as invalid. Please submit a new document request to proceed.
                                     </p>
                                 </div>
                             </div>
@@ -436,7 +446,7 @@
 
                         <!-- Action Buttons -->
                         <div class="action-buttons mt-3">
-                            @if($request->status === 'rejected')
+                            @if($request->status === 'rejected' || ($request->documentSignature && $request->documentSignature->signature_status === 'invalid'))
                                 <a href="{{ route('user.signature.approval.request') }}"
                                    class="btn btn-primary">
                                     <i class="fas fa-redo me-1"></i> Submit New Request

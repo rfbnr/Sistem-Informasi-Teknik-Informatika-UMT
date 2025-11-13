@@ -46,6 +46,7 @@ class ApprovalRequest extends Model
     const STATUS_APPROVED = 'approved';
     const STATUS_USER_SIGNED = 'user_signed';
     const STATUS_SIGN_APPROVED = 'sign_approved';
+    const STATUS_INVALID_SIGN = 'invalid_sign';
     const STATUS_REJECTED = 'rejected';
     // const STATUS_CANCELLED = 'cancelled';
 
@@ -161,6 +162,22 @@ class ApprovalRequest extends Model
     public function isCompleted()
     {
         return $this->status === self::STATUS_SIGN_APPROVED;
+    }
+
+    /**
+     * Check apakah dokumen ditolak
+     */
+    public function isRejected()
+    {
+        return $this->status === self::STATUS_REJECTED;
+    }
+
+    /**
+     * Check apakah dokument tidak valid (invalidated)
+     */
+    public function isInvalidated()
+    {
+        return $this->status === self::STATUS_INVALID_SIGN;
     }
 
     /**
@@ -283,6 +300,17 @@ class ApprovalRequest extends Model
     }
 
     /**
+     * Mark signature as invalidated
+     */
+    public function invalidateSignature()
+    {
+        $oldStatus = $this->status;
+        $this->update([
+            'status' => self::STATUS_INVALID_SIGN,
+        ]);
+    }
+
+    /**
      * Approve tanda tangan
      */
     public function approveSignature($signPath)
@@ -385,6 +413,7 @@ class ApprovalRequest extends Model
             self::STATUS_APPROVED => 'Disetujui - Siap Ditandatangani',
             self::STATUS_USER_SIGNED => 'Sudah Ditandatangani - Menunggu Verifikasi',
             self::STATUS_SIGN_APPROVED => 'Selesai - Tanda Tangan Terverifikasi',
+            self::STATUS_INVALID_SIGN => 'Tanda Tangan Tidak Valid',
             self::STATUS_REJECTED => 'Ditolak',
             // self::STATUS_CANCELLED => 'Dibatalkan'
         ];
@@ -402,6 +431,7 @@ class ApprovalRequest extends Model
             self::STATUS_APPROVED => 'badge-info',
             self::STATUS_USER_SIGNED => 'badge-primary',
             self::STATUS_SIGN_APPROVED => 'badge-success',
+            self::STATUS_INVALID_SIGN => 'badge-dark',
             self::STATUS_REJECTED => 'badge-danger',
             // self::STATUS_CANCELLED => 'badge-secondary'
         ];
@@ -428,6 +458,7 @@ class ApprovalRequest extends Model
             self::STATUS_APPROVED => 40,
             self::STATUS_USER_SIGNED => 80,
             self::STATUS_SIGN_APPROVED => 100,
+            self::STATUS_INVALID_SIGN => 0,
             self::STATUS_REJECTED => 0,
             // self::STATUS_CANCELLED => 0
         ];
@@ -445,6 +476,7 @@ class ApprovalRequest extends Model
             self::STATUS_APPROVED => 'Silahkan lakukan tanda tangan digital',
             self::STATUS_USER_SIGNED => 'Menunggu verifikasi tanda tangan',
             self::STATUS_SIGN_APPROVED => 'Proses selesai',
+            self::STATUS_INVALID_SIGN => 'Tanda tangan tidak valid',
             self::STATUS_REJECTED => 'Dokumen ditolak',
             // self::STATUS_CANCELLED => 'Dokumen dibatalkan'
         ];

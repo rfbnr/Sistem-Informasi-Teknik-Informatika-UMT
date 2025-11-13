@@ -257,6 +257,17 @@
                         </h5>
                     </div>
                     <div class="card-body">
+                        {{-- Alert signature invalidated --}}
+                        @if($documentSignature->signature_status === 'invalid')
+                            <div class="alert alert-danger">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                <strong>Signature Invalidated:</strong> {{ $documentSignature->invalidated_reason ?? 'No reason provided.' }}
+                                @if($documentSignature->invalidated_at)
+                                    <br><small class="text-muted">Invalidated on {{ $documentSignature->invalidated_at->format('d F Y, H:i:s') }}</small>
+                                @endif
+                            </div>
+                        @endif
+
                         <div class="alert alert-info mb-3">
                             <i class="fas fa-info-circle me-2"></i>
                             <strong>Unique Encryption Key:</strong> This document is secured with a unique RSA-2048 digital signature key that was automatically generated specifically for this document. Each signed document has its own independent encryption key for maximum security.
@@ -486,18 +497,19 @@
                         </div>
                         @endif
 
-                        <!-- Verified -->
-                        @if($documentSignature->verified_at)
+                        <!-- Verified Signed -->
+                        @if($documentSignature->signed_at)
                         <div class="timeline-item">
                             <div class="timeline-dot completed"></div>
                             <div>
                                 <strong>Signature Verified</strong>
                                 <div class="small text-success">
-                                    {{ $documentSignature->verified_at->format('d M Y, H:i') }}
+                                    {{ $documentSignature->signed_at->format('d M Y, H:i') }}
                                 </div>
-                                @if($documentSignature->verifier)
+                                @if($documentSignature->signer)
                                 <div class="small text-muted">
-                                    By: {{ $documentSignature->verifier->name }}
+                                    {{-- By: {{ $documentSignature->signer->name }} --}}
+                                    By: System (Automated Verification)
                                 </div>
                                 @endif
                             </div>
@@ -520,6 +532,27 @@
                                 @endif
                                 <div class="small mt-2 p-2 bg-danger bg-opacity-10 rounded">
                                     <strong>Reason:</strong> {{ $documentSignature->rejection_reason }}
+                                </div>
+                            </div>
+                        </div>
+                        @endif
+
+                        {{-- Invalidated --}}
+                        @if($documentSignature->invalidated_at)
+                        <div class="timeline-item">
+                            <div class="timeline-dot rejected"></div>
+                            <div>
+                                <strong class="text-danger">Signature Invalidated</strong>
+                                <div class="small text-danger">
+                                    {{ $documentSignature->invalidated_at->format('d M Y, H:i') }}
+                                </div>
+                                @if($documentSignature->signer)
+                                <div class="small text-muted">
+                                    By: {{ $documentSignature->signer->name }}
+                                </div>
+                                @endif
+                                <div class="small mt-2 p-2 bg-danger bg-opacity-10 rounded">
+                                    <strong>Reason:</strong> {{ $documentSignature->invalidated_reason ?? 'No reason provided.' }}
                                 </div>
                             </div>
                         </div>
@@ -1052,6 +1085,7 @@ Need more help? Contact your Kaprodi directly.
 .status-approval-rejected { background-color: #f8d7da; color: #842029; }
 .status-approval-user_signed { background-color: #cfe2ff; color: #084298; }
 .status-approval-sign_approved { background-color: #d1e7dd; color: #0f5132; }
+.status-approval-invalid_sign { background-color: #f8d7da; color: #842029; }
 .status-approval-cancelled { background-color: #f8d7da; color: #842029; }
 
 /* Document Preview Styling */

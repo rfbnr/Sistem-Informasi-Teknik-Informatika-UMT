@@ -48,7 +48,7 @@
 
     <!-- Statistics Cards -->
     <div class="row mb-4">
-        <div class="col-lg-2 col-md-4 mb-3">
+        <div class="col-lg-3 col-md-4 mb-3">
             <div class="stats-card">
                 <div class="stats-number text-primary">{{ $stats['total_signatures'] ?? 0 }}</div>
                 <div class="text-muted small">Total Signatures</div>
@@ -96,7 +96,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-lg-2 col-md-4 mb-3">
+        {{-- <div class="col-lg-2 col-md-4 mb-3">
             <div class="stats-card">
                 <div class="stats-number text-danger">{{ $stats['rejected_signatures'] ?? 0 }}</div>
                 <div class="text-muted small">Rejected</div>
@@ -107,8 +107,8 @@
                     </small>
                 </div>
             </div>
-        </div>
-        <div class="col-lg-2 col-md-4 mb-3">
+        </div> --}}
+        <div class="col-lg-3 col-md-4 mb-3">
             <div class="stats-card">
                 <div class="stats-number text-secondary">{{ $stats['expired_signatures'] ?? 0 }}</div>
                 <div class="text-muted small">Expired Keys</div>
@@ -214,14 +214,14 @@
                 <div class="card-body">
                     <!-- Key Stats -->
                     <div class="row text-center mb-3">
-                        <div class="col-6 mb-2">
+                        <div class="col-12 mb-2">
                             <div class="h5 text-success mb-0">{{ $keyStats['active_keys'] }}</div>
                             <small class="text-muted">Active Keys</small>
                         </div>
-                        <div class="col-6 mb-2">
+                        {{-- <div class="col-6 mb-2">
                             <div class="h5 text-secondary mb-0">{{ $keyStats['revoked_keys'] }}</div>
                             <small class="text-muted">Revoked</small>
-                        </div>
+                        </div> --}}
                     </div>
 
                     <!-- Alert Section -->

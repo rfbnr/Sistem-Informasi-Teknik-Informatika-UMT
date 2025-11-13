@@ -65,8 +65,11 @@ class DocumentSignatureController extends Controller
 
             $statusCounts = [
                 'pending' => DocumentSignature::where('signature_status', DocumentSignature::STATUS_PENDING)->count(),
+                'signed' => DocumentSignature::whereIn('signature_status', [
+                    DocumentSignature::STATUS_VERIFIED,
+                    DocumentSignature::STATUS_INVALID,
+                ])->count(),
                 // 'signed' => DocumentSignature::where('signature_status', DocumentSignature::STATUS_SIGNED)->count(),
-                'signed' => DocumentSignature::where('signature_status', DocumentSignature::STATUS_VERIFIED)->count(),
                 'verified' => DocumentSignature::where('signature_status', DocumentSignature::STATUS_VERIFIED)->count(),
                 // 'rejected' => DocumentSignature::where('signature_status', DocumentSignature::STATUS_REJECTED)->count(),
                 'invalid' => DocumentSignature::where('signature_status', DocumentSignature::STATUS_INVALID)->count(),
@@ -775,6 +778,7 @@ class DocumentSignatureController extends Controller
                 'signed' => (clone $baseQuery)->where('signature_status', 'signed')->count(),
 
                 'verified' => (clone $baseQuery)->where('signature_status', 'verified')->count(),
+                'invalid' => (clone $baseQuery)->where('signature_status', 'invalid')->count(),
 
                 'pending' => (clone $baseQuery)->whereIn('signature_status', ['pending', 'signed'])->count(),
 

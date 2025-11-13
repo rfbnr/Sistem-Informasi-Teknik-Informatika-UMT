@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Storage;
 use App\Services\DigitalSignatureService;
 use Illuminate\Support\Facades\Validator;
 use App\Mail\ApprovalRequestSignedNotification;
+use Illuminate\Support\Facades\DB;
 
 class DigitalSignatureController extends Controller
 {
@@ -94,7 +95,7 @@ class DigitalSignatureController extends Controller
                 'active_keys' => DigitalSignature::active()->count(),
                 'expiring_soon' => DigitalSignature::expiringSoon(30)->count(),
                 'urgent_expiry' => DigitalSignature::expiringSoon(7)->count(),
-                'revoked_keys' => DigitalSignature::where('status', 'revoked')->count(),
+                // 'revoked_keys' => DigitalSignature::where('status', 'revoked')->count(),
             ];
 
             // Get expiring keys for widget
@@ -286,7 +287,7 @@ class DigitalSignatureController extends Controller
             // ========================================================================
             // CRITICAL FIX: Wrap STEPS 1-7 in DB Transaction for data consistency
             // ========================================================================
-            $result = \Illuminate\Support\Facades\DB::transaction(function () use (
+            $result = DB::transaction(function () use (
                 $documentSignature,
                 $qrPositioningData,
                 $approvalRequest,
@@ -870,9 +871,9 @@ class DigitalSignatureController extends Controller
             $key = DigitalSignature::findOrFail($id);
 
             // Check if already revoked
-            if ($key->status === DigitalSignature::STATUS_REVOKED) {
-                return back()->with('warning', 'Signature key sudah di-revoke sebelumnya');
-            }
+            // if ($key->status === DigitalSignature::STATUS_REVOKED) {
+            //     return back()->with('warning', 'Signature key sudah di-revoke sebelumnya');
+            // }
 
             // Revoke the key
             $key->revoke($request->reason);

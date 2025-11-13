@@ -59,6 +59,11 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasMany(ApprovalRequest::class);
     }
 
+    public function digitalSignatures()
+    {
+        return $this->hasMany(DigitalSignature::class);
+    }
+
     public function isAdmin()
     {
         return $this->roles === 'admin';

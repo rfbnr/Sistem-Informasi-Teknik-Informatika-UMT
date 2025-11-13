@@ -43,24 +43,24 @@
                 <div class="text-muted">Total</div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-2">
             <div class="stats-card">
                 <div class="stats-number text-success">{{ $statistics['verified'] ?? 0 }}</div>
                 <div class="text-muted">Verified</div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-2">
             <div class="stats-card">
                 <div class="stats-number text-info">{{ $statistics['pending'] ?? 0 }}</div>
                 <div class="text-muted">Pending</div>
             </div>
         </div>
-        {{-- <div class="col-md-2">
+        <div class="col-md-2">
             <div class="stats-card">
-                <div class="stats-number text-danger">{{ $statistics['rejected'] ?? 0 }}</div>
-                <div class="text-muted">Rejected</div>
+                <div class="stats-number text-danger">{{ $statistics['invalid'] ?? 0 }}</div>
+                <div class="text-muted">Invalid</div>
             </div>
-        </div> --}}
+        </div>
         <div class="col-md-3">
             <div class="stats-card">
                 <div class="stats-number text-warning">{{ $statistics['this_month'] ?? 0 }}</div>
@@ -81,7 +81,7 @@
                 <div class="col-md-3">
                     <select class="form-select" name="status">
                         <option value="">All Status</option>
-                        <option value="signed" {{ request('status') == 'signed' ? 'selected' : '' }}>Signed</option>
+                        <option value="invalid" {{ request('status') == 'invalid' ? 'selected' : '' }}>Invalid</option>
                         <option value="verified" {{ request('status') == 'verified' ? 'selected' : '' }}>Verified</option>
                         <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
                         {{-- <option value="rejected" {{ request('status') == 'rejected' ? 'selected' : '' }}>Rejected</option> --}}
@@ -112,7 +112,7 @@
                     <div class="card-header {{
                         $signature->signature_status === 'verified' ? 'bg-success' :
                         ($signature->signature_status === 'signed' ? 'bg-info' :
-                        ($signature->signature_status === 'rejected' ? 'bg-danger' : 'bg-warning'))
+                        ($signature->signature_status === 'invalid' ? 'bg-danger' : 'bg-warning'))
                     }} text-white">
                         <div class="d-flex justify-content-between align-items-center">
                             <h6 class="mb-0">
@@ -222,19 +222,19 @@
                         </div>
 
                         <!-- Rejection Status -->
-                        @if($signature->signature_status === 'rejected')
+                        @if($signature->signature_status === 'invalid')
                         <div class="mb-3">
                             <div class="alert alert-danger mb-0 py-2">
                                 <i class="fas fa-times-circle me-2"></i>
-                                <strong class="small">Signature Rejected</strong>
+                                <strong class="small">Signature Invalid</strong>
                                 <small class="d-block mt-1" style="font-size: 0.75rem;">
-                                    <strong>Reason:</strong> {{ $signature->rejection_reason }}
+                                    <strong>Invalid Reason:</strong> {{ $signature->invalidated_reason }}
                                 </small>
-                                @if($signature->rejected_at)
+                                @if($signature->invalidated_at)
                                 <small class="d-block text-muted" style="font-size: 0.75rem;">
-                                    on {{ $signature->rejected_at->format('d M Y H:i') }}
-                                    @if($signature->rejector)
-                                        by {{ $signature->rejector->name }}
+                                    on {{ $signature->invalidated_at->format('d M Y H:i') }}
+                                    @if($signature->signer)
+                                        by {{ $signature->signer->name }}
                                     @endif
                                 </small>
                                 @endif
@@ -246,6 +246,24 @@
                             </div>
                         </div>
                         @endif
+
+                        {{-- Signature Invalidated --}}
+                        {{-- @if($signature->signature_status === 'invalid' && $signature->invalidated_at)
+                        <div class="mb-3">
+                            <div class="alert alert-danger mb-0 py-2">
+                                <i class="fas fa-ban me-2"></i>
+                                <strong class="small">Signature Invalidated</strong>
+                                <small class="d-block text-muted" style="font-size: 0.75rem;">
+                                    on {{ $signature->invalidated_at->format('d M Y H:i') }}
+                                </small>
+                                @if($signature->invalidated_reason)
+                                <small class="d-block mt-1" style="font-size: 0.75rem;">
+                                    <strong>Reason:</strong> {{ $signature->invalidated_reason }}
+                                </small>
+                                @endif
+                            </div>
+                        </div>
+                        @endif --}}
 
                         <!-- Verification Status -->
                         @if($signature->verified_at)
@@ -287,13 +305,13 @@
                         <!-- Actions -->
                         <div class="d-flex gap-2">
                             {{-- REJECTED: Show submit new request button --}}
-                            @if($signature->signature_status === 'rejected')
+                            @if($signature->signature_status === 'invalid')
                                 <a href="{{ route('user.signature.approval.request') }}"
                                    class="btn btn-sm btn-danger flex-fill">
                                     <i class="fas fa-redo"></i> Submit New Request
                                 </a>
                                 <a href="{{ route('user.signature.my.signatures.show', $signature->id) }}"
-                                   class="btn btn-sm btn-outline-primary">
+                                   class="btn btn-sm btn-outline-primary flex-fill">
                                     <i class="fas fa-eye"></i> Details
                                 </a>
                             @else
@@ -329,17 +347,6 @@
                                 <i class="fas fa-clock me-1"></i>
                                 Created {{ $signature->created_at->diffForHumans() }}
                             </span>
-                            {{-- @if($signature->approvalRequest->deadline)
-                                @if($signature->approvalRequest->isOverdue())
-                                    <span class="badge bg-danger">
-                                        <i class="fas fa-exclamation-triangle"></i> Overdue
-                                    </span>
-                                @elseif($signature->approvalRequest->isNearDeadline())
-                                    <span class="badge bg-warning text-dark">
-                                        <i class="fas fa-clock"></i> Deadline Soon
-                                    </span>
-                                @endif
-                            @endif --}}
                         </div>
                     </div>
                 </div>

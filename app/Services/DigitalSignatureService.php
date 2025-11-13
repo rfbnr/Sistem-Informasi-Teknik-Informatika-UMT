@@ -140,6 +140,7 @@ class DigitalSignatureService
                 'key_length' => $keyPair['key_length'],
                 'certificate' => $keyPair['certificate'],
                 'document_signature_id' => $documentSignature->id, // 1-to-1 relationship
+                'user_id' => $approvalRequest ? $approvalRequest->user_id : Auth::id(), // Owner of the signature
                 'valid_from' => $validFrom,
                 'valid_until' => $validUntil,
                 'status' => DigitalSignature::STATUS_ACTIVE,

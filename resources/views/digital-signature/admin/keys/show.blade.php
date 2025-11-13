@@ -136,9 +136,9 @@
         <div class="row align-items-center">
             <div class="col-lg-8">
                 <div class="d-flex align-items-center">
-                    <a href="{{ route('admin.signature.keys.index') }}" class="btn btn-outline-light me-3">
+                    {{-- <a href="{{ route('admin.signature.keys.index') }}" class="btn btn-outline-light me-3">
                         <i class="fas fa-arrow-left"></i>
-                    </a>
+                    </a> --}}
                     <div>
                         <h1 class="mb-1">
                             <i class="fas fa-key me-2"></i>
@@ -148,13 +148,19 @@
                     </div>
                 </div>
             </div>
+            {{-- Back Button --}}
             <div class="col-lg-4 text-end">
+                <a href="{{ route('admin.signature.keys.index') }}" class="btn btn-outline-light">
+                    <i class="fas fa-arrow-left me-1"></i> Back to Keys
+                </a>
+            </div>
+            {{-- <div class="col-lg-4 text-end">
                 @if($key->status != 'revoked')
                     <button class="btn btn-danger" onclick="showRevokeModal()">
                         <i class="fas fa-ban me-1"></i> Revoke Key
                     </button>
                 @endif
-            </div>
+            </div> --}}
         </div>
     </div>
 
@@ -186,7 +192,28 @@
                             <div class="col-md-4"><strong>Signature ID:</strong></div>
                             <div class="col-md-8">
                                 <code class="text-primary">{{ $key->signature_id }}</code>
-                                <i class="fas fa-copy copy-btn ms-2" onclick="copyToClipboard('{{ $key->signature_id }}')" title="Copy ID"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="info-row">
+                        <div class="row">
+                            <div class="col-md-4"><strong>Requester:</strong></div>
+                            <div class="col-md-8">
+                                {{
+                                    $key->user->name ?? 'N/A'
+                                }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="info-row">
+                        <div class="row">
+                            <div class="col-md-4"><strong>Email Requester:</strong></div>
+                            <div class="col-md-8">
+                                {{
+                                    $key->user->email ?? 'N/A'
+                                }}
                             </div>
                         </div>
                     </div>
@@ -271,7 +298,7 @@
                         </div>
                     </div>
 
-                    @if($key->status == 'revoked')
+                    {{-- @if($key->status == 'revoked')
                     <div class="info-row">
                         <div class="row">
                             <div class="col-md-4"><strong>Revoked At:</strong></div>
@@ -289,7 +316,7 @@
                             </div>
                         </div>
                     </div>
-                    @endif
+                    @endif --}}
 
                     <div class="info-row">
                         <div class="row">
@@ -313,14 +340,14 @@
                         <strong>SHA-256:</strong><br>
                         {{ $key->getPublicKeyFingerprint() }}
                     </div>
-                    <div class="mt-3 d-flex gap-2">
+                    {{-- <div class="mt-3 d-flex gap-2">
                         <button class="btn btn-sm btn-primary" onclick="copyToClipboard('{{ $key->getPublicKeyFingerprint() }}')">
                             <i class="fas fa-copy"></i> Copy Fingerprint
                         </button>
                         <a href="{{ route('admin.signature.keys.export.public', $key->id) }}" class="btn btn-sm btn-success">
                             <i class="fas fa-download"></i> Export Public Key
                         </a>
-                    </div>
+                    </div> --}}
                 </div>
             </div>
 
@@ -427,25 +454,25 @@
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
-                        @if($key->certificate)
+                        {{-- @if($key->certificate)
                         <button class="btn btn-primary" onclick="viewCertificate()">
                             <i class="fas fa-certificate"></i> View Certificate
                         </button>
-                        @endif
+                        @endif --}}
 
-                        <a href="{{ route('admin.signature.keys.export.public', $key->id) }}" class="btn btn-success">
+                        {{-- <a href="{{ route('admin.signature.keys.export.public', $key->id) }}" class="btn btn-success">
                             <i class="fas fa-download"></i> Export Public Key
-                        </a>
+                        </a> --}}
 
                         <a href="{{ route('admin.signature.keys.audit', $key->id) }}" class="btn btn-info">
                             <i class="fas fa-history"></i> View Audit Log
                         </a>
 
-                        @if($key->status != 'revoked')
+                        {{-- @if($key->status != 'revoked')
                         <button class="btn btn-danger" onclick="showRevokeModal()">
                             <i class="fas fa-ban"></i> Revoke This Key
                         </button>
-                        @endif
+                        @endif --}}
                     </div>
                 </div>
             </div>
@@ -472,7 +499,7 @@
 </div>
 
 <!-- Revoke Modal -->
-<div class="modal fade" id="revokeModal" tabindex="-1">
+{{-- <div class="modal fade" id="revokeModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <form method="POST" action="{{ route('admin.signature.keys.revoke', $key->id) }}">
@@ -509,7 +536,7 @@
             </form>
         </div>
     </div>
-</div>
+</div> --}}
 
 <!-- Certificate Modal -->
 <div class="modal fade" id="certificateModal" tabindex="-1">
@@ -545,10 +572,10 @@
 
 @push('scripts')
 <script>
-function showRevokeModal() {
-    const modal = new bootstrap.Modal(document.getElementById('revokeModal'));
-    modal.show();
-}
+// function showRevokeModal() {
+//     const modal = new bootstrap.Modal(document.getElementById('revokeModal'));
+//     modal.show();
+// }
 
 function viewCertificate() {
     const modal = new bootstrap.Modal(document.getElementById('certificateModal'));

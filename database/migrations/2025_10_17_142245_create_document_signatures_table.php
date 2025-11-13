@@ -24,6 +24,8 @@ return new class extends Migration
             $table->text('cms_signature')->nullable(); // CMS signature format
             $table->timestamp('signed_at')->nullable(); // Waktu penandatanganan
             $table->foreignId('signed_by')->nullable(); // Kaprodi yang menandatangani
+            $table->string('invalidated_reason')->nullable(); // Alasan pembatalan signature
+            $table->timestamp('invalidated_at')->nullable(); // Waktu pembatalan signature
             $table->enum('signature_status', ['pending', 'signed', 'verified', 'invalid'])->default('pending');
             $table->json('qr_positioning_data')->nullable(); // Data posisi barcode signature
             $table->string('final_pdf_path')->nullable(); // Path PDF final yang sudah ditandatangani
@@ -38,6 +40,7 @@ return new class extends Migration
             // $table->index('verification_url');
             // $table->index('verification_token');
             $table->index(['signed_at', 'signature_status']);
+            $table->index('invalidated_at', 'invalidated_reason');
         });
     }
 

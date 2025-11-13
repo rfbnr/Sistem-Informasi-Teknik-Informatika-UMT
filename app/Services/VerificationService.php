@@ -97,15 +97,36 @@ class VerificationService
 
         try {
             // 1. Check document signature existence and basic info
-            $checks['document_exists'] = [
-                'status' => true,
-                'message' => 'Document signature record found',
-                'details' => [
-                    'id' => $documentSignature->id,
-                    'signed_at' => $documentSignature->signed_at,
-                    'status' => $documentSignature->signature_status
-                ]
-            ];
+            // $checks['document_exists'] = [
+            //     'status' => true,
+            //     'message' => 'Document signature record found',
+            //     'details' => [
+            //         'id' => $documentSignature->id,
+            //         'signed_at' => $documentSignature->signed_at,
+            //         'status' => $documentSignature->signature_status
+            //     ]
+            // ];
+
+
+            // 1. Check document signature existence and check signature status
+            if ($documentSignature->signature_status !== 'verified' && !$isUploadedPdf) {
+                $checks['document_exists'] = [
+                    'status' => false,
+                    'message' => 'Document signature record found and status is "' . $documentSignature->signature_status . '", not "verified"',
+                    'details' => [
+                        'current_status' => $documentSignature->signature_status
+                    ]
+                ];
+                $overallValid = false;
+            } else {
+                $checks['document_exists'] = [
+                    'status' => true,
+                    'message' => 'Document signature record found and status is "' . $documentSignature->signature_status . '"',
+                    'details' => [
+                        'current_status' => $documentSignature->signature_status
+                    ]
+                ];
+            }
 
             // 2. Check digital signature validity
             $digitalSignature = $documentSignature->digitalSignature;

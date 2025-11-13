@@ -23,6 +23,7 @@ return new class extends Migration
                 'approved',          // Sudah diapprove, siap untuk ditandatangani user
                 'user_signed',       // User sudah tanda tangan, menunggu approve sign
                 'sign_approved',     // Tanda tangan sudah diapprove, dokumen final
+                'invalid_sign',    // Tanda tangan dibatalkan/invalidate
                 'rejected',          // Ditolak
             ])->default('pending')->after('notes');
 

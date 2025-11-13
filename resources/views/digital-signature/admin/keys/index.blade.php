@@ -72,7 +72,7 @@
 
     <!-- Statistics Cards -->
     <div class="row mb-4">
-        <div class="col-lg-2 col-md-4 mb-3">
+        <div class="col-lg-3 col-md-4 mb-3">
             <div class="stats-card">
                 <div class="stats-number text-primary">{{ $stats['total'] }}</div>
                 <div class="text-muted small">Total Keys</div>
@@ -90,18 +90,18 @@
                 <div class="text-muted small">Expiring Soon</div>
             </div>
         </div>
-        <div class="col-lg-2 col-md-4 mb-3">
+        <div class="col-lg-3 col-md-4 mb-3">
             <div class="stats-card clickable" onclick="filterByExpiry('expired')">
                 <div class="stats-number text-danger">{{ $stats['expired'] }}</div>
                 <div class="text-muted small">Expired</div>
             </div>
         </div>
-        <div class="col-lg-2 col-md-4 mb-3">
+        {{-- <div class="col-lg-2 col-md-4 mb-3">
             <div class="stats-card">
                 <div class="stats-number text-secondary">{{ $stats['revoked'] }}</div>
                 <div class="text-muted small">Revoked</div>
             </div>
-        </div>
+        </div> --}}
         <div class="col-lg-2 col-md-4 mb-3">
             <div class="stats-card">
                 <div class="stats-number text-info">{{ $stats['urgent_expiry'] }}</div>
@@ -121,7 +121,7 @@
                             <option value="all" {{ request('status') == 'all' ? 'selected' : '' }}>Semua Status</option>
                             <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
                             <option value="expired" {{ request('status') == 'expired' ? 'selected' : '' }}>Expired</option>
-                            <option value="revoked" {{ request('status') == 'revoked' ? 'selected' : '' }}>Revoked</option>
+                            {{-- <option value="revoked" {{ request('status') == 'revoked' ? 'selected' : '' }}>Revoked</option> --}}
                         </select>
                     </div>
                     <div class="col-md-3">
@@ -168,6 +168,7 @@
                         <thead class="table-light">
                             <tr>
                                 <th>Signature ID</th>
+                                <th>Requester</th>
                                 <th>Algorithm</th>
                                 <th>Key Length</th>
                                 <th>Status</th>
@@ -193,6 +194,9 @@
                                 }
                             @endphp
                             <tr class="key-card {{ $statusClass }}">
+                                {{-- <td>
+                                    {{ $loop->iteration + ($keys->currentPage() - 1) * $keys->perPage() }}
+                                </td> --}}
                                 <td>
                                     <strong class="text-primary">{{ $key->signature_id }}</strong>
                                     @if($key->documentSignature)
@@ -201,6 +205,11 @@
                                             {{ Str::limit($key->documentSignature->approvalRequest->document_name ?? 'N/A', 30) }}
                                         </small>
                                     @endif
+                                </td>
+                                <td>
+                                    {{ $key->user->name ?? 'N/A' }}
+                                    <br>
+                                    <small class="text-muted">{{ $key->user->email ?? '' }}</small>
                                 </td>
                                 <td>{{ $key->algorithm }}</td>
                                 <td>{{ $key->key_length }} bit</td>

@@ -20,12 +20,12 @@
                 <p class="mb-0 opacity-75">{{ $documentSignature->approvalRequest->document_name }}</p>
             </div>
             <div class="col-lg-4 text-end">
-                <a href="{{ route('admin.signature.documents.index') }}" class="btn btn-outline-secondary">
+                <a href="{{ route('admin.signature.documents.index') }}" class="btn btn-outline-light me-2">
                     <i class="fas fa-arrow-left me-1"></i> Back
                 </a>
-                <a href="{{ route('admin.signature.documents.download', $documentSignature->id) }}" class="btn btn-success">
+                {{-- <a href="{{ route('admin.signature.documents.download', $documentSignature->id) }}" class="btn btn-success">
                     <i class="fas fa-download me-1"></i> Download
-                </a>
+                </a> --}}
             </div>
         </div>
     </div>
@@ -45,6 +45,18 @@
         @endif
     @endif
 
+    {{-- Signature Invalide Alert --}}
+    @if($documentSignature->signature_status === 'invalid')
+        <div class="alert alert-danger">
+            <i class="fas fa-ban me-2"></i>
+            <strong>Signature Invalidated:</strong> This signature was marked as invalid on {{ $documentSignature->invalidated_at->format('d F Y, H:i') }}.
+            @if($documentSignature->invalidated_reason)
+                <br>
+                <strong>Reason:</strong> {{ $documentSignature->invalidated_reason }}
+            @endif
+        </div>
+    @endif
+
     <div class="row">
         <!-- Main Information -->
         <div class="col-lg-8">
@@ -57,6 +69,21 @@
                     </h5>
                 </div>
                 <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Submitted By</strong><br>
+                            {{ $documentSignature->approvalRequest->user->name }}
+                            <br>
+                            <small class="text-muted">
+                                NIM: {{ $documentSignature->approvalRequest->user->NIM ?? '-' }}
+                            </small>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Email</strong><br>
+                            {{ $documentSignature->approvalRequest->user->email }}
+                        </div>
+                    </div>
+
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <strong>Document Name:</strong><br>
@@ -468,11 +495,11 @@
                             </button> --}}
                         @endif
 
-                        {{-- @if(in_array($documentSignature->signature_status, ['signed', 'verified']))
+                        @if(in_array($documentSignature->signature_status, ['signed', 'verified']))
                             <button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#invalidateModal">
                                 <i class="fas fa-ban me-2"></i> Invalidate Signature
                             </button>
-                        @endif --}}
+                        @endif
                     </div>
                 </div>
             </div>
@@ -526,35 +553,32 @@
 </div>
 
 <!-- Invalidate Modal -->
-<div class="modal fade" id="invalidateModal" tabindex="-1">
+{{-- <div class="modal fade" id="invalidateModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header bg-danger text-white">
                 <h5 class="modal-title">Invalidate Signature</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <form action="{{ route('admin.signature.documents.invalidate', $documentSignature->id) }}" method="POST">
-                @csrf
-                <div class="modal-body">
-                    <div class="alert alert-danger">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        This will mark the signature as invalid and cannot be undone.
-                    </div>
-                    <div class="mb-3">
-                        <label for="reason" class="form-label">Reason *</label>
-                        <textarea class="form-control" id="reason" name="reason" rows="3" required></textarea>
-                    </div>
+            <div class="modal-body">
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    This will mark the signature as invalid and cannot be undone.
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-danger">
-                        <i class="fas fa-ban me-1"></i> Invalidate
-                    </button>
+                <div class="mb-3">
+                    <label for="invalidateReason" class="form-label">Reason *</label>
+                    <textarea class="form-control" id="invalidateReason" name="reason" rows="3" required></textarea>
                 </div>
-            </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" id="confirmInvalidateBtn" class="btn btn-danger" onclick="performInvalidate()">
+                    <i class="fas fa-ban me-1"></i> Invalidate
+                </button>
+            </div>
         </div>
     </div>
-</div>
+</div> --}}
 
 <!-- Document Preview Modal -->
 <div class="modal fade" id="documentPreviewModal" tabindex="-1" aria-labelledby="documentPreviewModalLabel" aria-hidden="true">
@@ -599,7 +623,7 @@
 </div>
 
 <!-- Reject Signature Modal -->
-<div class="modal fade" id="rejectModal" tabindex="-1">
+{{-- <div class="modal fade" id="rejectModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header bg-danger text-white">
@@ -650,7 +674,9 @@
             </form>
         </div>
     </div>
-</div>
+</div> --}}
+@include('digital-signature.admin.partials.invalidate-signed-modal')
+
 @endsection
 
 @push('scripts')
@@ -748,9 +774,9 @@ function previewDocument(type) {
     }, 3000);
 }
 
-function setRejectReason(reason) {
-    document.getElementById('reject_reason').value = reason;
-}
+// function setRejectReason(reason) {
+//     document.getElementById('reject_reason').value = reason;
+// }
 
 // Quick Reject from Modal
 function quickRejectFromModal(id) {

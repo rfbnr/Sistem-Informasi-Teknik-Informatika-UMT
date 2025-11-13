@@ -15,6 +15,7 @@ class DigitalSignature extends Model
     protected $fillable = [
         'signature_id',
         'document_signature_id', // NEW: 1-to-1 relationship
+        'user_id', // Pemilik signature
         'public_key',
         'private_key',
         'algorithm',
@@ -23,15 +24,15 @@ class DigitalSignature extends Model
         'valid_from',
         'valid_until',
         'status',
-        'revocation_reason',
-        'revoked_at',
+        // 'revocation_reason',
+        // 'revoked_at',
         'metadata'
     ];
 
     protected $casts = [
         'valid_from' => 'datetime',
         'valid_until' => 'datetime',
-        'revoked_at' => 'datetime',
+        // 'revoked_at' => 'datetime',
         'metadata' => 'array',
     ];
 
@@ -42,7 +43,7 @@ class DigitalSignature extends Model
     // Status constants
     const STATUS_ACTIVE = 'active';
     const STATUS_EXPIRED = 'expired';
-    const STATUS_REVOKED = 'revoked';
+    // const STATUS_REVOKED = 'revoked';
 
     public static function boot()
     {
@@ -75,6 +76,14 @@ class DigitalSignature extends Model
     }
 
     /**
+     * Relationship dengan User (Pemilik signature)
+     */
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /**
      * Check apakah signature masih valid
      */
     public function isValid()
@@ -82,7 +91,17 @@ class DigitalSignature extends Model
         return $this->status === self::STATUS_ACTIVE &&
                $this->valid_from <= now() &&
                $this->valid_until >= now();
+        // return $this->valid_from <= now() &&
+        //        $this->valid_until >= now();
     }
+
+    /**
+     * Check apakah signature valid secara keseluruhan
+     */
+    // public function isValid()
+    // {
+    //     return $this->isValidTimestamp() && $this->documentSignature && $this->documentSignature->isValid();
+    // }
 
     /**
      * Check apakah akan expired dalam waktu tertentu
@@ -95,41 +114,46 @@ class DigitalSignature extends Model
     /**
      * Revoke signature (per-document basis now)
      */
-    public function revoke($reason = null)
-    {
-        $this->update([
-            'status' => self::STATUS_REVOKED,
-            'revocation_reason' => $reason,
-            'revoked_at' => now(),
-            'metadata' => array_merge($this->metadata ?? [], [
-                'revoked_at' => now()->toISOString(),
-                'revoke_reason' => $reason
-            ])
-        ]);
+    // public function revoke($reason = null)
+    // {
+    //     $this->update([
+    //         'status' => self::STATUS_REVOKED,
+    //         'revocation_reason' => $reason,
+    //         'revoked_at' => now(),
+    //         'metadata' => array_merge($this->metadata ?? [], [
+    //             'revoked_at' => now()->toISOString(),
+    //             'revoke_reason' => $reason
+    //         ])
+    //     ]);
 
-        // Log audit with standardized metadata
-        $metadata = SignatureAuditLog::createMetadata([
-            'signature_id' => $this->signature_id,
-            'reason' => $reason,
-            'revoked_by' => Auth::user()->name ?? 'System',
-            'algorithm' => $this->algorithm,
-            'key_length' => $this->key_length,
-            'document_signature_id' => $this->document_signature_id,
-            'was_valid_until' => $this->valid_until?->toDateString(),
-        ]);
+    //     // Invalide DocumentSignature terkait
+    //     if ($this->documentSignature) {
+    //         $this->documentSignature->invalidate($reason);
+    //     }
 
-        SignatureAuditLog::create([
-            'kaprodi_id' => Auth::guard('kaprodi')->id(),
-            'action' => SignatureAuditLog::ACTION_SIGNATURE_KEY_REVOKED,
-            'status_from' => self::STATUS_ACTIVE,
-            'status_to' => self::STATUS_REVOKED,
-            'description' => "Digital signature {$this->signature_id} has been revoked. Reason: {$reason}",
-            'metadata' => $metadata,
-            'ip_address' => request()->ip(),
-            'user_agent' => request()->userAgent(),
-            'performed_at' => now()
-        ]);
-    }
+    //     // Log audit with standardized metadata
+    //     $metadata = SignatureAuditLog::createMetadata([
+    //         'signature_id' => $this->signature_id,
+    //         'reason' => $reason,
+    //         'revoked_by' => Auth::user()->name ?? 'System',
+    //         'algorithm' => $this->algorithm,
+    //         'key_length' => $this->key_length,
+    //         'document_signature_id' => $this->document_signature_id,
+    //         'was_valid_until' => $this->valid_until?->toDateString(),
+    //     ]);
+
+    //     SignatureAuditLog::create([
+    //         'kaprodi_id' => Auth::guard('kaprodi')->id(),
+    //         'action' => SignatureAuditLog::ACTION_SIGNATURE_KEY_REVOKED,
+    //         'status_from' => self::STATUS_ACTIVE,
+    //         'status_to' => self::STATUS_REVOKED,
+    //         'description' => "Digital signature {$this->signature_id} has been revoked. Reason: {$reason}",
+    //         'metadata' => $metadata,
+    //         'ip_address' => request()->ip(),
+    //         'user_agent' => request()->userAgent(),
+    //         'performed_at' => now()
+    //     ]);
+    // }
 
     /**
      * Generate RSA Key Pair
