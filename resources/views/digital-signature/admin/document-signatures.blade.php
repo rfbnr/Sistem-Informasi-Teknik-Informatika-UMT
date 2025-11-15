@@ -20,15 +20,20 @@
                 <p class="mb-0 opacity-75">Monitor digitally signed documents</p>
             </div>
             <div class="col-lg-4 text-end">
+                <a href="{{ route('admin.signature.dashboard') }}" class="btn btn-outline-light">
+                    <i class="fas fa-arrow-left me-1"></i> Kembali ke Dashboard
+                </a>
+            </div>
+            {{-- <div class="col-lg-4 text-end">
                 <div class="btn-group">
-                    {{-- <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#batchVerifyModal">
+                    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#batchVerifyModal">
                         <i class="fas fa-check-double me-1"></i> Batch Verify
-                    </button> --}}
+                    </button>
                     <a href="{{ route('admin.signature.documents.export') }}" class="btn btn-success">
                         <i class="fas fa-download me-1"></i> Export
                     </a>
                 </div>
-            </div>
+            </div> --}}
         </div>
     </div>
 

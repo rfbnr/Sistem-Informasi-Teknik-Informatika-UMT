@@ -90,12 +90,28 @@
                             </thead>
                             <tbody>
                                 @foreach($analytics['most_scanned'] as $index => $qr)
+                                @php
+                                    $top = $analytics['most_scanned']->values();
+                                    $top1 = optional($top->get(0))->access_count;
+                                    $top2 = optional($top->get(1))->access_count;
+                                    $top3 = optional($top->get(2))->access_count;
+                                @endphp
                                 <tr>
                                     <td>
-                                        @if($index < 3)
+                                        {{-- @if($index < 3)
                                             <span class="badge bg-warning">{{ $index + 1 }}</span>
                                         @else
                                             {{ $index + 1 }}
+                                        @endif --}}
+
+                                        @if($qr->access_count === $top1)
+                                            <span class="badge bg-warning">1</span>
+                                        @elseif(!is_null($top2) && $qr->access_count === $top2)
+                                            <span class="badge bg-secondary">2</span>
+                                        @elseif(!is_null($top3) && $qr->access_count === $top3)
+                                            <span class="badge bg-info">3</span>
+                                        @else
+                                            {{ $top->search($qr) + 1 }}
                                         @endif
                                     </td>
                                     <td><code>{{ $qr->short_code }}</code></td>
@@ -241,7 +257,7 @@
                                                 title="View Details">
                                             <i class="fas fa-eye"></i>
                                         </button>
-                                        <a href="{{ route('signature.verify.page', $qr->short_code) }}"
+                                        <a href="{{ route('signature.verify', $qr->short_code) }}"
                                            class="btn btn-outline-primary"
                                            target="_blank"
                                            title="Test Verification">
@@ -257,10 +273,10 @@
 
                 <!-- Pagination -->
                 <div class="mt-3 d-flex justify-content-between align-items-center">
-                    <div class="text-muted">
+                    {{-- <div class="text-muted">
                         Showing {{ $qrCodes->firstItem() }} to {{ $qrCodes->lastItem() }}
                         of {{ $qrCodes->total() }} entries
-                    </div>
+                    </div> --}}
                     <div>
                         {{ $qrCodes->links() }}
                     </div>

@@ -20,15 +20,20 @@
                 <p class="mb-0 opacity-75">Review and manage document approval requests</p>
             </div>
             <div class="col-lg-4 text-end">
+                <a href="{{ route('admin.signature.dashboard') }}" class="btn btn-outline-light">
+                    <i class="fas fa-arrow-left me-1"></i> Kembali ke Dashboard
+                </a>
+            </div>
+            {{-- <div class="col-lg-4 text-end">
                 <div class="btn-group">
-                    {{-- <button class="btn btn-outline-light" data-bs-toggle="modal" data-bs-target="#bulkApproveModal">
+                    <button class="btn btn-outline-light" data-bs-toggle="modal" data-bs-target="#bulkApproveModal">
                         <i class="fas fa-check-double me-1"></i> Bulk Approve
-                    </button> --}}
+                    </button>
                     <a href="{{ route('admin.signature.approval.export') }}" class="btn btn-success">
                         <i class="fas fa-download me-1"></i> Export
                     </a>
                 </div>
-            </div>
+            </div> --}}
         </div>
     </div>
 

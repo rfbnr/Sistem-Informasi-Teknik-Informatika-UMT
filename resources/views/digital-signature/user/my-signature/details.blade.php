@@ -297,7 +297,7 @@
                                     {{ $documentSignature->signer->name }}<br>
                                     <small class="text-muted">
                                         NIDN: {{ $documentSignature->signer->NIDN ?? '-' }}<br>
-                                        Email: {{ $documentSignature->signer->email }}
+                                        {{-- Email: {{ $documentSignature->signer->email }} --}}
                                     </small>
                                 @else
                                     <span class="text-muted">Not signed yet</span>
@@ -648,7 +648,7 @@
                             </button>
                         @else
                             {{-- NORMAL: Show download and verification options --}}
-                            @if($documentSignature->approvalRequest->signed_document_path || $documentSignature->final_pdf_path && in_array($documentSignature->signature_status, ['verified']))
+                            @if($documentSignature->approvalRequest->signed_document_path && $documentSignature->final_pdf_path && in_array($documentSignature->signature_status, ['verified']))
                                 <a href="{{ route('user.signature.my.signatures.download', $documentSignature->id) }}"
                                    class="btn btn-success">
                                     <i class="fas fa-download me-2"></i> Download Signed Document

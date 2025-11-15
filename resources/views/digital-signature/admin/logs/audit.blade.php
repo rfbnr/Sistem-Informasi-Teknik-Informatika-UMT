@@ -150,7 +150,7 @@
     background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
 }
 
-.stats-card .stats-number {
+.stats-card .stats-number text-whtie {
     font-size: 32px;
     font-weight: 700;
     margin-bottom: 5px;
@@ -170,7 +170,7 @@
 }
 
 .btn-filter {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
     color: white;
     border: none;
     padding: 8px 20px;
@@ -197,7 +197,8 @@
 }
 
 .nav-tabs .nav-link.active {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    /* background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); */
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
     color: white;
     border-radius: 8px 8px 0 0;
 }
@@ -270,7 +271,7 @@
                     <button class="btn btn-light" onclick="location.reload()">
                         <i class="fas fa-sync-alt me-1"></i> Refresh
                     </button>
-                    <button class="btn btn-warning" onclick="exportLogs()">
+                    <button class="btn btn-success" onclick="exportLogs()">
                         <i class="fas fa-download me-1"></i> Export
                     </button>
                 </div>
@@ -282,7 +283,7 @@
     <div class="row mb-4">
         <div class="col-lg-3 col-md-6 mb-3">
             <div class="stats-card">
-                <div class="stats-number">{{ $stats['total_today'] }}</div>
+                <div class="stats-number text-light">{{ $stats['total_today'] }}</div>
                 <div class="stats-label">
                     <i class="fas fa-chart-line me-1"></i> Total Activities Today
                 </div>
@@ -290,7 +291,7 @@
         </div>
         <div class="col-lg-3 col-md-6 mb-3">
             <div class="stats-card success">
-                <div class="stats-number">{{ $stats['successful_today'] }}</div>
+                <div class="stats-number text-light">{{ $stats['successful_today'] }}</div>
                 <div class="stats-label">
                     <i class="fas fa-check-circle me-1"></i> Successful Actions
                 </div>
@@ -298,7 +299,7 @@
         </div>
         <div class="col-lg-3 col-md-6 mb-3">
             <div class="stats-card danger">
-                <div class="stats-number">{{ $stats['failed_today'] }}</div>
+                <div class="stats-number text-light">{{ $stats['failed_today'] }}</div>
                 <div class="stats-label">
                     <i class="fas fa-times-circle me-1"></i> Failed Actions
                 </div>
@@ -306,7 +307,7 @@
         </div>
         <div class="col-lg-3 col-md-6 mb-3">
             <div class="stats-card warning">
-                <div class="stats-number">{{ $stats['success_rate'] }}%</div>
+                <div class="stats-number text-light">{{ $stats['success_rate'] }}%</div>
                 <div class="stats-label">
                     <i class="fas fa-percentage me-1"></i> Success Rate
                 </div>

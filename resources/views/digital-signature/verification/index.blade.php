@@ -163,18 +163,6 @@
                                     </div>
                                 </div>
 
-                                <div class="method-button" data-method="url" onclick="selectMethod('url')">
-                                    <div class="d-flex align-items-center">
-                                        <div class="me-3">
-                                            <i class="fas fa-link fa-2x text-success"></i>
-                                        </div>
-                                        <div>
-                                            <h6 class="mb-1">URL Verifikasi</h6>
-                                            <small class="text-muted">Masukkan URL verifikasi yang diberikan</small>
-                                        </div>
-                                    </div>
-                                </div>
-
                                 <div class="method-button" data-method="upload" onclick="selectMethod('upload')">
                                     <div class="d-flex align-items-center">
                                         <div class="me-3">
@@ -183,6 +171,18 @@
                                         <div>
                                             <h6 class="mb-1">Upload PDF</h6>
                                             <small class="text-muted">Upload file PDF yang sudah ditandatangani untuk diverifikasi</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="method-button" data-method="url" onclick="selectMethod('url')">
+                                    <div class="d-flex align-items-center">
+                                        <div class="me-3">
+                                            <i class="fas fa-link fa-2x text-success"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-1">URL Verifikasi</h6>
+                                            <small class="text-muted">Masukkan URL verifikasi yang diberikan</small>
                                         </div>
                                     </div>
                                 </div>
@@ -206,7 +206,7 @@
                                 <input type="hidden" name="verification_type" id="verificationType" value="qr">
 
                                 <!-- QR Scanner -->
-                                <div id="qrSection" class="verification-section">
+                                <div id="qrSection" class="verification-section mb-3">
                                     <div class="qr-scanner">
                                         <i class="fas fa-camera fa-3x text-muted mb-3"></i>
                                         <h6>Scan QR Code</h6>
@@ -245,7 +245,7 @@
                                                 <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>
                                                 <h6>Drag & Drop PDF atau Klik untuk Upload</h6>
                                                 <p class="text-muted mb-2">File PDF yang sudah ditandatangani digital</p>
-                                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="$('#pdfFile').click()">
+                                                <button type="button" class="btn btn-outline-primary btn-sm" id="selectFileBtn">
                                                     <i class="fas fa-folder-open"></i> Pilih File
                                                 </button>
                                                 <div class="mt-3">
@@ -343,7 +343,7 @@
                                 <div class="card-body text-center">
                                     <i class="fas fa-certificate fa-2x text-warning mb-2"></i>
                                     <h6>Sertifikat Digital</h6>
-                                    <small class="text-muted">Download sertifikat verifikasi</small>
+                                    <small class="text-muted">Lihat hasil sertifikat verifikasi</small>
                                 </div>
                             </div>
                         </div>
@@ -558,10 +558,21 @@
             return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
         }
 
-        // Drag and drop handlers
+        // FIXED: Separate button handler to prevent infinite loop
+        $('#selectFileBtn').on('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            $('#pdfFile').trigger('click');
+        });
+
+        // FIXED: Upload area click - only trigger if clicking on area itself, not on children
         $('#uploadArea').on('click', function(e) {
-            if (!$(e.target).closest('button').length) {
-                $('#pdfFile').click();
+            // Only trigger if clicking directly on uploadArea or uploadPlaceholder
+            // but NOT on button or its children
+            if (e.target === this || $(e.target).closest('#uploadPlaceholder').length && !$(e.target).closest('#selectFileBtn').length) {
+                e.preventDefault();
+                e.stopPropagation();
+                $('#pdfFile').trigger('click');
             }
         });
 

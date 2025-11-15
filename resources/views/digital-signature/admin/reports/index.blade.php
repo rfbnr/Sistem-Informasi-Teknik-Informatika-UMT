@@ -457,7 +457,7 @@
                 <div class="card-header bg-primary text-white">
                     <h5 class="mb-0">
                         <i class="fas fa-history me-2"></i>
-                        Recent Activity
+                        Recent Activity (5 Latest)
                     </h5>
                 </div>
                 <div class="card-body">

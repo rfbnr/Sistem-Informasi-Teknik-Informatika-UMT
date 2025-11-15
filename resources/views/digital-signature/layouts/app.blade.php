@@ -250,7 +250,7 @@
 
             <a class="navbar-brand" href="/">
                 <i class="fas fa-signature me-2"></i>
-                DiSign System | Informatika UMT
+                DiSign | Informatika UMT
             </a>
 
             <div class="navbar-nav ms-auto">

@@ -12,7 +12,7 @@
 
     <style>
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #0056b3 0%, #0056b3 100%);
             min-height: 100vh;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             display: flex;
@@ -58,7 +58,8 @@
         }
 
         .countdown-container {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            /* background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); */
+            background: linear-gradient(135deg, #0056b3 0%, #0056b3 100%);
             color: white;
             border-radius: 1rem;
             padding: 2rem;

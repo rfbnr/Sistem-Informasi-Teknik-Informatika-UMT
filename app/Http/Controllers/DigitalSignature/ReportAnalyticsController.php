@@ -107,7 +107,7 @@ class ReportAnalyticsController extends Controller
         $topRejectionReasons = $this->getTopRejectionReasons($start, $end);
 
         // Recent Activity
-        $recentActivity = $this->getRecentActivity(10);
+        $recentActivity = $this->getRecentActivity(5);
 
         // QR Code Access Analytics
         $qrAnalytics = $this->getQRCodeAnalytics($start, $end);

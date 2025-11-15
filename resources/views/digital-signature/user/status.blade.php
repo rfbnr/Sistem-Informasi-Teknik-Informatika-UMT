@@ -93,7 +93,7 @@
 .status-badge {
     padding: 0.5rem 1rem;
     border-radius: 2rem;
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -222,7 +222,7 @@
                         'pending' => $approvalRequests->where('status', 'pending')->count(),
                         'approved' => $approvalRequests->where('status', 'approved')->count(),
                         'completed' => $approvalRequests->whereIn('status', ['sign_approved', 'user_signed'])->count(),
-                        'rejected' => $approvalRequests->where('status', 'rejected')->count()
+                        'rejected' => $approvalRequests->whereIn('status', ['rejected', 'invalid_sign'])->count()
                     ];
                 @endphp
                 <div class="col-md-2">

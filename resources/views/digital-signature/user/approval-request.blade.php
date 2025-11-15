@@ -165,6 +165,7 @@
 .status-user_signed { background: #6f42c1; }
 .status-sign_approved { background: #28a745; }
 .status-rejected { background: #dc3545; }
+.status-invalid_sign { background: #dc3545; }
 
 .guidelines-box {
     background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
