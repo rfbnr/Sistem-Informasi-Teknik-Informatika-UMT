@@ -35,7 +35,7 @@
 <script>
     // Perform Invalidate
     function performInvalidate() {
-        const requestId = {{ $documentSignature->id }};
+        const requestId = {{ $documentSignature->id ?? 0 }};
         const reason = document.getElementById('invalidateReason').value;
 
         // add loading state to button
