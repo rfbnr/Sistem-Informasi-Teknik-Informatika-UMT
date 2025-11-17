@@ -256,14 +256,14 @@
                                             </div>
                                             <div id="uploadPreview" style="display: none;">
                                                 <div class="alert alert-info mb-0">
-                                                    <div class="d-flex align-items-center justify-content-between">
+                                                    <div class="align-items-center justify-content-between">
                                                         <div>
                                                             <i class="fas fa-file-pdf text-danger fa-2x me-3"></i>
-                                                            <span id="fileName" class="font-weight-bold"></span>
+                                                            <span id="fileName" class="font-weight-bold d-inline-block text-truncate" style="max-width: 150px;"></span>
                                                             <br>
                                                             <small class="text-muted" id="fileSize"></small>
                                                         </div>
-                                                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="clearUpload()">
+                                                        <button type="button" class="btn btn-sm btn-outline-danger mt-3" onclick="clearUpload()">
                                                             <i class="fas fa-times"></i> Hapus
                                                         </button>
                                                     </div>

@@ -7,7 +7,22 @@
     @include('digital-signature.admin.partials.sidebar')
 @endsection
 
+
 @section('content')
+<style>
+    .col-md-2-4 {
+        flex: 0 0 25%;
+        max-width: 25%;
+    }
+    @media (max-width: 768px) {
+        .col-md-2-4 {
+            flex: 0 0 100%;
+            max-width: 100%;
+            margin-bottom: 1rem;
+        }
+    }
+</style>
+
 <div class="main-content">
     <!-- Page Header -->
     <div class="page-header">
@@ -56,31 +71,31 @@
 
     <!-- Statistics Cards -->
     <div class="row mb-4">
-        <div class="col-md-3">
+        <div class="col-md-2-4">
             <div class="stats-card">
                 <div class="stats-number text-warning">{{ $statistics['pending'] ?? 0 }}</div>
                 <div class="text-muted"><i class="fas fa-clock me-1"></i> Pending Approval</div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-2-4">
             <div class="stats-card">
                 <div class="stats-number text-info">{{ $statistics['approved'] ?? 0 }}</div>
                 <div class="text-muted"><i class="fas fa-check me-1"></i> Approved</div>
             </div>
         </div>
-        {{-- <div class="col-md-3">
+        {{-- <div class="col-md-2-4">
             <div class="stats-card">
                 <div class="stats-number text-success">{{ $statistics['user_signed'] ?? 0 }}</div>
                 <div class="text-muted"><i class="fas fa-signature me-1"></i> User Signed</div>
             </div>
         </div> --}}
-        <div class="col-md-3">
+        <div class="col-md-2-4">
             <div class="stats-card">
                 <div class="stats-number text-success">{{ $statistics['completed'] ?? 0 }}</div>
                 <div class="text-muted"><i class="fas fa-signature me-1"></i> Completed</div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-2-4">
             <div class="stats-card">
                 <div class="stats-number text-danger">{{ $statistics['rejected'] ?? 0 }}</div>
                 <div class="text-muted"><i class="fas fa-times me-1"></i> Rejected</div>

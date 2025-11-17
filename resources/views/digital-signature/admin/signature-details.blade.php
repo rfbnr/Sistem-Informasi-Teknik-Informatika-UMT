@@ -728,9 +728,9 @@ function previewDocument(type) {
 
     // Set title based on type
     if (type === 'original') {
-        titleSpan.textContent = 'Original Document Preview | ' + originalFileName;
+        titleSpan.textContent = 'Original Document Preview';
     } else {
-        titleSpan.textContent = 'Signed Document Preview | ' + signedFileName;
+        titleSpan.textContent = 'Signed Document Preview';
     }
 
     // Get document path
