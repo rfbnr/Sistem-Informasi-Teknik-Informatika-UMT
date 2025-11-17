@@ -196,9 +196,9 @@
                 <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">
                         <i class="fas fa-file-pdf me-2"></i>
-                        Document Preview
+                        Original Document Preview
                     </h5>
-                    <div class="btn-group btn-group-sm">
+                    {{-- <div class="btn-group btn-group-sm">
                         <a href="{{ route('admin.signature.approval.download', $approvalRequest->id) }}"
                            class="btn btn-light btn-sm">
                             <i class="fas fa-download me-1"></i> Download Original
@@ -209,7 +209,7 @@
                                 <i class="fas fa-download me-1"></i> Download Signed
                             </a>
                         @endif
-                    </div>
+                    </div> --}}
                 </div>
                 <div class="card-body p-0">
                     <div style="height: 600px; position: relative;">

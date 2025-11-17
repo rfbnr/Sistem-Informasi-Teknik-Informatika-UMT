@@ -624,7 +624,8 @@ class VerificationController extends Controller
             return [
                 // Certificate Basic Info (PUBLIC SAFE)
                 'version' => ($certData['version'] ?? 2) + 1,
-                'serial_number' => '****' . substr($certData['serialNumber'] ?? 'N/A', -8), // Masked for security
+                // 'serial_number' => $certData['serialNumber'] ?? 'N/A',
+                'serial_number' => '*****' . substr($certData['serialNumber'] ?? 'N/A', -5), // Masked for security
 
                 // Subject (Owner) - NO EMAIL for privacy
                 'subject' => [

@@ -792,6 +792,10 @@
                                 <div class="col-md-8">${cert.issuer.CN}</div>
                             </div>
                             <div class="row mb-2">
+                                <div class="col-md-4"><strong>Organizational Unit (OU):</strong></div>
+                                <div class="col-md-8">${cert.issuer.OU || 'N/A'}</div>
+                            </div>
+                            <div class="row mb-2">
                                 <div class="col-md-4"><strong>Organization (O):</strong></div>
                                 <div class="col-md-8">${cert.issuer.O}</div>
                             </div>

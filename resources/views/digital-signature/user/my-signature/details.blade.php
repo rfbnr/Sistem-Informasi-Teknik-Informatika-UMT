@@ -846,7 +846,7 @@
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                     <i class="fas fa-times me-1"></i> Close
                 </button>
-                <a id="downloadDocumentBtn" href="#" class="btn btn-success" target="_blank">
+                <a id="downloadDocumentBtn" href="#" class="btn btn-success">
                     <i class="fas fa-download me-1"></i> Download Document
                 </a>
             </div>
@@ -902,7 +902,13 @@ function previewDocument(type) {
     }
 
     // Set download button
-    downloadBtn.href = docPath;
+    if( type === 'signed') {
+        downloadBtn.target = '';
+        downloadBtn.href = "{{ route('user.signature.my.signatures.download', $documentSignature->id) }}";
+    } else {
+        downloadBtn.target = '_blank';
+        downloadBtn.href = docPath;
+    }
 
     if(type === 'signed' && !{{ in_array($documentSignature->signature_status, ['verified']) ? 'true' : 'false' }}) {
         downloadBtn.style.display = 'none';
@@ -926,7 +932,11 @@ function previewDocument(type) {
     };
 
     // Set iframe source (add #toolbar=0 to hide PDF toolbar for cleaner view)
-    iframe.src = docPath + '#toolbar=0';
+    if( type === 'signed') {
+        iframe.src = docPath + '#toolbar=0';
+    } else {
+        iframe.src = docPath;
+    }
 
     // Fallback timeout in case onload doesn't fire
     setTimeout(function() {

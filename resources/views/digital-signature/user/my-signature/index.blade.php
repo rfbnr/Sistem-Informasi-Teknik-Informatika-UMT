@@ -327,12 +327,12 @@
                                     </a>
                                 @endif
                             @endif
-                            @if(($signature->approvalRequest->signed_document_path || $signature->final_pdf_path) && $signature->signature_status === 'verified')
+                            {{-- @if(($signature->approvalRequest->signed_document_path || $signature->final_pdf_path) && $signature->signature_status === 'verified')
                                 <a href="{{ route('user.signature.my.signatures.download', $signature->id) }}"
                                    class="btn btn-sm btn-success flex-fill">
                                     <i class="fas fa-download"></i> Download
                                 </a>
-                            @endif
+                            @endif --}}
                             @if($signature->qr_code_path && $signature->signature_status === 'verified')
                                 <a href="{{ route('user.signature.my.signatures.qr', $signature->id) }}"
                                    class="btn btn-sm btn-outline-secondary">

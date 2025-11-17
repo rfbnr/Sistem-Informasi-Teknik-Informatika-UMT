@@ -8,6 +8,7 @@ use App\Services\QRCodeService;
 use App\Models\DigitalSignature;
 use App\Models\DocumentSignature;
 use App\Models\SignatureAuditLog;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
@@ -19,7 +20,6 @@ use Illuminate\Support\Facades\Storage;
 use App\Services\DigitalSignatureService;
 use Illuminate\Support\Facades\Validator;
 use App\Mail\ApprovalRequestSignedNotification;
-use Illuminate\Support\Facades\DB;
 
 class DigitalSignatureController extends Controller
 {
@@ -1209,9 +1209,10 @@ class DigitalSignatureController extends Controller
                     'C' => $certData['issuer']['C'] ?? $certData['issuer']['countryName'] ?? 'N/A',
                 ],
                 'version' => ($certData['version'] ?? 2) + 1,
-                'serial_number' => isset($certData['serialNumberHex'])
-                    ? strtoupper($certData['serialNumberHex'])
-                    : (isset($certData['serialNumber']) ? strtoupper(dechex($certData['serialNumber'])) : 'N/A'),
+                'serial_number' => $certData['serialNumber'] ?? 'N/A',
+                // 'serial_number' => isset($certData['serialNumberHex'])
+                //     ? strtoupper($certData['serialNumberHex'])
+                //     : (isset($certData['serialNumber']) ? strtoupper(dechex($certData['serialNumber'])) : 'N/A'),
                 'signature_algorithm' => $certData['signatureTypeLN'] ?? $certData['signatureTypeSN'] ?? 'sha256WithRSAEncryption',
                 'public_key_algorithm' => 'RSA (' . ($certData['bits'] ?? 2048) . ' bit)',
                 'valid_from' => isset($certData['validFrom_time_t'])

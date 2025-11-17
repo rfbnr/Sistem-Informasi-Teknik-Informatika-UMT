@@ -657,7 +657,9 @@ function viewCertificate() {
                                 <div class="col-md-4"><strong>Serial Number:</strong></div>
                                 <div class="col-md-8">
                                     <code class="text-primary">${cert.serial_number}</code>
+                                    {{--
                                     <i class="fas fa-copy ms-2 copy-btn" onclick="copyCertData('${cert.serial_number}', 'Serial Number')" title="Copy"></i>
+                                    --}}
                                 </div>
                             </div>
                         </div>
@@ -673,7 +675,9 @@ function viewCertificate() {
                             <div class="alert alert-light mb-3">
                                 <small class="text-muted">Distinguished Name (DN):</small><br>
                                 <code class="text-dark">${subjectDN}</code>
+                                {{--
                                 <i class="fas fa-copy ms-2 copy-btn" onclick="copyCertData('${subjectDN}', 'Subject DN')" title="Copy"></i>
+                                --}}
                             </div>
 
                             <div class="row mb-2">
@@ -717,7 +721,9 @@ function viewCertificate() {
                             <div class="alert alert-light mb-3">
                                 <small class="text-muted">Distinguished Name (DN):</small><br>
                                 <code class="text-dark">${issuerDN}</code>
+                                {{--
                                 <i class="fas fa-copy ms-2 copy-btn" onclick="copyCertData('${issuerDN}', 'Issuer DN')" title="Copy"></i>
+                                --}}
                             </div>
 
                             <div class="row mb-2">
@@ -814,9 +820,11 @@ function viewCertificate() {
                             <div class="mb-3">
                                 <div class="d-flex justify-content-between align-items-center mb-1">
                                     <strong>SHA-256 Fingerprint:</strong>
+                                    {{--
                                     <button class="btn btn-sm btn-outline-primary" onclick="copyCertData('${cert.fingerprints.sha256}', 'SHA-256 Fingerprint')">
                                         <i class="fas fa-copy"></i> Copy
                                     </button>
+                                    --}}
                                 </div>
                                 <code class="d-block bg-light p-2 rounded" style="word-break: break-all; font-size: 11px;">${cert.fingerprints.sha256}</code>
                                 <small class="text-muted">Digunakan untuk verifikasi keaslian sertifikat</small>
@@ -824,9 +832,11 @@ function viewCertificate() {
                             <div class="mb-0">
                                 <div class="d-flex justify-content-between align-items-center mb-1">
                                     <strong>SHA-1 Fingerprint:</strong>
+                                    {{--
                                     <button class="btn btn-sm btn-outline-primary" onclick="copyCertData('${cert.fingerprints.sha1}', 'SHA-1 Fingerprint')">
                                         <i class="fas fa-copy"></i> Copy
                                     </button>
+                                    --}}
                                 </div>
                                 <code class="d-block bg-light p-2 rounded" style="word-break: break-all; font-size: 11px;">${cert.fingerprints.sha1}</code>
                                 <small class="text-muted">Fingerprint alternatif untuk kompatibilitas</small>

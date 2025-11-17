@@ -478,12 +478,12 @@
                                 </a>
                             @endif
 
-                            @if($request->documentSignature && $request->documentSignature->qr_code_path && in_array($request->status, ['sign_approved']))
+                            {{-- @if($request->documentSignature && $request->documentSignature->qr_code_path && in_array($request->status, ['sign_approved']))
                                 <a href="{{ route('user.signature.my.signatures.qr', $request->documentSignature->id) }}"
                                    class="btn btn-outline-secondary">
                                     <i class="fas fa-qrcode me-1"></i> Download QR
                                 </a>
-                            @endif
+                            @endif --}}
 
                             <!-- Verification Link -->
                             @if($request->documentSignature && $request->documentSignature->verification_url && in_array($request->status, ['sign_approved']))
