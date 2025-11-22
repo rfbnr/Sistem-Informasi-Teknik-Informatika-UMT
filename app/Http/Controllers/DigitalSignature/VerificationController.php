@@ -42,7 +42,7 @@ class VerificationController extends Controller
     {
         // Rate limiting
         $key = 'verify_token:' . request()->ip();
-        if (RateLimiter::tooManyAttempts($key, 10)) {
+        if (RateLimiter::tooManyAttempts($key, 5)) {
             $seconds = RateLimiter::availableIn($key);
             return view('digital-signature.verification.rate-limited', compact('seconds'));
         }
@@ -50,7 +50,10 @@ class VerificationController extends Controller
         RateLimiter::hit($key, 300); // 5 minutes decay
 
         try {
-            $verificationResult = $this->verificationService->verifyByToken($token);
+            // ✅ FIX: Check if token is short code format (XXXX-XXXX-XXXX)
+            $actualToken = $this->resolveToken($token);
+
+            $verificationResult = $this->verificationService->verifyByToken($actualToken);
 
             if(!$verificationResult) {
                 return view('digital-signature.verification.error', [
@@ -72,6 +75,9 @@ class VerificationController extends Controller
                 'timestamp' => now()
             ]);
 
+            // ✅ FIX: Extract document signature from verification result
+            $documentSignature = $verificationResult['details']['document_signature'] ?? null;
+
             SignatureVerificationLog::create([
                 'document_signature_id' => $documentSignature->id ?? null,
                 'approval_request_id' => $documentSignature->approval_request_id ?? null,
@@ -89,14 +95,20 @@ class VerificationController extends Controller
             return view('digital-signature.verification.result', compact('verificationResult'));
 
         } catch (\Exception $e) {
+            // ✅ FIX: Log detailed error, show generic message with error code
+            $errorCode = 'VER_' . strtoupper(substr(md5($e->getMessage()), 0, 8));
+
             Log::warning('Public verification error', [
                 'token_hash' => hash('sha256', $token),
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'error_code' => $errorCode,
                 'ip_address' => request()->ip()
             ]);
 
             return view('digital-signature.verification.error', [
-                'message' => 'Verification failed. Please check your QR code or verification link.'
+                'message' => 'Verifikasi gagal. Silakan coba lagi atau hubungi administrator.',
+                'error_code' => $errorCode
             ]);
         }
     }
@@ -119,7 +131,8 @@ class VerificationController extends Controller
         $key = 'verify_public:' . request()->ip();
         if (RateLimiter::tooManyAttempts($key, 5)) {
             $seconds = RateLimiter::availableIn($key);
-            return back()->with('error', "Too many verification attempts. Please try again in {$seconds} seconds.");
+            // return back()->with('error', "Too many verification attempts. Please try again in {$seconds} seconds.");
+            return view('digital-signature.verification.rate-limited', compact('seconds'));
         }
 
         RateLimiter::hit($key, 300);
@@ -132,14 +145,18 @@ class VerificationController extends Controller
 
             switch ($type) {
                 case 'token':
-                    $verificationResult = $this->verificationService->verifyByToken($input);
+                    // ✅ FIX: Resolve short code if needed
+                    $actualToken = $this->resolveToken($input);
+                    $verificationResult = $this->verificationService->verifyByToken($actualToken);
                     break;
 
                 case 'url':
                     // Extract token from URL
                     $token = $this->extractTokenFromUrl($input);
                     if ($token) {
-                        $verificationResult = $this->verificationService->verifyByToken($token);
+                        // ✅ FIX: Resolve short code if needed
+                        $actualToken = $this->resolveToken($token);
+                        $verificationResult = $this->verificationService->verifyByToken($actualToken);
                     } else {
                         throw new \Exception('Invalid verification URL format');
                     }
@@ -151,13 +168,17 @@ class VerificationController extends Controller
                         // Input is a URL, extract token from it
                         $token = $this->extractTokenFromUrl($input);
                         if ($token) {
-                            $verificationResult = $this->verificationService->verifyByToken($token);
+                            // ✅ FIX: Resolve short code if needed
+                            $actualToken = $this->resolveToken($token);
+                            $verificationResult = $this->verificationService->verifyByToken($actualToken);
                         } else {
                             throw new \Exception('Invalid QR code URL format');
                         }
                     } else {
                         // Input is a direct token
-                        $verificationResult = $this->verificationService->verifyByToken($input);
+                        // ✅ FIX: Resolve short code if needed
+                        $actualToken = $this->resolveToken($input);
+                        $verificationResult = $this->verificationService->verifyByToken($actualToken);
                     }
                     break;
 
@@ -418,20 +439,72 @@ class VerificationController extends Controller
     }
 
     /**
-     * Extract token from verification URL
+     * ✅ NEW: Resolve token - convert short code to full encrypted token if needed
+     *
+     * @param string $token Token or short code
+     * @return string Full encrypted token
+     * @throws \Exception
+     */
+    private function resolveToken($token)
+    {
+        // Check if token is short code format: XXXX-XXXX-XXXX (with dashes)
+        // Short code: 14 chars (4-4-4 + 2 dashes)
+        // Encrypted token: usually 40+ chars, no dashes
+        if (preg_match('/^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/i', $token)) {
+            // This is a short code, resolve to full token
+            Log::info('Resolving short code to full token', [
+                'short_code' => $token,
+                'ip' => request()->ip()
+            ]);
+
+            $mapping = \App\Models\VerificationCodeMapping::findByShortCode($token);
+
+            // Track access
+            $mapping->trackAccess(request()->ip(), request()->userAgent());
+
+            // Return the full encrypted payload
+            return $mapping->encrypted_payload;
+        }
+
+        // Already a full encrypted token, return as-is
+        return $token;
+    }
+
+    /**
+     * ✅ HARDENED: Extract token from verification URL with validation
+     * Supports both short codes (XXXX-XXXX-XXXX) and full encrypted tokens
      */
     private function extractTokenFromUrl($url)
     {
-        // Handle different URL formats
+        // Pattern 1: Short code format (XXXX-XXXX-XXXX)
+        $shortCodePattern = '/\/verify\/([A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4})/i';
+        if (preg_match($shortCodePattern, $url, $matches)) {
+            return $matches[1];
+        }
+
+        // Pattern 2: Full encrypted token patterns
         $patterns = [
-            '/\/verify\/([^\/\?]+)/',
-            '/[\?&]token=([^&]+)/',
-            '/\/signature\/verify\/([^\/\?]+)/'
+            '/\/verify\/([a-zA-Z0-9_\-=+\/]{20,500})/',  // Min 20 chars, max 500, valid base64 chars
+            '/[\?&]token=([a-zA-Z0-9_\-=+\/]{20,500})/',
+            '/\/signature\/verify\/([a-zA-Z0-9_\-=+\/]{20,500})/'
         ];
 
         foreach ($patterns as $pattern) {
             if (preg_match($pattern, $url, $matches)) {
-                return $matches[1];
+                $token = $matches[1];
+
+                // ✅ Additional validation: Token length check
+                // Encrypted tokens typically 32-256 chars
+                if (strlen($token) < 20 || strlen($token) > 500) {
+                    continue;  // Skip invalid length tokens
+                }
+
+                // ✅ Validate token contains only valid base64-like characters
+                if (!preg_match('/^[a-zA-Z0-9_\-=+\/]+$/', $token)) {
+                    continue;  // Skip tokens with invalid characters
+                }
+
+                return $token;
             }
         }
 
@@ -672,6 +745,9 @@ class VerificationController extends Controller
                 'status' => $digitalSignature->status,
                 'is_revoked' => $digitalSignature->status === 'revoked',
 
+                // ✅ NEW: X.509 v3 Extensions Validation
+                'extensions_validation' => $this->parseX509Extensions($certData),
+
                 // NO PRIVATE/SENSITIVE DATA:
                 // ❌ No private key
                 // ❌ No full serial number
@@ -742,164 +818,14 @@ class VerificationController extends Controller
         $key = 'verify_upload:' . request()->ip();
         if (RateLimiter::tooManyAttempts($key, 5)) {
             $seconds = RateLimiter::availableIn($key);
-            return back()->with('error', "Terlalu banyak percobaan upload. Mohon tunggu {$seconds} detik.");
+            return view('digital-signature.verification.rate-limited', compact('seconds'));
+            // return back()->with('error', "Terlalu banyak percobaan upload. Mohon tunggu {$seconds} detik.");
         }
 
         RateLimiter::hit($key, 300); // 5 minutes decay
 
-        // try {
-        //     $uploadedPdf = $request->file('pdf_file');
-
-        //     // STEP 1: Calculate uploaded PDF hash
-        //     $uploadedHash = hash_file('sha256', $uploadedPdf->getRealPath());
-
-        //     Log::info('PDF upload verification attempt', [
-        //         'filename' => $uploadedPdf->getClientOriginalName(),
-        //         'size' => $uploadedPdf->getSize(),
-        //         'hash' => $uploadedHash,
-        //         'ip_address' => request()->ip()
-        //     ]);
-
-        //     // STEP 2: Find signature in database by hash
-        //     $documentSignature = DocumentSignature::where('document_hash', $uploadedHash)
-        //         ->with(['digitalSignature', 'approvalRequest.user'])
-        //         ->first();
-
-        //     if (!$documentSignature) {
-        //         Log::warning('No matching signature found for uploaded PDF', [
-        //             'hash' => $uploadedHash,
-        //             'ip_address' => request()->ip()
-        //         ]);
-
-        //         return view('digital-signature.verification.result', [
-        //             'verificationResult' => [
-        //                 'is_valid' => false,
-        //                 'message' => 'Tidak ditemukan tanda tangan digital yang cocok dengan dokumen ini.',
-        //                 'verified_at' => now(),
-        //                 'verification_id' => uniqid('verify_upload_'),
-        //                 'details' => [
-        //                     'upload_info' => [
-        //                         'filename' => $uploadedPdf->getClientOriginalName(),
-        //                         'size' => $uploadedPdf->getSize(),
-        //                         'hash' => $uploadedHash,
-        //                         'search_method' => 'hash_lookup'
-        //                     ],
-        //                     'checks' => [
-        //                         'hash_lookup' => [
-        //                             'status' => false,
-        //                             'message' => 'Dokumen tidak terdaftar dalam sistem atau belum pernah ditandatangani'
-        //                         ]
-        //                     ]
-        //                 ]
-        //             ]
-        //         ]);
-        //     }
-
-        //     // STEP 3: Byte-by-byte comparison with stored PDF
-        //     $storedPdfPath = \Illuminate\Support\Facades\Storage::disk('public')->path($documentSignature->final_pdf_path);
-
-        //     if (!file_exists($storedPdfPath)) {
-        //         Log::error('Original signed document not found', [
-        //             'document_signature_id' => $documentSignature->id,
-        //             'expected_path' => $documentSignature->final_pdf_path
-        //         ]);
-
-        //         return view('digital-signature.verification.result', [
-        //             'verificationResult' => [
-        //                 'is_valid' => false,
-        //                 'message' => 'Dokumen asli tidak ditemukan di sistem. Silakan hubungi administrator.',
-        //                 'verified_at' => now(),
-        //                 'verification_id' => uniqid('verify_upload_'),
-        //                 'details' => []
-        //             ]
-        //         ]);
-        //     }
-
-        //     $storedContent = file_get_contents($storedPdfPath);
-        //     $uploadedContent = file_get_contents($uploadedPdf->getRealPath());
-
-        //     $contentIdentical = $storedContent === $uploadedContent;
-
-        //     // STEP 4: Comprehensive verification
-        //     $verificationResult = $this->verificationService->verifyById($documentSignature->id, true);
-
-        //     // STEP 5: Add upload-specific checks
-        //     $verificationResult['upload_verification'] = [
-        //         'hash_match' => hash_equals($documentSignature->document_hash, $uploadedHash),
-        //         'content_identical' => $contentIdentical,
-        //         'file_size_match' => filesize($storedPdfPath) === filesize($uploadedPdf->getRealPath()),
-        //         'uploaded_filename' => $uploadedPdf->getClientOriginalName(),
-        //         'uploaded_size' => $uploadedPdf->getSize(),
-        //         'uploaded_at' => now()->toIso8601String(),
-        //         'signature_format' => $documentSignature->signature_format ?? 'unknown'
-        //     ];
-
-        //     // ✅ NEW: Additional check for PKCS#7 PDF signature indicators
-        //     if ($documentSignature->signature_format === 'pkcs7_cms_detached') {
-        //         $pdfSignatureCheck = $this->checkPDFSignatureIndicators($uploadedPdf->getRealPath());
-        //         $verificationResult['upload_verification']['pdf_signature_indicators'] = $pdfSignatureCheck;
-        //     }
-
-        //     // Add upload info to checks
-        //     if (!isset($verificationResult['details']['checks'])) {
-        //         $verificationResult['details']['checks'] = [];
-        //     }
-
-        //     // $verificationResult['details']['checks']['upload_verification'] = [
-        //     //     'status' => $contentIdentical && $verificationResult['upload_verification']['hash_match'],
-        //     //     'message' => $contentIdentical ? 'File yang diupload identik dengan dokumen yang ditandatangani' : 'File yang diupload berbeda dari dokumen asli',
-        //     //     'details' => $verificationResult['upload_verification']
-        //     // ];
-
-        //     // STEP 6: Log verification
-        //     Log::info('Uploaded PDF verification completed', [
-        //         'document_signature_id' => $documentSignature->id,
-        //         'is_valid' => $verificationResult['is_valid'],
-        //         'hash_match' => $verificationResult['upload_verification']['hash_match'],
-        //         'content_identical' => $contentIdentical,
-        //         'ip_address' => request()->ip()
-        //     ]);
-
-        //     // Create verification log
-        //     SignatureVerificationLog::create([
-        //         'document_signature_id' => $documentSignature->id,
-        //         'approval_request_id' => $documentSignature->approval_request_id,
-        //         'user_id' => Auth::id(),
-        //         'verification_method' => 'upload',
-        //         'verification_token_hash' => hash('sha256', $uploadedPdf->getClientOriginalName()),
-        //         'is_valid' => $verificationResult['is_valid'] && $contentIdentical,
-        //         'result_status' => $verificationResult['is_valid'] && $contentIdentical ?
-        //             SignatureVerificationLog::STATUS_SUCCESS : SignatureVerificationLog::STATUS_FAILED,
-        //         'ip_address' => request()->ip(),
-        //         'user_agent' => request()->userAgent(),
-        //         'referrer' => request()->header('Referer'),
-        //         'metadata' => [
-        //             'upload_info' => $verificationResult['upload_verification'],
-        //             'verification_method' => 'pdf_upload'
-        //         ],
-        //         'verified_at' => now()
-        //     ]);
-
-        //     return view('digital-signature.verification.result', compact('verificationResult'));
-
-        // } catch (\Exception $e) {
-        //     Log::error('Uploaded PDF verification failed', [
-        //         'error' => $e->getMessage(),
-        //         'trace' => $e->getTraceAsString(),
-        //         'ip_address' => request()->ip()
-        //     ]);
-
-        //     return back()->with('error', 'Terjadi kesalahan saat memverifikasi dokumen: ' . $e->getMessage());
-        // }
-
-
         try {
             $uploadedPdf = $request->file('pdf_file');
-
-            $pdfSignatureCheck = $this->checkPDFSignatureIndicators(
-                $uploadedPdf,  // ✅ Check FINAL signed PDF
-                // $documentSignature     // ✅ Pass document signature for detached check
-            );
 
             // STEP 1: Calculate uploaded PDF hash
             $uploadedHash = hash_file('sha256', $uploadedPdf->getRealPath());
@@ -968,11 +894,8 @@ class VerificationController extends Controller
                 ]);
             }
 
-            // STEP 4: Byte-by-byte comparison with stored PDF
-            $storedContent = file_get_contents($finalSignedPdfPath);
-            $uploadedContent = file_get_contents($uploadedPdf->getRealPath());
-
-            $contentIdentical = $storedContent === $uploadedContent;
+            // STEP 4: ✅ FIX: Memory-efficient byte-by-byte comparison with streaming
+            $contentIdentical = $this->compareFilesInChunks($finalSignedPdfPath, $uploadedPdf->getRealPath());
 
             // STEP 5: Comprehensive verification
             $verificationResult = $this->verificationService->verifyById($documentSignature->id, true);
@@ -988,19 +911,17 @@ class VerificationController extends Controller
                 'signature_format' => $documentSignature->signature_format ?? 'unknown'
             ];
 
-            // ✅ FIX: Check signature indicators on FINAL signed PDF (not uploaded PDF)
-            Log::info('Checking signature indicators', [
-                'checking_file' => 'final_signed_pdf',
-                'path' => $finalSignedPdfPath,
-                'signature_format' => $documentSignature->signature_format
-            ]);
+            // ✅ Check signature indicators on FINAL signed PDF (ONLY if pkcs7_cms_detached)
+            if ($documentSignature->signature_format === 'pkcs7_cms_detached') {
+                Log::info('Checking PDF signature indicators', [
+                    'checking_file' => 'final_signed_pdf',
+                    'path' => $finalSignedPdfPath,
+                    'signature_format' => $documentSignature->signature_format
+                ]);
 
-            $pdfSignatureCheck = $this->checkPDFSignatureIndicators(
-                $finalSignedPdfPath,  // Check FINAL signed PDF
-                $documentSignature    // Pass document signature for detached check
-            );
-
-            $verificationResult['upload_verification']['pdf_signature_indicators'] = $pdfSignatureCheck;
+                $pdfSignatureCheck = $this->checkPDFSignatureIndicators($finalSignedPdfPath);
+                $verificationResult['upload_verification']['pdf_signature_indicators'] = $pdfSignatureCheck;
+            }
 
             // STEP 7: Log verification
             Log::info('Uploaded PDF verification completed', [
@@ -1008,7 +929,7 @@ class VerificationController extends Controller
                 'is_valid' => $verificationResult['is_valid'],
                 'hash_match' => $verificationResult['upload_verification']['hash_match'],
                 'content_identical' => $contentIdentical,
-                'signature_indicators' => $pdfSignatureCheck,
+                'signature_indicators' => $pdfSignatureCheck ?? null,
                 'ip_address' => request()->ip()
             ]);
 
@@ -1032,6 +953,7 @@ class VerificationController extends Controller
                 'verified_at' => now()
             ]);
 
+            // Normal form submission (fallback)
             return view('digital-signature.verification.result', compact('verificationResult'));
 
         } catch (\Exception $e) {
@@ -1323,5 +1245,126 @@ class VerificationController extends Controller
             default:
                 return 'No digital signature indicators found in PDF structure';
         }
+    }
+
+    /**
+     * ✅ NEW: Parse X.509 v3 Extensions for validation display
+     *
+     * @param array $certData Parsed certificate data from openssl_x509_parse()
+     * @return array Extensions validation results
+     */
+    private function parseX509Extensions($certData)
+    {
+        $extensions = $certData['extensions'] ?? [];
+
+        $validations = [
+            'basicConstraints' => [
+                'name' => 'Basic Constraints',
+                'present' => isset($extensions['basicConstraints']),
+                'value' => $extensions['basicConstraints'] ?? null,
+                'expected' => 'CA:FALSE',
+                'valid' => ($extensions['basicConstraints'] ?? '') === 'CA:FALSE',
+                'critical' => true,
+                'description' => 'Indicates if certificate can be used as CA'
+            ],
+            'keyUsage' => [
+                'name' => 'Key Usage',
+                'present' => isset($extensions['keyUsage']),
+                'value' => $extensions['keyUsage'] ?? null,
+                'expected' => 'Digital Signature, Non Repudiation',
+                'valid' => str_contains($extensions['keyUsage'] ?? '', 'Digital Signature'),
+                'critical' => true,
+                'description' => 'Defines cryptographic operations allowed'
+            ],
+            'extendedKeyUsage' => [
+                'name' => 'Extended Key Usage',
+                'present' => isset($extensions['extendedKeyUsage']),
+                'value' => $extensions['extendedKeyUsage'] ?? null,
+                'expected' => 'Code Signing, E-mail Protection',
+                'valid' => isset($extensions['extendedKeyUsage']),
+                'critical' => false,
+                'description' => 'Additional usage purposes'
+            ],
+            'subjectKeyIdentifier' => [
+                'name' => 'Subject Key Identifier',
+                'present' => isset($extensions['subjectKeyIdentifier']),
+                'value' => isset($extensions['subjectKeyIdentifier']) ? substr($extensions['subjectKeyIdentifier'], 0, 20) . '...' : null,
+                'expected' => 'Present',
+                'valid' => isset($extensions['subjectKeyIdentifier']),
+                'critical' => false,
+                'description' => 'Unique identifier for public key'
+            ],
+            'authorityKeyIdentifier' => [
+                'name' => 'Authority Key Identifier',
+                'present' => isset($extensions['authorityKeyIdentifier']),
+                'value' => isset($extensions['authorityKeyIdentifier']) ? 'Present' : null,
+                'expected' => 'Present',
+                'valid' => isset($extensions['authorityKeyIdentifier']),
+                'critical' => false,
+                'description' => 'Links to issuer certificate'
+            ],
+        ];
+
+        // Summary
+        $allValid = collect($validations)->every(fn($v) => $v['valid']);
+        $validCount = collect($validations)->filter(fn($v) => $v['valid'])->count();
+        $totalCount = count($validations);
+
+        return [
+            'checks' => $validations,
+            'all_valid' => $allValid,
+            'valid_count' => $validCount,
+            'total_count' => $totalCount,
+            'summary' => "{$validCount}/{$totalCount} extensions valid",
+            'has_critical_failures' => collect($validations)->filter(fn($v) => $v['critical'] && !$v['valid'])->isNotEmpty()
+        ];
+    }
+
+    /**
+     * ✅ NEW: Memory-efficient file comparison using chunk-based streaming
+     * Compares two files byte-by-byte without loading entire files into memory
+     *
+     * @param string $file1 Path to first file
+     * @param string $file2 Path to second file
+     * @param int $chunkSize Chunk size in bytes (default 8KB)
+     * @return bool True if files are identical, false otherwise
+     */
+    private function compareFilesInChunks($file1, $file2, $chunkSize = 8192)
+    {
+        // Quick size check first
+        if (filesize($file1) !== filesize($file2)) {
+            return false;
+        }
+
+        $handle1 = fopen($file1, 'rb');
+        $handle2 = fopen($file2, 'rb');
+
+        if (!$handle1 || !$handle2) {
+            if ($handle1) fclose($handle1);
+            if ($handle2) fclose($handle2);
+            return false;
+        }
+
+        $identical = true;
+
+        while (!feof($handle1) && !feof($handle2)) {
+            $chunk1 = fread($handle1, $chunkSize);
+            $chunk2 = fread($handle2, $chunkSize);
+
+            if ($chunk1 !== $chunk2) {
+                $identical = false;
+                break;
+            }
+        }
+
+        // Ensure both files reached EOF
+        if ($identical && (feof($handle1) !== feof($handle2))) {
+            $identical = false;
+        }
+
+        fclose($handle1);
+        fclose($handle2);
+
+        return $identical;
     }
 }

@@ -262,9 +262,11 @@
 
     <!-- Scripts -->
     <script>
-        // Initialize countdown
-        let secondsRemaining = {{ $seconds ?? 300 }};
-        const totalSeconds = secondsRemaining;
+        const initialSeconds = {{ $seconds ?? 300 }};
+        const totalSeconds = 300; // Always 5 minutes for progress bar calculation
+
+        // Calculate absolute expiry timestamp
+        const expiryTimestamp = Date.now() + (initialSeconds * 1000);
 
         const countdownElement = document.getElementById('countdown');
         const progressBar = document.getElementById('progressBar');
@@ -278,16 +280,23 @@
             return `${minutes}:${secs.toString().padStart(2, '0')}`;
         }
 
+        function getRemainingSeconds() {
+            const now = Date.now();
+            const remaining = Math.max(0, Math.ceil((expiryTimestamp - now) / 1000));
+            return remaining;
+        }
+
         // Update countdown
         function updateCountdown() {
+            const secondsRemaining = getRemainingSeconds();
+
             if (secondsRemaining > 0) {
                 countdownElement.textContent = formatTime(secondsRemaining);
 
-                // Update progress bar
-                const progress = ((totalSeconds - secondsRemaining) / totalSeconds) * 100;
+                const elapsedSeconds = totalSeconds - secondsRemaining;
+                const progress = Math.min(100, (elapsedSeconds / totalSeconds) * 100);
                 progressBar.style.width = progress + '%';
 
-                secondsRemaining--;
                 setTimeout(updateCountdown, 1000);
             } else {
                 // Enable retry button
@@ -317,29 +326,18 @@
             }
         });
 
-        // Prevent page refresh during countdown
         window.addEventListener('beforeunload', function(e) {
-            if (secondsRemaining > 0) {
+            const remaining = getRemainingSeconds();
+            if (remaining > 0) {
                 e.preventDefault();
                 e.returnValue = 'Your countdown timer will be reset if you leave this page.';
                 return e.returnValue;
             }
         });
 
-        // Store countdown in sessionStorage to persist across refreshes
-        setInterval(() => {
-            if (secondsRemaining > 0) {
-                sessionStorage.setItem('rate_limit_countdown', secondsRemaining);
-            }
-        }, 1000);
-
-        // Check if there's a stored countdown
-        window.addEventListener('load', function() {
-            const stored = sessionStorage.getItem('rate_limit_countdown');
-            if (stored && parseInt(stored) < secondsRemaining) {
-                secondsRemaining = parseInt(stored);
-            }
-        });
+        // SessionStorage logic (no longer needed with absolute timestamp)
+        // The countdown is now based on absolute time, so it's always accurate
+        // even if user refreshes the page or hits the endpoint again
     </script>
 </body>
 </html>

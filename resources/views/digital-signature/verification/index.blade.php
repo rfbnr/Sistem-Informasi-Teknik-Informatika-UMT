@@ -14,7 +14,7 @@
     <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <!-- Custom CSS -->
-    <link href="{{ asset('assets/css/signature-interface.css') }}" rel="stylesheet">
+    {{-- <link href="{{ asset('assets/css/signature-interface.css') }}" rel="stylesheet"> --}}
 
     <style>
         body {
@@ -232,6 +232,16 @@
                                                    placeholder="https://example.com/signature/verify/..." disabled data-method="url">
                                         </div>
                                         <small class="text-muted">Paste URL verifikasi yang Anda terima</small>
+
+                                        {{-- ✅ NEW: URL Preview --}}
+                                        <div id="urlPreview" class="mt-2" style="display: none;">
+                                            <div class="alert alert-info py-2 mb-0">
+                                                <small>
+                                                    <strong><i class="fas fa-check-circle"></i> Detected:</strong> <span id="previewType"></span><br>
+                                                    <strong><i class="fas fa-key"></i> Token:</strong> <code id="previewToken" class="bg-white px-1"></code>
+                                                </small>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -403,7 +413,7 @@
         }
 
         // QR Code Scanner
-        $('#startQRScanner').click(function() {
+        $('#startQRScanner').click(async function() {
             // Check if Html5Qrcode is available
             if (typeof Html5Qrcode === 'undefined') {
                 alert('Library QR Scanner belum siap. Mohon refresh halaman dan coba lagi.');
@@ -411,10 +421,17 @@
                 return;
             }
 
-            $('#qrReader').show();
-            $(this).prop('disabled', true).text('Scanning...');
-
+            // ✅ NEW: Request camera permission first
             try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+
+                // Permission granted, release the stream immediately
+                stream.getTracks().forEach(track => track.stop());
+
+                // Now start QR scanner
+                $('#qrReader').show();
+                $(this).prop('disabled', true).text('Scanning...');
+
                 html5QrCode = new Html5Qrcode("qrReader");
 
                 html5QrCode.start(
@@ -452,33 +469,40 @@
                         // Don't log every frame error to avoid console spam
                     }
                 ).catch(err => {
-                    console.error('Camera access error:', err);
-
-                    // let errorMsg = 'Tidak dapat mengakses kamera. ';
-                    let errorMsg = err;
-
-                    if (err.name === 'NotAllowedError') {
-                        errorMsg += 'Mohon berikan izin akses kamera pada browser Anda.';
-                    } else if (err.name === 'NotFoundError') {
-                        errorMsg += 'Kamera tidak ditemukan pada perangkat Anda.';
-                    } else if (err.name === 'NotReadableError') {
-                        errorMsg += 'Kamera sedang digunakan oleh aplikasi lain.';
-                    } else if (err.name === 'OverconstrainedError') {
-                        errorMsg += 'Kamera tidak mendukung mode yang diminta.';
-                    } else if (err.name === 'SecurityError') {
-                        errorMsg += 'Akses kamera diblokir karena alasan keamanan. Pastikan menggunakan HTTPS.';
-                    }
-                    //  else {
-                    //     errorMsg += err.message || 'Error tidak diketahui.';
-                    // }
-
-                    alert(errorMsg);
-                    $('#startQRScanner').prop('disabled', false).html('<i class="fas fa-camera"></i> Mulai Scan');
+                    console.error('QR Scanner start error:', err);
                     $('#qrReader').hide();
+                    $('#startQRScanner').prop('disabled', false).html('<i class="fas fa-camera"></i> Mulai Scan');
+
+                    let errorMsg = 'Tidak dapat memulai QR scanner. ';
+                    errorMsg += err.message || err;
+                    alert(errorMsg);
                 });
+
             } catch (err) {
-                console.error('Error initializing QR scanner:', err);
-                alert('Gagal menginisialisasi QR scanner. Mohon refresh halaman dan coba lagi.');
+                // ✅ Camera permission denied or error
+                console.error('Camera permission error:', err);
+
+                let errorMsg = 'Tidak dapat mengakses kamera. ';
+
+                if (err.name === 'NotAllowedError') {
+                    errorMsg += 'Mohon berikan izin akses kamera pada browser Anda.\n\n';
+                    errorMsg += 'Cara mengaktifkan:\n';
+                    errorMsg += '• Chrome/Edge: Klik ikon kunci di address bar → Site settings → Camera → Allow\n';
+                    errorMsg += '• Firefox: Klik ikon kamera di address bar → Allow\n';
+                    errorMsg += '• Safari: Settings → Privacy → Camera → Allow for this website';
+                } else if (err.name === 'NotFoundError') {
+                    errorMsg += 'Kamera tidak ditemukan pada perangkat Anda.';
+                } else if (err.name === 'NotReadableError') {
+                    errorMsg += 'Kamera sedang digunakan oleh aplikasi lain. Mohon tutup aplikasi lain dan coba lagi.';
+                } else if (err.name === 'OverconstrainedError') {
+                    errorMsg += 'Kamera tidak mendukung mode yang diminta.';
+                } else if (err.name === 'SecurityError') {
+                    errorMsg += 'Akses kamera diblokir karena alasan keamanan. Pastikan menggunakan HTTPS.';
+                } else {
+                    errorMsg += err.message || 'Error tidak diketahui.';
+                }
+
+                alert(errorMsg);
                 $('#startQRScanner').prop('disabled', false).html('<i class="fas fa-camera"></i> Mulai Scan');
                 $('#qrReader').hide();
             }
@@ -490,6 +514,69 @@
             if (!$(this).prop('disabled')) {
                 const value = $(this).val().trim();
                 $('#verifyButton').prop('disabled', value.length === 0);
+            }
+        });
+
+        // ✅ NEW: URL Preview - Show token extraction (supports short codes)
+        $('#verificationUrl').on('input', function() {
+            const input = $(this).val().trim();
+
+            if (!input) {
+                $('#urlPreview').hide();
+                return;
+            }
+
+            // Check if URL
+            if (input.startsWith('http://') || input.startsWith('https://')) {
+                // Pattern 1: Short code format (XXXX-XXXX-XXXX)
+                const shortCodePattern = /\/verify\/([A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4})/i;
+                const shortCodeMatch = input.match(shortCodePattern);
+
+                if (shortCodeMatch) {
+                    const shortCode = shortCodeMatch[1];
+                    $('#previewType').html('<span class="badge bg-success">Short Code Detected</span>');
+                    $('#previewToken').text(shortCode);
+                    $('#urlPreview').show();
+                    return;
+                }
+
+                // Pattern 2: Full encrypted token
+                const patterns = [
+                    /\/verify\/([a-zA-Z0-9_\-=+\/]{20,500})/,
+                    /[\?&]token=([a-zA-Z0-9_\-=+\/]{20,500})/,
+                    /\/signature\/verify\/([a-zA-Z0-9_\-=+\/]{20,500})/
+                ];
+
+                for (let pattern of patterns) {
+                    const match = input.match(pattern);
+                    if (match) {
+                        const token = match[1];
+                        const displayToken = token.length > 40 ? token.substring(0, 40) + '...' : token;
+
+                        $('#previewType').html('<span class="badge bg-success">URL Verifikasi Valid</span>');
+                        $('#previewToken').text(displayToken);
+                        $('#urlPreview').show();
+                        return;
+                    }
+                }
+
+                // URL detected but no token found
+                $('#previewType').html('<span class="badge bg-warning">URL terdeteksi, tetapi token tidak ditemukan</span>');
+                $('#previewToken').text('Tidak ada token');
+                $('#urlPreview').show();
+            } else {
+                // Check if direct short code (XXXX-XXXX-XXXX)
+                if (/^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/i.test(input)) {
+                    $('#previewType').html('<span class="badge bg-info">Short Code</span>');
+                    $('#previewToken').text(input);
+                    $('#urlPreview').show();
+                } else {
+                    // Direct token
+                    const displayToken = input.length > 40 ? input.substring(0, 40) + '...' : input;
+                    $('#previewType').html('<span class="badge bg-info">Direct Token</span>');
+                    $('#previewToken').text(displayToken);
+                    $('#urlPreview').show();
+                }
             }
         });
 

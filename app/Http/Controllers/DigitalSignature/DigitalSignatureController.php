@@ -663,7 +663,29 @@ class DigitalSignatureController extends Controller
             // Days until expiry
             $daysUntilExpiry = (int) abs(now()->diffInDays($key->valid_until, false));
 
-            return view('digital-signature.admin.keys.show', compact('key', 'usageStats', 'daysUntilExpiry'));
+            // ✅ NEW: Parse certificate info with X.509 v3 extensions validation
+            $certificateInfo = null;
+            if ($key->certificate) {
+                $certificateInfo = $this->parseCertificateInfo($key->certificate);
+            }
+
+            // ✅ NEW: Get signature format and signing method info
+            $signatureFormat = null;
+            $signingMethod = null;
+
+            if ($key->documentSignature) {
+                $signatureFormat = $key->documentSignature->signature_format;
+                $signingMethod = $key->documentSignature->signature_metadata['signing_method'] ?? null;
+            }
+
+            return view('digital-signature.admin.keys.show', compact(
+                'key',
+                'usageStats',
+                'daysUntilExpiry',
+                'certificateInfo',
+                'signatureFormat',
+                'signingMethod'
+            ));
 
         } catch (\Exception $e) {
             Log::error('Key show error: ' . $e->getMessage());
@@ -1007,6 +1029,12 @@ class DigitalSignatureController extends Controller
             $sha256Formatted = strtoupper(implode(':', str_split($sha256Fingerprint, 2)));
             $sha1Formatted = strtoupper(implode(':', str_split($sha1Fingerprint, 2)));
 
+            // ✅ NEW: Validate X.509 v3 extensions
+            $extensionsValidation = null;
+            if (isset($certData['extensions']) && !empty($certData['extensions'])) {
+                $extensionsValidation = $this->verificationService->validateCertificateExtensions($certData['extensions']);
+            }
+
             // ✅ Build certificate info from REAL parsed data
             return [
                 'is_real_certificate' => true,
@@ -1048,7 +1076,8 @@ class DigitalSignatureController extends Controller
                     'sha1_raw' => strtoupper($sha1Fingerprint),
                 ],
                 'purposes' => $certData['purposes'] ?? [],
-                'extensions' => $certData['extensions'] ?? [],
+                'extensions' => $extensionsValidation, // ✅ FIXED: Send validated extensions instead of raw
+                'extensions_validation' => $extensionsValidation, // ✅ NEW: Alias for consistency
             ];
 
         } catch (\Exception $e) {

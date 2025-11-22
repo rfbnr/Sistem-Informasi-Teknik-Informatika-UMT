@@ -352,9 +352,43 @@
                         </div>
                         @endif
 
+                        {{-- ✅ NEW: Signature Format & Implementation Method --}}
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                <strong>Signing Method:</strong><br>
+                                <strong>Signature Format:</strong><br>
+                                @if($documentSignature->signature_format === 'pkcs7_cms_detached')
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-certificate me-1"></i> PKCS#7 CMS Detached
+                                    </span>
+                                    <p class="small text-muted mb-0 mt-1">
+                                        Industry-standard cryptographic message syntax
+                                    </p>
+                                @elseif($documentSignature->signature_format === 'legacy_hash_only')
+                                    <span class="badge bg-warning text-dark">
+                                        <i class="fas fa-hashtag me-1"></i> Legacy Hash-Only
+                                    </span>
+                                @else
+                                    <span class="text-muted">Not specified</span>
+                                @endif
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Signing Implementation:</strong><br>
+                                @if(isset($documentSignature->signature_metadata['signing_method']) && $documentSignature->signature_metadata['signing_method'] === 'one_pass_tcpdf')
+                                    <span class="badge bg-primary">
+                                        <i class="fas fa-bolt me-1"></i> ONE-PASS TCPDF
+                                    </span>
+                                    <p class="small text-muted mb-0 mt-1">
+                                        Combined QR embedding and PDF signing
+                                    </p>
+                                @else
+                                    <span class="text-muted">Standard</span>
+                                @endif
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <strong>Placement Method:</strong><br>
                                 @if(isset($documentSignature->signature_metadata['placement_method']))
                                     @if($documentSignature->signature_metadata['placement_method'] === 'drag_drop_qr')
                                         <span class="badge bg-success">
@@ -412,6 +446,201 @@
                         @endif
                     </div>
                 </div>
+
+                {{-- ✅ NEW: X.509 v3 Certificate Extensions Details --}}
+                @if($verificationResult && isset($verificationResult['details']['checks']['certificate']['details']['extensions_validation']))
+                    @php
+                        $extensionsValidation = $verificationResult['details']['checks']['certificate']['details']['extensions_validation'];
+                    @endphp
+                    <div class="card mb-4">
+                        <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                            <h5 class="mb-0">
+                                <i class="fas fa-shield-alt me-2"></i>
+                                X.509 v3 Certificate Extensions
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {{-- Summary Badge --}}
+                            <div class="alert alert-{{ $extensionsValidation['all_valid'] ? 'success' : ($extensionsValidation['critical_valid'] ? 'warning' : 'danger') }} mb-3">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-{{ $extensionsValidation['all_valid'] ? 'check-circle' : ($extensionsValidation['critical_valid'] ? 'exclamation-triangle' : 'times-circle') }} fa-2x me-3"></i>
+                                    <div>
+                                        <strong>{{ $extensionsValidation['summary'] }}</strong>
+                                        @if(!empty($extensionsValidation['warnings']))
+                                            <div class="small mt-1">
+                                                @foreach($extensionsValidation['warnings'] as $warning)
+                                                    <div><i class="fas fa-info-circle me-1"></i> {{ $warning }}</div>
+                                                @endforeach
+                                            </div>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+
+                            {{-- Extensions Details --}}
+                            @foreach($extensionsValidation['checks'] as $extName => $extCheck)
+                                <div class="mb-3 pb-3 border-bottom">
+                                    <div class="d-flex align-items-start">
+                                        <div class="me-3 mt-1">
+                                            @if($extCheck['valid'])
+                                                <i class="fas fa-check-circle fa-lg text-success"></i>
+                                            @else
+                                                <i class="fas fa-times-circle fa-lg text-danger"></i>
+                                            @endif
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex justify-content-between align-items-start mb-1">
+                                                <strong>{{ $extCheck['name'] }}</strong>
+                                                @if($extCheck['critical'])
+                                                    <span class="badge bg-danger">CRITICAL</span>
+                                                @else
+                                                    <span class="badge bg-secondary">Non-Critical</span>
+                                                @endif
+                                            </div>
+                                            <div class="small text-muted mb-2">{{ $extCheck['description'] }}</div>
+
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <small class="text-muted">Expected:</small><br>
+                                                    <code class="small">{{ $extCheck['expected'] }}</code>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <small class="text-muted">Current Value:</small><br>
+                                                    @if($extCheck['present'])
+                                                        <code class="small">{{ $extCheck['value'] }}</code>
+                                                    @else
+                                                        <span class="text-danger small">Not Present</span>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+
+                            <div class="small text-muted mt-3">
+                                <i class="fas fa-info-circle me-1"></i>
+                                <strong>Note:</strong> X.509 v3 extensions provide additional constraints and capabilities for the certificate.
+                                Critical extensions must be valid for the certificate to be trusted.
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
+                {{-- ✅ NEW: CMS PKCS#7 Signature Details --}}
+                @if($verificationResult && isset($verificationResult['details']['checks']['cms_signature']))
+                    @php
+                        $cmsCheck = $verificationResult['details']['checks']['cms_signature'];
+                        $cmsDetails = $cmsCheck['details'] ?? [];
+                    @endphp
+                    <div class="card mb-4">
+                        <div class="card-header" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white;">
+                            <h5 class="mb-0">
+                                <i class="fas fa-lock me-2"></i>
+                                CMS PKCS#7 Signature Details
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {{-- Verification Status --}}
+                            <div class="alert alert-{{ $cmsCheck['status'] ? 'success' : 'danger' }} mb-3">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-{{ $cmsCheck['status'] ? 'check-circle' : 'times-circle' }} fa-2x me-3"></i>
+                                    <div>
+                                        <strong>{{ $cmsCheck['message'] }}</strong>
+                                    </div>
+                                </div>
+                            </div>
+
+                            @if(!empty($cmsDetails))
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <strong>Signature Format:</strong><br>
+                                        <code class="badge bg-primary">
+                                            {{ $cmsDetails['signature_format_used'] ?? 'N/A' }}
+                                        </code>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong>Verification Status:</strong><br>
+                                        @if($cmsDetails['is_valid'] ?? false)
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check-circle me-1"></i> Valid
+                                            </span>
+                                        @else
+                                            <span class="badge bg-danger">
+                                                <i class="fas fa-times-circle me-1"></i> Invalid
+                                            </span>
+                                        @endif
+                                    </div>
+                                </div>
+
+                                @if(isset($cmsDetails['algorithm_used']))
+                                    <div class="row mb-3">
+                                        <div class="col-md-12">
+                                            <strong>Algorithm Used:</strong><br>
+                                            <code>{{ $cmsDetails['algorithm_used'] }}</code>
+                                        </div>
+                                    </div>
+                                @endif
+
+                                @if(isset($cmsDetails['signature_time']))
+                                    <div class="row mb-3">
+                                        <div class="col-md-12">
+                                            <strong>Signature Time:</strong><br>
+                                            {{ $cmsDetails['signature_time'] }}
+                                        </div>
+                                    </div>
+                                @endif
+
+                                {{-- Adobe PDF Signature Indicators (if available) --}}
+                                @if(isset($cmsDetails['pdf_indicators']))
+                                    <div class="mt-3 pt-3 border-top">
+                                        <strong class="d-block mb-2">Adobe PDF Signature Indicators:</strong>
+                                        <ul class="mb-0">
+                                            <li>
+                                                <strong>AcroForm Dictionary:</strong>
+                                                @if($cmsDetails['pdf_indicators']['has_acroform'] ?? false)
+                                                    <span class="text-success"><i class="fas fa-check"></i> Present</span>
+                                                @else
+                                                    <span class="text-danger"><i class="fas fa-times"></i> Missing</span>
+                                                @endif
+                                            </li>
+                                            <li>
+                                                <strong>Signature Field:</strong>
+                                                @if($cmsDetails['pdf_indicators']['has_sig_field'] ?? false)
+                                                    <span class="text-success"><i class="fas fa-check"></i> Present</span>
+                                                @else
+                                                    <span class="text-danger"><i class="fas fa-times"></i> Missing</span>
+                                                @endif
+                                            </li>
+                                            <li>
+                                                <strong>ByteRange:</strong>
+                                                @if($cmsDetails['pdf_indicators']['has_byterange'] ?? false)
+                                                    <span class="text-success"><i class="fas fa-check"></i> Present</span>
+                                                @else
+                                                    <span class="text-danger"><i class="fas fa-times"></i> Missing</span>
+                                                @endif
+                                            </li>
+                                        </ul>
+
+                                        @if($cmsDetails['pdf_indicators']['adobe_compatible'] ?? false)
+                                            <div class="mt-2">
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-file-pdf me-1"></i> Adobe Reader Compatible
+                                                </span>
+                                            </div>
+                                        @endif
+                                    </div>
+                                @endif
+                            @endif
+
+                            <div class="small text-muted mt-3">
+                                <i class="fas fa-info-circle me-1"></i>
+                                <strong>Note:</strong> PKCS#7 CMS (Cryptographic Message Syntax) is an industry-standard format
+                                for digitally signing and encrypting data, widely used in PDF document signatures.
+                            </div>
+                        </div>
+                    </div>
+                @endif
             @endif
 
             <!-- Verification Checks -->
@@ -425,17 +654,109 @@
                 </div>
                 <div class="card-body">
                     @foreach($verificationResult['details']['checks'] as $checkName => $check)
-                        <div class="d-flex align-items-center mb-3 pb-3 border-bottom">
-                            <div class="me-3">
-                                @if($check['status'])
-                                    <i class="fas fa-check-circle fa-2x text-success"></i>
-                                @else
-                                    <i class="fas fa-times-circle fa-2x text-danger"></i>
-                                @endif
-                            </div>
-                            <div class="flex-grow-1">
-                                <strong>{{ ucwords(str_replace('_', ' ', $checkName)) }}</strong>
-                                <div class="small text-muted">{{ $check['message'] }}</div>
+                        <div class="mb-3 pb-3 border-bottom">
+                            <div class="d-flex align-items-start">
+                                <div class="me-3 mt-1">
+                                    @if($check['status'])
+                                        <i class="fas fa-check-circle fa-2x text-success"></i>
+                                    @else
+                                        <i class="fas fa-times-circle fa-2x text-danger"></i>
+                                    @endif
+                                </div>
+                                <div class="flex-grow-1">
+                                    <strong>{{ ucwords(str_replace('_', ' ', $checkName)) }}</strong>
+                                    <div class="small text-muted">{{ $check['message'] }}</div>
+
+                                    {{-- ✅ ENHANCED: Show Document Integrity Details --}}
+                                    @if($checkName === 'document_integrity' && isset($check['details']))
+                                        <div class="mt-2 p-2 bg-light rounded">
+                                            <div class="row small">
+                                                <div class="col-md-6 mb-2">
+                                                    <strong>Verified File:</strong><br>
+                                                    @if($check['details']['is_signed_pdf'] ?? false)
+                                                        <span class="badge bg-success">Signed PDF</span>
+                                                    @else
+                                                        <span class="badge bg-info">Original PDF</span>
+                                                    @endif
+                                                </div>
+                                                <div class="col-md-6 mb-2">
+                                                    <strong>File Size:</strong><br>
+                                                    {{ number_format($check['details']['file_size'] ?? 0) }} bytes
+                                                </div>
+                                                <div class="col-md-6 mb-2">
+                                                    <strong>Hash Algorithm:</strong><br>
+                                                    <code>SHA-256</code>
+                                                </div>
+                                                <div class="col-md-6 mb-2">
+                                                    <strong>Hash Match:</strong><br>
+                                                    @if($check['status'])
+                                                        <span class="text-success">
+                                                            <i class="fas fa-check"></i> Identical
+                                                        </span>
+                                                    @else
+                                                        <span class="text-danger">
+                                                            <i class="fas fa-times"></i> Modified
+                                                        </span>
+                                                    @endif
+                                                </div>
+                                                @if(isset($check['details']['stored_hash']))
+                                                    <div class="col-12 mt-2">
+                                                        <strong>Stored Hash:</strong><br>
+                                                        <code class="small">{{ substr($check['details']['stored_hash'], 0, 64) }}...</code>
+                                                    </div>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    @endif
+
+                                    {{-- ✅ ENHANCED: Show Digital Signature Key Details --}}
+                                    @if($checkName === 'digital_signature' && isset($check['details']))
+                                        <div class="mt-2 p-2 bg-light rounded">
+                                            <div class="row small">
+                                                <div class="col-md-6 mb-2">
+                                                    <strong>Signature ID:</strong><br>
+                                                    <code class="small">{{ $check['details']['signature_id'] ?? 'N/A' }}</code>
+                                                </div>
+                                                <div class="col-md-6 mb-2">
+                                                    <strong>Algorithm:</strong><br>
+                                                    <span class="badge bg-info">{{ $check['details']['algorithm'] ?? 'N/A' }}</span>
+                                                </div>
+                                                <div class="col-md-6 mb-2">
+                                                    <strong>Key Length:</strong><br>
+                                                    <span class="badge bg-success">{{ $check['details']['key_length'] ?? 'N/A' }} bits</span>
+                                                </div>
+                                                <div class="col-md-6 mb-2">
+                                                    <strong>Days Until Expiry:</strong><br>
+                                                    {{ abs($check['details']['days_until_expiry'] ?? 0) }} days
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endif
+
+                                    {{-- ✅ ENHANCED: Show Approval Request Details --}}
+                                    @if($checkName === 'approval_request' && isset($check['details']))
+                                        <div class="mt-2 p-2 bg-light rounded">
+                                            <div class="row small">
+                                                <div class="col-md-6 mb-2">
+                                                    <strong>Document Type:</strong><br>
+                                                    <span class="badge bg-secondary">{{ $check['details']['document_type'] ?? 'N/A' }}</span>
+                                                </div>
+                                                <div class="col-md-6 mb-2">
+                                                    <strong>Submitted By:</strong><br>
+                                                    {{ $check['details']['submitted_by'] ?? 'N/A' }}
+                                                </div>
+                                                <div class="col-md-6 mb-2">
+                                                    <strong>Status:</strong><br>
+                                                    <span class="badge bg-success">{{ ucfirst($check['details']['status'] ?? 'N/A') }}</span>
+                                                </div>
+                                                <div class="col-md-6 mb-2">
+                                                    <strong>Document Number:</strong><br>
+                                                    <code class="small">{{ $check['details']['document_number'] ?? 'N/A' }}</code>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endif
+                                </div>
                             </div>
                         </div>
                     @endforeach

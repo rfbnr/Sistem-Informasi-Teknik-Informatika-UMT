@@ -389,6 +389,74 @@
                                     </div>
                                 @endif
 
+                                {{-- ✅ NEW: Signing Method Information --}}
+                                @if(isset($verificationResult['details']['document_signature']))
+                                    @php
+                                        $sigMeta = $verificationResult['details']['document_signature']->signature_metadata ?? [];
+                                        $signingMethod = $sigMeta['signing_method'] ?? 'unknown';
+                                        $adobeCompatible = $sigMeta['adobe_reader_compatible'] ?? false;
+                                        $sigFormat = $verificationResult['details']['document_signature']->signature_format ?? 'unknown';
+                                    @endphp
+
+                                    @if($signingMethod !== 'unknown' || $sigFormat !== 'unknown')
+                                        <div class="info-card bg-light">
+                                            <h5 class="mb-3">
+                                                <i class="fas fa-file-signature text-primary"></i> Metode Penandatanganan
+                                            </h5>
+
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3">
+                                                    <strong class="d-block mb-2">Signing Method:</strong>
+                                                    @if($signingMethod === 'one_pass_tcpdf' && $sigFormat === 'pkcs7_cms_detached')
+                                                        <span class="badge bg-success me-2">
+                                                            <i class="fas fa-check-circle"></i> ONE-PASS TCPDF
+                                                        </span>
+                                                        <p class="small text-muted mt-2 mb-0">
+                                                            Dokumen ditandatangani menggunakan metode ONE-PASS dengan embedded PKCS#7 signature dalam struktur PDF.
+                                                        </p>
+                                                    @elseif($signingMethod === 'legacy' || $sigFormat === 'legacy_hash_only')
+                                                        <span class="badge bg-warning">
+                                                            <i class="fas fa-exclamation-triangle"></i> Legacy Method
+                                                        </span>
+                                                        <p class="small text-muted mt-2 mb-0">
+                                                            Metode penandatanganan lama (hash-only).
+                                                        </p>
+                                                    @else
+                                                        <span class="badge bg-secondary">{{ ucfirst(str_replace('_', ' ', $signingMethod)) }}</span>
+                                                    @endif
+                                                </div>
+
+                                                <div class="col-md-6 mb-3">
+                                                    <strong class="d-block mb-2">Signature Format:</strong>
+                                                    @if($sigFormat === 'pkcs7_cms_detached')
+                                                        <span class="badge bg-info me-2">
+                                                            <i class="fas fa-certificate"></i> PKCS#7/CMS Detached
+                                                        </span>
+                                                        <p class="small text-muted mt-2 mb-0">
+                                                            Format ISO 32000-1 compliant digital signature.
+                                                        </p>
+                                                    @elseif($sigFormat === 'legacy_hash_only')
+                                                        <span class="badge bg-warning">Legacy Hash-Only</span>
+                                                    @else
+                                                        <span class="badge bg-secondary">{{ $sigFormat }}</span>
+                                                    @endif
+                                                </div>
+                                            </div>
+
+                                            @if($adobeCompatible && $sigFormat === 'pkcs7_cms_detached')
+                                                <div class="alert alert-info mb-0 mt-2">
+                                                    <i class="fas fa-info-circle"></i>
+                                                    <strong>Adobe Reader Compatible</strong><br>
+                                                    <span class="small">
+                                                        Dokumen ini dapat diverifikasi langsung di Adobe Acrobat Reader DC.
+                                                        Signature akan terdeteksi secara otomatis oleh Adobe Reader.
+                                                    </span>
+                                                </div>
+                                            @endif
+                                        </div>
+                                    @endif
+                                @endif
+
                                 <!-- Verification Checks -->
                                 @if(isset($verificationResult['details']['checks']))
                                     <div class="info-card">

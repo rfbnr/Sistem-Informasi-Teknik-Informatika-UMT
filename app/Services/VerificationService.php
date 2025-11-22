@@ -536,7 +536,7 @@ class VerificationService
      * @param array $extensions Certificate extensions from openssl_x509_parse
      * @return array Validation result
      */
-    private function validateCertificateExtensions($extensions)
+    public function validateCertificateExtensions($extensions)
     {
         $checks = [];
 

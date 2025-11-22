@@ -396,11 +396,124 @@
                             </div>
                         </div>
                     </div>
+
+                    {{-- ✅ NEW: Signature Format Information --}}
+                    @if($signatureFormat)
+                        <div class="info-row">
+                            <div class="row">
+                                <div class="col-md-4"><strong>Signature Format:</strong></div>
+                                <div class="col-md-8">
+                                    @if($signatureFormat === 'pkcs7_cms_detached')
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-certificate me-1"></i> PKCS#7 CMS Detached
+                                        </span>
+                                        <p class="small text-muted mb-0 mt-1">Industry-standard cryptographic message syntax</p>
+                                    @elseif($signatureFormat === 'legacy_hash_only')
+                                        <span class="badge bg-warning text-dark">
+                                            <i class="fas fa-hashtag me-1"></i> Legacy Hash-Only
+                                        </span>
+                                    @else
+                                        <span class="text-muted">{{ $signatureFormat }}</span>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    @endif
+
+                    {{-- ✅ NEW: Signing Implementation Method --}}
+                    @if($signingMethod)
+                        <div class="info-row">
+                            <div class="row">
+                                <div class="col-md-4"><strong>Implementation:</strong></div>
+                                <div class="col-md-8">
+                                    @if($signingMethod === 'one_pass_tcpdf')
+                                        <span class="badge bg-primary">
+                                            <i class="fas fa-bolt me-1"></i> ONE-PASS TCPDF
+                                        </span>
+                                        <p class="small text-muted mb-0 mt-1">Combined QR embedding and PDF signing</p>
+                                    @else
+                                        <span class="badge bg-secondary">
+                                            {{ strtoupper(str_replace('_', ' ', $signingMethod)) }}
+                                        </span>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    @endif
+
                     <div class="mt-3">
                         <a href="{{ route('admin.signature.documents.show', $key->documentSignature->id) }}" class="btn btn-primary">
                             <i class="fas fa-eye"></i> View Document Details
                         </a>
                     </div>
+                </div>
+            </div>
+            @endif
+
+            {{-- ✅ NEW: CMS Signature Status Card --}}
+            @if($key->documentSignature && $key->documentSignature->signed_at && $key->documentSignature->cms_signature)
+            <div class="card shadow-sm mt-4">
+                <div class="card-header" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white;">
+                    <h5 class="mb-0">
+                        <i class="fas fa-lock me-2"></i>
+                        CMS PKCS#7 Signature Status
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if($signatureFormat === 'pkcs7_cms_detached')
+                        <div class="alert alert-success mb-3">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-check-circle fa-2x me-3"></i>
+                                <div>
+                                    <strong>PKCS#7 CMS Signature Active</strong>
+                                    <div class="small mt-1">Industry-standard cryptographic message syntax</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="info-row">
+                            <div class="row">
+                                <div class="col-md-5"><strong>Signature Format:</strong></div>
+                                <div class="col-md-7">
+                                    <code class="badge bg-primary">pkcs7_cms_detached</code>
+                                </div>
+                            </div>
+                        </div>
+
+                        @if($signingMethod === 'one_pass_tcpdf')
+                            <div class="info-row">
+                                <div class="row">
+                                    <div class="col-md-5"><strong>Implementation:</strong></div>
+                                    <div class="col-md-7">
+                                        <span class="badge bg-success">ONE-PASS TCPDF</span>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
+
+                        <div class="info-row">
+                            <div class="row">
+                                <div class="col-md-5"><strong>Signature Created:</strong></div>
+                                <div class="col-md-7">
+                                    <small>{{ $key->documentSignature->signed_at->format('d M Y H:i:s') }}</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-3 p-2 bg-light rounded">
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle me-1"></i>
+                                This document uses PKCS#7 CMS (Cryptographic Message Syntax) for digital signatures,
+                                ensuring compatibility with Adobe Reader and other PDF viewers.
+                            </small>
+                        </div>
+                    @else
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Legacy Signature Format</strong>
+                            <div class="small mt-1">This document uses legacy hash-only signature format</div>
+                        </div>
+                    @endif
                 </div>
             </div>
             @endif
@@ -488,6 +601,28 @@
                 </div>
                 <div class="card-body">
                     <p class="small text-muted mb-2">Digital certificate tersedia untuk key ini</p>
+
+                    {{-- ✅ NEW: Certificate Extensions Summary Badge --}}
+                    @if($certificateInfo && isset($certificateInfo['extensions_validation']))
+                        <div class="mb-3">
+                            <small class="text-muted d-block mb-1">Extensions Status:</small>
+                            @if($certificateInfo['extensions_validation']['all_valid'])
+                                <span class="badge bg-success w-100 py-2">
+                                    <i class="fas fa-check-circle"></i> All Extensions Valid
+                                </span>
+                            @elseif($certificateInfo['extensions_validation']['critical_valid'])
+                                <span class="badge bg-warning w-100 py-2">
+                                    <i class="fas fa-exclamation-triangle"></i> Critical Valid
+                                </span>
+                                <small class="text-muted d-block mt-1">Some non-critical extensions missing</small>
+                            @else
+                                <span class="badge bg-danger w-100 py-2">
+                                    <i class="fas fa-times-circle"></i> Extensions Invalid
+                                </span>
+                            @endif
+                        </div>
+                    @endif
+
                     <button class="btn btn-primary w-100" onclick="viewCertificate()">
                         <i class="fas fa-eye"></i> View Certificate Details
                     </button>
@@ -809,6 +944,72 @@ function viewCertificate() {
                             </div>
                         </div>
                     </div>
+
+                    <!-- ✅ NEW: X.509 v3 Extensions -->
+                    ${cert.extensions ? `
+                    <div class="card mb-3">
+                        <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                            <i class="fas fa-shield-alt me-2"></i>
+                            <strong>X.509 v3 Certificate Extensions</strong>
+                        </div>
+                        <div class="card-body">
+                            ${cert.extensions.summary ? `
+                            <div class="alert alert-${cert.extensions.all_valid ? 'success' : (cert.extensions.critical_valid ? 'warning' : 'danger')} mb-3">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-${cert.extensions.all_valid ? 'check-circle' : (cert.extensions.critical_valid ? 'exclamation-triangle' : 'times-circle')} fa-2x me-3"></i>
+                                    <div>
+                                        <strong>${cert.extensions.summary}</strong>
+                                        ${cert.extensions.warnings && cert.extensions.warnings.length > 0 ? `
+                                        <div class="small mt-1">
+                                            ${cert.extensions.warnings.map(w => `<div><i class="fas fa-info-circle me-1"></i> ${w}</div>`).join('')}
+                                        </div>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                            ` : ''}
+
+                            ${cert.extensions.checks ? Object.entries(cert.extensions.checks).map(([extName, extCheck]) => `
+                            <div class="mb-3 pb-3 border-bottom">
+                                <div class="d-flex align-items-start">
+                                    <div class="me-3 mt-1">
+                                        ${extCheck.valid ?
+                                            '<i class="fas fa-check-circle fa-lg text-success"></i>' :
+                                            '<i class="fas fa-times-circle fa-lg text-danger"></i>'}
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex justify-content-between align-items-start mb-1">
+                                            <strong>${extCheck.name}</strong>
+                                            ${extCheck.critical ?
+                                                '<span class="badge bg-danger">CRITICAL</span>' :
+                                                '<span class="badge bg-secondary">Non-Critical</span>'}
+                                        </div>
+                                        <div class="small text-muted mb-2">${extCheck.description}</div>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <small class="text-muted">Expected:</small><br>
+                                                <code class="small">${extCheck.expected}</code>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <small class="text-muted">Current Value:</small><br>
+                                                ${extCheck.present ?
+                                                    `<code class="small">${extCheck.value}</code>` :
+                                                    '<span class="text-danger small">Not Present</span>'}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            `).join('') : ''}
+
+                            <div class="small text-muted mt-3">
+                                <i class="fas fa-info-circle me-1"></i>
+                                <strong>Note:</strong> X.509 v3 extensions provide additional constraints and capabilities for the certificate.
+                                Critical extensions must be valid for the certificate to be trusted.
+                            </div>
+                        </div>
+                    </div>
+                    ` : ''}
 
                     <!-- Certificate Fingerprints -->
                     <div class="card mb-3">
