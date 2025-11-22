@@ -290,6 +290,11 @@ class ApprovalRequest extends Model
             'signed_document_path' => $signPath,
         ]);
 
+        $documentSignature = $this->documentSignature;
+        if ($documentSignature) {
+            $documentSignature->clearTemporaryQRCode();
+        }
+
         // FIXED: Log audit with correct final status (SIGN_APPROVED, not USER_SIGNED)
         $this->logStatusChange(
             'user_signed_auto_approved',
@@ -366,8 +371,6 @@ class ApprovalRequest extends Model
             // Digital signature key will be generated later during signing
             $documentSignature = DocumentSignature::create([
                 'approval_request_id' => $this->id,
-                // 'digital_signature_id' => null, // Will be auto-generated during signing
-                // 'document_hash' => null, // Will be generated during signing
                 'signature_status' => DocumentSignature::STATUS_PENDING
             ]);
 

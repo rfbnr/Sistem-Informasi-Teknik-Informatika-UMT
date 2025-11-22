@@ -87,7 +87,6 @@ class QRCodeService
                 'qr_code_path' => $qrCodePath,
                 'qr_code_url' => Storage::url($qrCodePath),
                 'verification_url' => $verificationUrl,
-                // 'verification_token' => $verificationToken,
                 'size' => $qrCode->getSize(),
                 'format' => 'png'
             ];
@@ -179,7 +178,7 @@ class QRCodeService
     //! DIPAKAI DI GENERATEVERIFICATIONQR METHOD
     private function createEncryptedVerificationData($documentSignature)
     {
-        $defaultExpiry = now()->addYears(3);
+        $defaultExpiry = now()->addYears(1);
 
         $expiresAt = $defaultExpiry;
 
@@ -187,18 +186,14 @@ class QRCodeService
         if ($expiresAt < now()) {
             Log::error('Calculated expiration is in the past', [
                 'expires_at' => $expiresAt->toDateTimeString(),
-                // 'digital_signature_id' => $digitalSignature->id
             ]);
             throw new \Exception('Cannot create QR code: Calculated expiration date is in the past.');
         }
 
         Log::info('QR code expiration calculated dynamically', [
             'document_signature_id' => $documentSignature->id,
-            // 'digital_signature_id' => $digitalSignature->id,
-            // 'signature_expiry' => $signatureExpiry->toDateTimeString(),
             'default_expiry' => $defaultExpiry->toDateTimeString(),
             'chosen_expiry' => $expiresAt->toDateTimeString(),
-            // 'expiry_reason' => $signatureExpiry < $defaultExpiry ? 'signature_validity' : 'default_cap',
             'days_until_expiry' => now()->diffInDays($expiresAt)
         ]);
 
@@ -210,10 +205,10 @@ class QRCodeService
             'approval_request_id' => $documentSignature->approval_request_id,
             'verification_token' => $documentSignature->verification_token,
             'created_at' => now()->timestamp,
-            'expires_at' => $expiresAt->timestamp // ✅ DYNAMIC from DigitalSignature!
+            'expires_at' => $expiresAt->timestamp
         ];
 
-        // Full encryption - TETAP SAMA seperti sebelumnya!
+        // Full encryption
         $encryptedPayload = Crypt::encryptString(json_encode($verificationData));
 
         Log::info('Created encrypted verification payload', [
@@ -229,7 +224,7 @@ class QRCodeService
             $mapping = VerificationCodeMapping::createMapping(
                 $encryptedPayload,
                 $documentSignature->id,
-                $expiresAt // ✅ Pass Carbon instance with dynamic expiration!
+                $expiresAt
             );
 
             Log::info('Short code mapping created successfully', [
