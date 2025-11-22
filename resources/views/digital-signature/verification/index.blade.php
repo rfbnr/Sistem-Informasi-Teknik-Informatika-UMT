@@ -277,21 +277,6 @@
                                     </div>
                                 </div>
 
-                                <!-- Token Input -->
-                                {{-- <div id="tokenSection" class="verification-section" style="display: none;">
-                                    <div class="form-group mb-3">
-                                        <label for="verificationToken" class="form-label font-weight-bold">Token Verifikasi:</label>
-                                        <div class="input-group">
-                                            <span class="input-group-text">
-                                                <i class="fas fa-key"></i>
-                                            </span>
-                                            <input type="text" class="form-control" id="verificationToken" name="verification_input"
-                                                   placeholder="Masukkan token verifikasi" disabled data-method="token">
-                                        </div>
-                                        <small class="text-muted">Token berupa kombinasi huruf dan angka</small>
-                                    </div>
-                                </div> --}}
-
                                 <!-- Submit Button -->
                                 <div class="d-grid">
                                     <button type="submit" class="btn btn-verify" id="verifyButton" disabled>

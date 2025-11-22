@@ -333,7 +333,7 @@ class VerificationService
     }
 
     /**
-     * Verify CMS signature
+     * ✅ ENHANCED: Verify CMS signature with signature format support
      */
     private function verifyCMSSignature($documentSignature, $approvalRequest)
     {
@@ -352,23 +352,42 @@ class VerificationService
                 Log::info('Verifying CMS signature with original PDF', ['path' => $pathToVerify]);
             }
 
+            // ✅ NEW: Get signature format from DocumentSignature
+            $signatureFormat = $documentSignature->signature_format ?? 'legacy_hash_only';
+
+            Log::info('CMS signature verification starting', [
+                'document_signature_id' => $documentSignature->id,
+                'signature_format' => $signatureFormat,
+                'path' => $pathToVerify
+            ]);
+
+            // ✅ NEW: Pass signature format to verification service
             $verificationResult = $this->digitalSignatureService->verifyCMSSignature(
                 $pathToVerify,
                 $documentSignature->cms_signature,
-                $documentSignature->digitalSignature->id
-                // $documentSignature->digital_signature_id
+                $documentSignature->digitalSignature->id,
+                $signatureFormat  // Pass format for correct verification method
             );
+
+            // ✅ Add signature format to result details
+            $verificationResult['signature_format_used'] = $signatureFormat;
 
             return [
                 'status' => $verificationResult['is_valid'],
-                'message' => $verificationResult['is_valid'] ? 'CMS signature is valid' : 'CMS signature verification failed',
+                'message' => $verificationResult['is_valid'] ?
+                    'CMS signature is valid (' . $signatureFormat . ')' :
+                    'CMS signature verification failed',
                 'details' => $verificationResult
             ];
 
         } catch (\Exception $e) {
             return [
                 'status' => false,
-                'message' => 'CMS signature verification error: ' . $e->getMessage()
+                'message' => 'CMS signature verification error: ' . $e->getMessage(),
+                'details' => [
+                    'error' => $e->getMessage(),
+                    'signature_format' => $documentSignature->signature_format ?? 'unknown'
+                ]
             ];
         }
     }
@@ -416,7 +435,7 @@ class VerificationService
     }
 
     /**
-     * Verify certificate
+     * ✅ ENHANCED: Verify certificate with X.509 v3 extensions validation
      */
     private function verifyCertificate($digitalSignature)
     {
@@ -451,12 +470,38 @@ class VerificationService
             $isExpired = $validTo && $validTo < $now;
             $isNotYetValid = $validFrom && $validFrom > $now;
 
-            $isValid = !$isExpired && !$isNotYetValid;
+            $isValidPeriod = !$isExpired && !$isNotYetValid;
+
+            // ✅ NEW: Validate X.509 v3 extensions
+            $extensionsValidation = null;
+            $extensionsValid = true; // Default to true for backward compatibility
+
+            if (isset($certInfo['extensions'])) {
+                $extensionsValidation = $this->validateCertificateExtensions($certInfo['extensions']);
+                // Only fail if CRITICAL extensions are invalid
+                $extensionsValid = $extensionsValidation['critical_valid'];
+
+                Log::info('Certificate extensions validation', [
+                    'signature_id' => $digitalSignature->signature_id,
+                    'all_valid' => $extensionsValidation['all_valid'],
+                    'critical_valid' => $extensionsValidation['critical_valid']
+                ]);
+            } else {
+                Log::warning('Certificate missing X.509 v3 extensions', [
+                    'signature_id' => $digitalSignature->signature_id,
+                    'version' => ($certInfo['version'] ?? 2) + 1
+                ]);
+            }
+
+            // Overall validity: period + critical extensions
+            $isValid = $isValidPeriod && $extensionsValid;
 
             return [
                 'status' => $isValid,
                 'message' => $isValid ? 'Certificate is valid' :
-                    ($isExpired ? 'Certificate has expired' : 'Certificate is not yet valid'),
+                    ($isExpired ? 'Certificate has expired' :
+                    ($isNotYetValid ? 'Certificate is not yet valid' :
+                    'Certificate extensions validation failed')),
                 'details' => [
                     'subject' => $certInfo['subject'] ?? 'Unknown',
                     'issuer' => $certInfo['issuer'] ?? 'Unknown',
@@ -464,7 +509,9 @@ class VerificationService
                     'valid_to' => $validTo,
                     'is_expired' => $isExpired,
                     'is_not_yet_valid' => $isNotYetValid,
-                    'serial_number' => $certInfo['serialNumber'] ?? 'Unknown'
+                    'serial_number' => $certInfo['serialNumber'] ?? 'Unknown',
+                    'version' => ($certInfo['version'] ?? 2) + 1,
+                    'extensions_validation' => $extensionsValidation
                 ]
             ];
 
@@ -474,6 +521,114 @@ class VerificationService
                 'message' => 'Certificate verification error: ' . $e->getMessage()
             ];
         }
+    }
+
+    /**
+     * ✅ NEW: Validate X.509 v3 certificate extensions
+     *
+     * Validates:
+     * - basicConstraints: CA:FALSE (CRITICAL)
+     * - keyUsage: Digital Signature, Non Repudiation (CRITICAL)
+     * - extendedKeyUsage: Code Signing, Email Protection (non-critical)
+     * - subjectKeyIdentifier: Present (non-critical)
+     * - authorityKeyIdentifier: Present (non-critical)
+     *
+     * @param array $extensions Certificate extensions from openssl_x509_parse
+     * @return array Validation result
+     */
+    private function validateCertificateExtensions($extensions)
+    {
+        $checks = [];
+
+        // ✅ CHECK 1: basicConstraints (CRITICAL)
+        // Should be "CA:FALSE" for end-entity certificate
+        $checks['basicConstraints'] = [
+            'name' => 'Basic Constraints',
+            'present' => isset($extensions['basicConstraints']),
+            'value' => $extensions['basicConstraints'] ?? null,
+            'expected' => 'CA:FALSE',
+            'valid' => isset($extensions['basicConstraints']) &&
+                      str_contains(strtoupper($extensions['basicConstraints']), 'CA:FALSE'),
+            'critical' => true,
+            'description' => 'Marks certificate as end-entity (not a Certificate Authority)'
+        ];
+
+        // ✅ CHECK 2: keyUsage (CRITICAL)
+        // Should include "Digital Signature" and ideally "Non Repudiation"
+        $checks['keyUsage'] = [
+            'name' => 'Key Usage',
+            'present' => isset($extensions['keyUsage']),
+            'value' => $extensions['keyUsage'] ?? null,
+            'expected' => 'Digital Signature, Non Repudiation',
+            'valid' => isset($extensions['keyUsage']) &&
+                      str_contains($extensions['keyUsage'], 'Digital Signature'),
+            'critical' => true,
+            'description' => 'Specifies cryptographic operations allowed with this key'
+        ];
+
+        // ✅ CHECK 3: extendedKeyUsage (non-critical but recommended)
+        // Should include "Code Signing" or "E-mail Protection" for document signing
+        $checks['extendedKeyUsage'] = [
+            'name' => 'Extended Key Usage',
+            'present' => isset($extensions['extendedKeyUsage']),
+            'value' => $extensions['extendedKeyUsage'] ?? null,
+            'expected' => 'Code Signing, E-mail Protection',
+            'valid' => isset($extensions['extendedKeyUsage']) &&
+                      (str_contains($extensions['extendedKeyUsage'], 'Code Signing') ||
+                       str_contains($extensions['extendedKeyUsage'], 'E-mail Protection')),
+            'critical' => false,
+            'description' => 'Specifies purposes for which certificate can be used'
+        ];
+
+        // ✅ CHECK 4: subjectKeyIdentifier (non-critical)
+        $checks['subjectKeyIdentifier'] = [
+            'name' => 'Subject Key Identifier',
+            'present' => isset($extensions['subjectKeyIdentifier']),
+            'value' => isset($extensions['subjectKeyIdentifier']) ?
+                      substr($extensions['subjectKeyIdentifier'], 0, 20) . '...' : null,
+            'expected' => 'Present',
+            'valid' => isset($extensions['subjectKeyIdentifier']),
+            'critical' => false,
+            'description' => 'Unique identifier for certificate public key'
+        ];
+
+        // ✅ CHECK 5: authorityKeyIdentifier (non-critical)
+        $checks['authorityKeyIdentifier'] = [
+            'name' => 'Authority Key Identifier',
+            'present' => isset($extensions['authorityKeyIdentifier']),
+            'value' => isset($extensions['authorityKeyIdentifier']) ?
+                      'Present' : null,
+            'expected' => 'Present',
+            'valid' => isset($extensions['authorityKeyIdentifier']),
+            'critical' => false,
+            'description' => 'Links to issuer certificate public key'
+        ];
+
+        // Calculate validation summary
+        $allValid = true;
+        $criticalValid = true;
+        $warnings = [];
+
+        foreach ($checks as $extensionName => $check) {
+            if (!$check['valid']) {
+                $allValid = false;
+                if ($check['critical']) {
+                    $criticalValid = false;
+                } else {
+                    $warnings[] = "{$check['name']} is missing or invalid (non-critical)";
+                }
+            }
+        }
+
+        return [
+            'checks' => $checks,
+            'all_valid' => $allValid,
+            'critical_valid' => $criticalValid,
+            'warnings' => $warnings,
+            'summary' => $criticalValid ?
+                ($allValid ? 'All extensions valid' : 'Critical extensions valid, some non-critical extensions missing') :
+                'Critical extensions validation failed'
+        ];
     }
 
     /**

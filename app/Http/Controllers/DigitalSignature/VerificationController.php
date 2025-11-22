@@ -747,8 +747,159 @@ class VerificationController extends Controller
 
         RateLimiter::hit($key, 300); // 5 minutes decay
 
+        // try {
+        //     $uploadedPdf = $request->file('pdf_file');
+
+        //     // STEP 1: Calculate uploaded PDF hash
+        //     $uploadedHash = hash_file('sha256', $uploadedPdf->getRealPath());
+
+        //     Log::info('PDF upload verification attempt', [
+        //         'filename' => $uploadedPdf->getClientOriginalName(),
+        //         'size' => $uploadedPdf->getSize(),
+        //         'hash' => $uploadedHash,
+        //         'ip_address' => request()->ip()
+        //     ]);
+
+        //     // STEP 2: Find signature in database by hash
+        //     $documentSignature = DocumentSignature::where('document_hash', $uploadedHash)
+        //         ->with(['digitalSignature', 'approvalRequest.user'])
+        //         ->first();
+
+        //     if (!$documentSignature) {
+        //         Log::warning('No matching signature found for uploaded PDF', [
+        //             'hash' => $uploadedHash,
+        //             'ip_address' => request()->ip()
+        //         ]);
+
+        //         return view('digital-signature.verification.result', [
+        //             'verificationResult' => [
+        //                 'is_valid' => false,
+        //                 'message' => 'Tidak ditemukan tanda tangan digital yang cocok dengan dokumen ini.',
+        //                 'verified_at' => now(),
+        //                 'verification_id' => uniqid('verify_upload_'),
+        //                 'details' => [
+        //                     'upload_info' => [
+        //                         'filename' => $uploadedPdf->getClientOriginalName(),
+        //                         'size' => $uploadedPdf->getSize(),
+        //                         'hash' => $uploadedHash,
+        //                         'search_method' => 'hash_lookup'
+        //                     ],
+        //                     'checks' => [
+        //                         'hash_lookup' => [
+        //                             'status' => false,
+        //                             'message' => 'Dokumen tidak terdaftar dalam sistem atau belum pernah ditandatangani'
+        //                         ]
+        //                     ]
+        //                 ]
+        //             ]
+        //         ]);
+        //     }
+
+        //     // STEP 3: Byte-by-byte comparison with stored PDF
+        //     $storedPdfPath = \Illuminate\Support\Facades\Storage::disk('public')->path($documentSignature->final_pdf_path);
+
+        //     if (!file_exists($storedPdfPath)) {
+        //         Log::error('Original signed document not found', [
+        //             'document_signature_id' => $documentSignature->id,
+        //             'expected_path' => $documentSignature->final_pdf_path
+        //         ]);
+
+        //         return view('digital-signature.verification.result', [
+        //             'verificationResult' => [
+        //                 'is_valid' => false,
+        //                 'message' => 'Dokumen asli tidak ditemukan di sistem. Silakan hubungi administrator.',
+        //                 'verified_at' => now(),
+        //                 'verification_id' => uniqid('verify_upload_'),
+        //                 'details' => []
+        //             ]
+        //         ]);
+        //     }
+
+        //     $storedContent = file_get_contents($storedPdfPath);
+        //     $uploadedContent = file_get_contents($uploadedPdf->getRealPath());
+
+        //     $contentIdentical = $storedContent === $uploadedContent;
+
+        //     // STEP 4: Comprehensive verification
+        //     $verificationResult = $this->verificationService->verifyById($documentSignature->id, true);
+
+        //     // STEP 5: Add upload-specific checks
+        //     $verificationResult['upload_verification'] = [
+        //         'hash_match' => hash_equals($documentSignature->document_hash, $uploadedHash),
+        //         'content_identical' => $contentIdentical,
+        //         'file_size_match' => filesize($storedPdfPath) === filesize($uploadedPdf->getRealPath()),
+        //         'uploaded_filename' => $uploadedPdf->getClientOriginalName(),
+        //         'uploaded_size' => $uploadedPdf->getSize(),
+        //         'uploaded_at' => now()->toIso8601String(),
+        //         'signature_format' => $documentSignature->signature_format ?? 'unknown'
+        //     ];
+
+        //     // ✅ NEW: Additional check for PKCS#7 PDF signature indicators
+        //     if ($documentSignature->signature_format === 'pkcs7_cms_detached') {
+        //         $pdfSignatureCheck = $this->checkPDFSignatureIndicators($uploadedPdf->getRealPath());
+        //         $verificationResult['upload_verification']['pdf_signature_indicators'] = $pdfSignatureCheck;
+        //     }
+
+        //     // Add upload info to checks
+        //     if (!isset($verificationResult['details']['checks'])) {
+        //         $verificationResult['details']['checks'] = [];
+        //     }
+
+        //     // $verificationResult['details']['checks']['upload_verification'] = [
+        //     //     'status' => $contentIdentical && $verificationResult['upload_verification']['hash_match'],
+        //     //     'message' => $contentIdentical ? 'File yang diupload identik dengan dokumen yang ditandatangani' : 'File yang diupload berbeda dari dokumen asli',
+        //     //     'details' => $verificationResult['upload_verification']
+        //     // ];
+
+        //     // STEP 6: Log verification
+        //     Log::info('Uploaded PDF verification completed', [
+        //         'document_signature_id' => $documentSignature->id,
+        //         'is_valid' => $verificationResult['is_valid'],
+        //         'hash_match' => $verificationResult['upload_verification']['hash_match'],
+        //         'content_identical' => $contentIdentical,
+        //         'ip_address' => request()->ip()
+        //     ]);
+
+        //     // Create verification log
+        //     SignatureVerificationLog::create([
+        //         'document_signature_id' => $documentSignature->id,
+        //         'approval_request_id' => $documentSignature->approval_request_id,
+        //         'user_id' => Auth::id(),
+        //         'verification_method' => 'upload',
+        //         'verification_token_hash' => hash('sha256', $uploadedPdf->getClientOriginalName()),
+        //         'is_valid' => $verificationResult['is_valid'] && $contentIdentical,
+        //         'result_status' => $verificationResult['is_valid'] && $contentIdentical ?
+        //             SignatureVerificationLog::STATUS_SUCCESS : SignatureVerificationLog::STATUS_FAILED,
+        //         'ip_address' => request()->ip(),
+        //         'user_agent' => request()->userAgent(),
+        //         'referrer' => request()->header('Referer'),
+        //         'metadata' => [
+        //             'upload_info' => $verificationResult['upload_verification'],
+        //             'verification_method' => 'pdf_upload'
+        //         ],
+        //         'verified_at' => now()
+        //     ]);
+
+        //     return view('digital-signature.verification.result', compact('verificationResult'));
+
+        // } catch (\Exception $e) {
+        //     Log::error('Uploaded PDF verification failed', [
+        //         'error' => $e->getMessage(),
+        //         'trace' => $e->getTraceAsString(),
+        //         'ip_address' => request()->ip()
+        //     ]);
+
+        //     return back()->with('error', 'Terjadi kesalahan saat memverifikasi dokumen: ' . $e->getMessage());
+        // }
+
+
         try {
             $uploadedPdf = $request->file('pdf_file');
+
+            $pdfSignatureCheck = $this->checkPDFSignatureIndicators(
+                $uploadedPdf,  // ✅ Check FINAL signed PDF
+                // $documentSignature     // ✅ Pass document signature for detached check
+            );
 
             // STEP 1: Calculate uploaded PDF hash
             $uploadedHash = hash_file('sha256', $uploadedPdf->getRealPath());
@@ -795,11 +946,13 @@ class VerificationController extends Controller
                 ]);
             }
 
-            // STEP 3: Byte-by-byte comparison with stored PDF
-            $storedPdfPath = \Illuminate\Support\Facades\Storage::disk('public')->path($documentSignature->final_pdf_path);
+            // STEP 3: Get FINAL signed PDF path (not uploaded PDF)
+            $finalSignedPdfPath = \Illuminate\Support\Facades\Storage::disk('public')->path(
+                $documentSignature->final_pdf_path
+            );
 
-            if (!file_exists($storedPdfPath)) {
-                Log::error('Original signed document not found', [
+            if (!file_exists($finalSignedPdfPath)) {
+                Log::error('Final signed document not found', [
                     'document_signature_id' => $documentSignature->id,
                     'expected_path' => $documentSignature->final_pdf_path
                 ]);
@@ -807,7 +960,7 @@ class VerificationController extends Controller
                 return view('digital-signature.verification.result', [
                     'verificationResult' => [
                         'is_valid' => false,
-                        'message' => 'Dokumen asli tidak ditemukan di sistem. Silakan hubungi administrator.',
+                        'message' => 'Dokumen yang ditandatangani tidak ditemukan di sistem. Silakan hubungi administrator.',
                         'verified_at' => now(),
                         'verification_id' => uniqid('verify_upload_'),
                         'details' => []
@@ -815,41 +968,47 @@ class VerificationController extends Controller
                 ]);
             }
 
-            $storedContent = file_get_contents($storedPdfPath);
+            // STEP 4: Byte-by-byte comparison with stored PDF
+            $storedContent = file_get_contents($finalSignedPdfPath);
             $uploadedContent = file_get_contents($uploadedPdf->getRealPath());
 
             $contentIdentical = $storedContent === $uploadedContent;
 
-            // STEP 4: Comprehensive verification
+            // STEP 5: Comprehensive verification
             $verificationResult = $this->verificationService->verifyById($documentSignature->id, true);
 
-            // STEP 5: Add upload-specific checks
+            // STEP 6: Add upload-specific checks
             $verificationResult['upload_verification'] = [
                 'hash_match' => hash_equals($documentSignature->document_hash, $uploadedHash),
                 'content_identical' => $contentIdentical,
-                'file_size_match' => filesize($storedPdfPath) === filesize($uploadedPdf->getRealPath()),
+                'file_size_match' => filesize($finalSignedPdfPath) === filesize($uploadedPdf->getRealPath()),
                 'uploaded_filename' => $uploadedPdf->getClientOriginalName(),
                 'uploaded_size' => $uploadedPdf->getSize(),
-                'uploaded_at' => now()->toIso8601String()
+                'uploaded_at' => now()->toIso8601String(),
+                'signature_format' => $documentSignature->signature_format ?? 'unknown'
             ];
 
-            // Add upload info to checks
-            if (!isset($verificationResult['details']['checks'])) {
-                $verificationResult['details']['checks'] = [];
-            }
+            // ✅ FIX: Check signature indicators on FINAL signed PDF (not uploaded PDF)
+            Log::info('Checking signature indicators', [
+                'checking_file' => 'final_signed_pdf',
+                'path' => $finalSignedPdfPath,
+                'signature_format' => $documentSignature->signature_format
+            ]);
 
-            // $verificationResult['details']['checks']['upload_verification'] = [
-            //     'status' => $contentIdentical && $verificationResult['upload_verification']['hash_match'],
-            //     'message' => $contentIdentical ? 'File yang diupload identik dengan dokumen yang ditandatangani' : 'File yang diupload berbeda dari dokumen asli',
-            //     'details' => $verificationResult['upload_verification']
-            // ];
+            $pdfSignatureCheck = $this->checkPDFSignatureIndicators(
+                $finalSignedPdfPath,  // Check FINAL signed PDF
+                $documentSignature    // Pass document signature for detached check
+            );
 
-            // STEP 6: Log verification
+            $verificationResult['upload_verification']['pdf_signature_indicators'] = $pdfSignatureCheck;
+
+            // STEP 7: Log verification
             Log::info('Uploaded PDF verification completed', [
                 'document_signature_id' => $documentSignature->id,
                 'is_valid' => $verificationResult['is_valid'],
                 'hash_match' => $verificationResult['upload_verification']['hash_match'],
                 'content_identical' => $contentIdentical,
+                'signature_indicators' => $pdfSignatureCheck,
                 'ip_address' => request()->ip()
             ]);
 
@@ -883,6 +1042,286 @@ class VerificationController extends Controller
             ]);
 
             return back()->with('error', 'Terjadi kesalahan saat memverifikasi dokumen: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * ✅ NEW: Check for PDF digital signature indicators
+     *
+     * This method checks for common PDF signature markers without requiring
+     * a full PDF parsing library. It looks for:
+     * - /ByteRange keyword (indicates signature placeholder)
+     * - /Contents keyword (contains signature data)
+     * - /Type /Sig (signature dictionary type)
+     * - /SubFilter /adbe.pkcs7.detached (PKCS#7 detached signature)
+     *
+     * @param string $pdfPath Path to PDF file
+     * @return array Check results
+     */
+    private function checkPDFSignatureIndicators($pdfPath)
+    {
+        try {
+            // Read PDF content as binary
+            $pdfContent = file_get_contents($pdfPath);
+
+            if (!$pdfContent) {
+                return [
+                    'checked' => false,
+                    'error' => 'Could not read PDF file'
+                ];
+            }
+
+            // Check for PDF signature indicators
+            $indicators = [
+                'has_byterange' => str_contains($pdfContent, '/ByteRange'),
+                'has_contents' => str_contains($pdfContent, '/Contents'),
+                'has_sig_type' => str_contains($pdfContent, '/Type /Sig'),
+                'has_pkcs7_subfilter' => str_contains($pdfContent, '/SubFilter /adbe.pkcs7.detached') ||
+                                        str_contains($pdfContent, '/SubFilter/adbe.pkcs7.detached'),
+                'has_signature_field' => str_contains($pdfContent, '/FT /Sig') ||
+                                        str_contains($pdfContent, '/FT/Sig'),
+            ];
+
+            // Count positive indicators
+            $positiveCount = count(array_filter($indicators));
+            $totalChecks = count($indicators);
+
+            // Determine likelihood
+            $confidence = 'none';
+            if ($positiveCount >= 4) {
+                $confidence = 'high'; // Very likely has embedded signature
+            } elseif ($positiveCount >= 2) {
+                $confidence = 'medium'; // Possibly has embedded signature
+            } elseif ($positiveCount >= 1) {
+                $confidence = 'low'; // Weak indicators
+            }
+
+            Log::info('PDF signature indicators check', [
+                'path' => $pdfPath,
+                'indicators' => $indicators,
+                'positive_count' => $positiveCount,
+                'confidence' => $confidence
+            ]);
+
+            return [
+                'checked' => true,
+                'indicators' => $indicators,
+                'positive_count' => $positiveCount,
+                'total_checks' => $totalChecks,
+                'confidence' => $confidence,
+                'interpretation' => $this->interpretPDFSignatureIndicators($confidence, $indicators),
+                'note' => 'This is a heuristic check. Full PDF signature extraction requires specialized libraries.'
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('PDF signature indicators check failed', [
+                'error' => $e->getMessage(),
+                'path' => $pdfPath
+            ]);
+
+            return [
+                'checked' => false,
+                'error' => 'Check failed: ' . $e->getMessage()
+            ];
+        }
+    }
+
+
+    /**
+     * ✅ UPDATED: Check for digital signature (both embedded and detached)
+     *
+     * @param string $pdfPath Path to PDF file (FINAL signed PDF)
+     * @param DocumentSignature|null $documentSignature Document signature from database
+     * @return array Check results
+     */
+    // private function checkPDFSignatureIndicators($pdfPath, $documentSignature = null)
+    // {
+    //     try {
+    //         // Read PDF content as binary
+    //         $pdfContent = file_get_contents($pdfPath);
+
+    //         if (!$pdfContent) {
+    //             return [
+    //                 'checked' => false,
+    //                 'error' => 'Could not read PDF file'
+    //             ];
+    //         }
+
+    //         // dd($pdfContent);
+
+    //         // ✅ STEP 1: Check for EMBEDDED signature markers in PDF structure
+    //         $embeddedIndicators = [
+    //             'has_byterange' => str_contains($pdfContent, '/ByteRange'),
+    //             'has_contents' => str_contains($pdfContent, '/Contents') &&
+    //                             (str_contains($pdfContent, '/Sig') || str_contains($pdfContent, 'pkcs7')),
+    //             'has_sig_type' => str_contains($pdfContent, '/Type /Sig') ||
+    //                             str_contains($pdfContent, '/Type/Sig'),
+    //             'has_pkcs7_subfilter' => str_contains($pdfContent, '/SubFilter /adbe.pkcs7.detached') ||
+    //                                     str_contains($pdfContent, '/SubFilter/adbe.pkcs7.detached'),
+    //             'has_signature_field' => str_contains($pdfContent, '/FT /Sig') ||
+    //                                     str_contains($pdfContent, '/FT/Sig'),
+    //             'has_adobe_ppklite' => str_contains($pdfContent, '/Filter /Adobe.PPKLite') ||
+    //                                 str_contains($pdfContent, '/Filter/Adobe.PPKLite'),
+    //         ];
+
+    //         // dd($embeddedIndicators);
+
+    //         $embeddedCount = count(array_filter($embeddedIndicators));
+
+    //         // ✅ STEP 2: Check for DETACHED signature (our implementation)
+    //         $detachedIndicators = [
+    //             'has_database_signature' => false,
+    //             'has_cms_signature' => false,
+    //             'signature_format_matches' => false,
+    //             'hash_matches' => false,
+    //             'signature_valid' => false
+    //         ];
+
+    //         if ($documentSignature) {
+    //             $detachedIndicators['has_database_signature'] = true;
+    //             $detachedIndicators['has_cms_signature'] = !empty($documentSignature->cms_signature);
+    //             $detachedIndicators['signature_format_matches'] =
+    //                 $documentSignature->signature_format === 'pkcs7_cms_detached';
+
+    //             // Verify hash matches with FINAL signed PDF
+    //             $finalPdfHash = hash_file('sha256', $pdfPath);
+    //             $detachedIndicators['hash_matches'] = hash_equals(
+    //                 $documentSignature->document_hash,
+    //                 $finalPdfHash
+    //             );
+
+    //             // Check if signature is valid (not expired/revoked)
+    //             if ($documentSignature->digitalSignature) {
+    //                 $detachedIndicators['signature_valid'] = $documentSignature->digitalSignature->isValid();
+    //             }
+    //         }
+
+    //         $detachedCount = count(array_filter($detachedIndicators));
+
+    //         // ✅ STEP 3: Check for METADATA markers (from our addSignatureMarkersToPDF)
+    //         $metadataIndicators = [
+    //             'has_creator_umt' => str_contains($pdfContent, 'UMT Digital Signature System'),
+    //             'has_producer_umt' => str_contains($pdfContent, 'UMT Digital Signature'),
+    //             'has_signature_keywords' => str_contains($pdfContent, 'digital signature') ||
+    //                                     str_contains($pdfContent, 'pkcs7'),
+    //         ];
+
+    //         $metadataCount = count(array_filter($metadataIndicators));
+
+    //         // ✅ STEP 4: Determine signature type and confidence
+    //         $signatureType = 'none';
+    //         $confidence = 'none';
+    //         $interpretation = '';
+
+    //         if ($embeddedCount >= 4 && $detachedCount >= 4) {
+    //             // HYBRID: Both embedded + detached
+    //             $signatureType = 'hybrid';
+    //             $confidence = 'very_high';
+    //             $interpretation = 'PDF contains HYBRID signature (both embedded PKCS#7 in PDF structure + detached in database). Maximum security.';
+    //         } elseif ($embeddedCount >= 4) {
+    //             // Strong embedded signature
+    //             $signatureType = 'embedded';
+    //             $confidence = 'high';
+    //             $interpretation = 'PDF contains embedded PKCS#7 digital signature in PDF structure';
+    //         } elseif ($detachedCount >= 4) {
+    //             // Strong detached signature (our main implementation)
+    //             $signatureType = 'detached';
+    //             $confidence = 'high';
+    //             $interpretation = 'PDF signed with DETACHED PKCS#7 signature (stored separately in database)';
+    //         } elseif ($detachedCount >= 3 && $metadataCount >= 2) {
+    //             // Detached with metadata markers
+    //             $signatureType = 'detached_with_metadata';
+    //             $confidence = 'high';
+    //             $interpretation = 'PDF signed with DETACHED PKCS#7 signature with embedded metadata markers';
+    //         } elseif ($embeddedCount >= 2 || $detachedCount >= 2) {
+    //             $signatureType = 'partial';
+    //             $confidence = 'medium';
+    //             $interpretation = 'PDF has partial signature indicators';
+    //         } elseif ($embeddedCount >= 1 || $detachedCount >= 1 || $metadataCount >= 1) {
+    //             $signatureType = 'weak';
+    //             $confidence = 'low';
+    //             $interpretation = 'PDF has weak signature indicators';
+    //         } else {
+    //             $signatureType = 'none';
+    //             $confidence = 'none';
+    //             $interpretation = 'No digital signature detected';
+    //         }
+
+    //         Log::info('PDF signature indicators check (comprehensive)', [
+    //             'path' => $pdfPath,
+    //             'signature_type' => $signatureType,
+    //             'embedded_count' => $embeddedCount,
+    //             'detached_count' => $detachedCount,
+    //             'metadata_count' => $metadataCount,
+    //             'confidence' => $confidence
+    //         ]);
+
+    //         return [
+    //             'checked' => true,
+    //             'signature_type' => $signatureType,
+    //             'confidence' => $confidence,
+    //             'interpretation' => $interpretation,
+
+    //             // Embedded signature indicators
+    //             // 'embedded_indicators' => $embeddedIndicators,
+    //             // 'embedded_positive_count' => $embeddedCount,
+    //             // 'indicators' => $embeddedIndicators,
+    //             // 'positive_count' => $embeddedCount,
+    //             // 'total_checks' => count($embeddedIndicators),
+
+    //             // Detached signature indicators
+    //             // 'detached_indicators' => $detachedIndicators,
+    //             // 'detached_positive_count' => $detachedCount,
+    //             'indicators' => $detachedIndicators,
+    //             'positive_count' => $detachedCount,
+    //             'total_checks' => count($detachedIndicators),
+
+    //             // Metadata indicators
+    //             'metadata_indicators' => $metadataIndicators,
+    //             'metadata_positive_count' => $metadataCount,
+
+    //             'note' => $signatureType === 'detached' || $signatureType === 'detached_with_metadata'
+    //                 ? 'This PDF uses DETACHED signature (stored separately in database). PDF structure may not contain embedded signature dictionary.'
+    //                 : 'Checking for embedded PDF signature markers.'
+    //         ];
+
+    //     } catch (\Exception $e) {
+    //         Log::error('PDF signature indicators check failed', [
+    //             'error' => $e->getMessage(),
+    //             'path' => $pdfPath
+    //         ]);
+
+    //         return [
+    //             'checked' => false,
+    //             'error' => 'Check failed: ' . $e->getMessage()
+    //         ];
+    //     }
+    // }
+
+    /**
+     * ✅ NEW: Interpret PDF signature indicators
+     *
+     * @param string $confidence Confidence level
+     * @param array $indicators Indicator results
+     * @return string Human-readable interpretation
+     */
+    private function interpretPDFSignatureIndicators($confidence, $indicators)
+    {
+        switch ($confidence) {
+            case 'high':
+                if ($indicators['has_pkcs7_subfilter']) {
+                    return 'PDF contains strong evidence of PKCS#7 digital signature (adbe.pkcs7.detached format)';
+                }
+                return 'PDF contains strong evidence of digital signature';
+
+            case 'medium':
+                return 'PDF may contain digital signature markers, but not all expected fields are present';
+
+            case 'low':
+                return 'PDF has minimal signature indicators. May not contain embedded signature.';
+
+            default:
+                return 'No digital signature indicators found in PDF structure';
         }
     }
 }
